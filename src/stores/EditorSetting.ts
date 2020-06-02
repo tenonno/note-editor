@@ -212,13 +212,8 @@ export default class EditorSetting {
   @action
   setObjectSize = (value: number) => (this.objectSize = value);
 
-  @observable
-  otherValue = 120;
-
-  @action
-  setOtherValue(value: number) {
-    this.otherValue = value;
-  }
+  @box
+  public otherValue: number | string = 120;
 
   measureLayouts: IMeasureLayout[] = [
     new DefaultMeasureLayout(),

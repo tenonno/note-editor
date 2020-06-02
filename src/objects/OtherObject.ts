@@ -9,7 +9,7 @@ import { Measure } from "./Measure";
 
 export type OtherObjectData = {
   type: number;
-  value: number;
+  value: number | string;
   guid: GUID;
 
   /**
