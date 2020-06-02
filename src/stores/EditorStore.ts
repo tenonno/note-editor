@@ -238,7 +238,7 @@ export default class Editor {
    * インスペクタの対象を更新する
    */
   @action
-  updateInspector() {
+  public updateInspector() {
     const targets = this.inspectorTargets;
     this.inspectorTargets = [];
 
@@ -251,11 +251,10 @@ export default class Editor {
 
       // その他オブジェクト
       else if (t instanceof OtherObjectRecord) {
-        this.inspectorTargets.push(
-          this.currentChart!.timeline.otherObjects.find(
-            object => object.guid === t.guid
-          )
+        const otherObject = this.currentChart!.timeline.otherObjects.find(
+          object => object.guid === t.guid
         );
+        if (otherObject) this.inspectorTargets.push(otherObject);
       }
 
       // その他
@@ -477,7 +476,17 @@ export default class Editor {
         target => target instanceof NoteRecord
       );
       removeNotes.forEach(n => this.currentChart!.timeline.removeNote(n));
-      if (removeNotes.length > 0) this.currentChart!.save();
+
+      const removeOtherObjects = this.inspectorTargets.filter(
+        target => target instanceof OtherObjectRecord
+      );
+      removeOtherObjects.forEach(o =>
+        this.currentChart!.timeline.removeOtherObject(o)
+      );
+
+      if (removeNotes.length > 0 || removeOtherObjects.length > 0)
+        this.currentChart!.save();
+      this.updateInspector();
     });
 
     ipcRenderer.on("moveDivision", (_: any, index: number) =>

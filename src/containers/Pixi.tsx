@@ -10,12 +10,16 @@ import LanePointRenderer from "../objects/LanePointRenderer";
 import { NotePointInfo } from "../objects/LaneRenderer";
 import LaneRendererResolver from "../objects/LaneRendererResolver";
 import { Measure, sortMeasureData } from "../objects/Measure";
-import MeasureRendererResolver from "../objects/MeasureRendererResolver";
+import MeasureController from "../objects/MeasureController";
 import { Note, NoteRecord } from "../objects/Note";
 import { NoteLineRecord } from "../objects/NoteLine";
 import NoteLineRendererResolver from "../objects/NoteLineRendererResolver";
 import NoteRendererResolver from "../objects/NoteRendererResolver";
-import { OtherObjectRecord, OtherObjectRenderer } from "../objects/OtherObject";
+import {
+  OtherObject,
+  OtherObjectRecord,
+  OtherObjectRenderer
+} from "../objects/OtherObject";
 import { EditMode, ObjectCategory } from "../stores/EditorSetting";
 import { inject, InjectedComponent } from "../stores/inject";
 import CustomRendererUtility from "../utils/CustomRendererUtility";
@@ -35,6 +39,8 @@ export default class Pixi extends InjectedComponent {
   private rangeSelectStartPoint: PIXI.Point | null = null;
   private rangeSelectEndPoint: PIXI.Point | null = null;
   private rangeSelectedObjects: any[] = [];
+
+  private selectOtherObjectOrderIndex = 0;
 
   componentDidMount() {
     this.app = new PIXI.Application({
@@ -152,16 +158,16 @@ export default class Pixi extends InjectedComponent {
     );
   }
 
-  drawText(
+  public drawText(
     text: string,
     x: number,
     y: number,
     option?: any,
-    maxWidth?: number
+    maxWidth?: number,
+    offset = [0.5, 0.5]
   ) {
     if (this.tempTextIndex >= this.temporaryTexts.length) {
       const t = new PIXI.Text("");
-      t.anchor.set(0.5, 0.5);
       this.graphics!.addChild(t);
       this.temporaryTexts.push(t);
     }
@@ -171,6 +177,8 @@ export default class Pixi extends InjectedComponent {
       previousStyleOptions?: any;
       previousMaxWidth?: number;
     } = this.temporaryTexts[this.tempTextIndex];
+
+    t.anchor.set(offset[0], offset[1]);
 
     // .text か .style に値を代入すると再描画処理が入るので
     // 前フレームと比較して更新を最小限にする
@@ -183,6 +191,7 @@ export default class Pixi extends InjectedComponent {
       t.style = Object.assign(
         {
           fontFamily: "'Noto Sans JP', sans-serif",
+          align: "center",
           fontSize: 20,
           fill: 0xffffff,
           dropShadow: true,
@@ -250,7 +259,7 @@ export default class Pixi extends InjectedComponent {
 
     const { editor } = this.injected;
     const { setting } = editor;
-    const { theme, padding, measureWidth } = setting;
+    const { theme, horizontalPadding, measureWidth } = setting;
 
     const chart = editor.currentChart!;
     const musicGameSystem = chart.musicGameSystem;
@@ -302,12 +311,6 @@ export default class Pixi extends InjectedComponent {
     chart.updateTime();
     const currentTime = chart.time - chart.startTime;
 
-    // 判定ラインの x 座標
-    let cx = 0;
-
-    // 0 ~ 1 に正規化された判定ラインの y 座標
-    let cy = 0;
-
     for (const measure of chart.timeline.measures) {
       // 小節の開始時刻、終了時刻
       measure.beginTime = timeCalculator.getTime(measure.index);
@@ -341,62 +344,18 @@ export default class Pixi extends InjectedComponent {
       chart.timeline.measures
     );
 
-    // 小節の操作
-    for (const measure of chart.timeline.measures) {
-      const x = measure.x;
-      const y = measure.y;
-      const hh = measure.height;
-
-      // 画面内なら小節を描画する
-      if (measure.isVisible) {
-        MeasureRendererResolver.resolve().render(
-          graphics,
-          measure,
-          chart.timeline.measures
-        );
-      }
-
-      // 小節の中に現在時刻があるなら
-      if (measure.containsCurrentTime) {
-        const $y = y + hh - hh * measure.currentTimePosition;
-
-        cx = x + measureWidth / 2;
-        cy = setting.measureLayout.getScrollOffsetY(
-          $y,
-          measure,
-          chart.timeline.measures
-        );
-
-        graphics
-          .lineStyle(4, 0xff0000)
-          .moveTo(x, $y)
-          .lineTo(x + measureWidth, $y);
-      }
-
-      if (measure.isVisible) {
-        // 小節番号
-        this.drawText(
-          measure.index.toString().padStart(3, "0"),
-          x - padding / 2,
-          y + hh - 10,
-          { fontSize: 20 },
-          padding
-        );
-        // 拍子
-        this.drawText(
-          Fraction.to01(measure.beat).toString(),
-          x - padding / 2,
-          y + hh - 30,
-          { fontSize: 20, fill: 0xcccccc },
-          padding
-        );
-      }
-    }
+    const measureController = new MeasureController();
+    const { x: cx, y: cy } = measureController.render(
+      chart,
+      graphics,
+      this,
+      setting
+    );
 
     // 対象タイムラインを画面中央に配置する
     graphics.x = w / 2 - cx;
 
-    graphics.x += (measureWidth + padding) * (cy - 0.5);
+    graphics.x += (measureWidth + horizontalPadding) * (cy - 0.5);
 
     if (graphics.x > 0) graphics.x = 0;
 
@@ -456,17 +415,6 @@ export default class Pixi extends InjectedComponent {
             .lineTo(x, s.y + s.height);
         }
       }
-    }
-
-    // その他オブジェクト描画
-    for (const object of chart.timeline.otherObjects) {
-      const measure = chart.timeline.measures[object.measureIndex];
-      OtherObjectRenderer.render(
-        chart.musicGameSystem.otherObjectTypes,
-        object,
-        graphics,
-        measure
-      );
     }
 
     // レーン中間点描画
@@ -539,6 +487,107 @@ export default class Pixi extends InjectedComponent {
       note.isVisible = measure.isVisible && visibleLayers.has(note.layer);
     }
 
+    // その他オブジェクト描画
+    OtherObjectRenderer.updateFrame();
+    for (const object of chart.timeline.otherObjects) {
+      const measure = chart.timeline.measures[object.measureIndex];
+
+      OtherObjectRenderer.render(
+        chart.musicGameSystem.otherObjectTypes,
+        object,
+        graphics,
+        measure
+      );
+
+      if (editor.inspectorTargets.includes(object)) {
+        OtherObjectRenderer.drawBounds(
+          object,
+          measure,
+          graphics,
+          theme.selected
+        );
+      }
+    }
+
+    // その他オブジェクト配置
+    if (
+      targetMeasure &&
+      setting.editMode === EditMode.Add &&
+      setting.editObjectCategory === ObjectCategory.Other
+    ) {
+      const [, ny] = normalizeContainsPoint(targetMeasure, mousePosition);
+
+      const vlDiv = targetMeasureDivision;
+
+      const newObject = OtherObjectRecord.new({
+        type: setting.editOtherTypeIndex,
+        measureIndex: targetMeasure.index,
+        measurePosition: new Fraction(
+          vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
+          vlDiv
+        ),
+        guid: guid(),
+        value: setting.otherValue
+      });
+
+      if (isClick) {
+        chart.timeline.addOtherObject(newObject);
+        chart.save();
+      } else {
+        // プレビュー
+        OtherObjectRenderer.render(
+          chart.musicGameSystem.otherObjectTypes,
+          newObject,
+          graphics,
+          chart.timeline.measures[newObject.measureIndex]
+        );
+      }
+    }
+
+    // その他オブジェクト選択/削除
+    if (
+      setting.editMode === EditMode.Select ||
+      setting.editMode === EditMode.Delete
+    ) {
+      const selectObjectOptions: {
+        object: OtherObject;
+        order: number;
+      }[] = [];
+
+      for (const object of chart.timeline.otherObjects) {
+        const bounds = OtherObjectRenderer.getBounds(
+          object,
+          chart.timeline.measures[object.measureIndex]
+        );
+
+        if (bounds.contains(mousePosition.x, mousePosition.y)) {
+          const measure = chart.timeline.measures[object.measureIndex];
+
+          const renderOrder = OtherObjectRenderer.drawBounds(
+            object,
+            measure,
+            graphics,
+            theme.hover
+          );
+
+          selectObjectOptions.push({ object, order: renderOrder });
+        }
+      }
+
+      if (isClick && selectObjectOptions.length > 0) {
+        const selectObject = _.orderBy(selectObjectOptions, "order")[
+          this.selectOtherObjectOrderIndex++ % selectObjectOptions.length
+        ].object;
+
+        if (setting.editMode === EditMode.Select) {
+          this.inspect(selectObject);
+        } else if (setting.editMode === EditMode.Delete) {
+          chart.timeline.removeOtherObject(selectObject);
+          chart.save();
+        }
+      }
+    }
+
     // ノートライン描画
     for (const noteLine of chart.timeline.noteLines) {
       NoteLineRendererResolver.resolve(noteLine).render(
@@ -581,7 +630,7 @@ export default class Pixi extends InjectedComponent {
           }
         }
 
-        if(isRight){
+        if (isRight) {
           this.isRangeSelection = false;
           chart.timeline.removeNote(note);
           chart.save();
@@ -646,40 +695,6 @@ export default class Pixi extends InjectedComponent {
     // 接続モードじゃないかノート外をタップしたら接続対象ノートを解除
     if (setting.editMode !== EditMode.Connect || (isClick && !isMouseOnNote)) {
       this.connectTargetNote = null;
-    }
-
-    // その他オブジェクト選択/削除
-    if (
-      setting.editMode === EditMode.Select ||
-      setting.editMode === EditMode.Delete
-    ) {
-      for (const object of chart.timeline.otherObjects) {
-        const bounds = OtherObjectRenderer.getBounds(
-          chart.musicGameSystem.otherObjectTypes,
-          object,
-          chart.timeline.measures[object.measureIndex]
-        );
-
-        if (bounds.contains(mousePosition.x, mousePosition.y)) {
-          graphics
-            .lineStyle(2, 0xff9900)
-            .drawRect(
-              bounds.x - 2,
-              bounds.y - 2,
-              bounds.width + 4,
-              bounds.height + 4
-            );
-
-          if (isClick) {
-            if (setting.editMode === EditMode.Select) {
-              this.inspect(object);
-            } else if (setting.editMode === EditMode.Delete) {
-              chart.timeline.removeOtherObject(object);
-              chart.save();
-            }
-          }
-        }
-      }
     }
 
     // レーン選択中ならノートを配置する
@@ -878,41 +893,6 @@ export default class Pixi extends InjectedComponent {
           newLanePoint,
           graphics,
           chart.timeline.measures[newLanePoint.measureIndex]
-        );
-      }
-    }
-
-    // その他オブジェクト配置
-    if (
-      targetMeasure &&
-      setting.editMode === EditMode.Add &&
-      setting.editObjectCategory === ObjectCategory.Other
-    ) {
-      const [, ny] = normalizeContainsPoint(targetMeasure, mousePosition);
-
-      const vlDiv = targetMeasureDivision;
-
-      const newObject = OtherObjectRecord.new({
-        type: setting.editOtherTypeIndex,
-        measureIndex: targetMeasure.index,
-        measurePosition: new Fraction(
-          vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
-          vlDiv
-        ),
-        guid: guid(),
-        value: setting.otherValue
-      });
-
-      if (isClick) {
-        chart.timeline.addOtherObject(newObject);
-        chart.save();
-      } else {
-        // プレビュー
-        OtherObjectRenderer.render(
-          chart.musicGameSystem.otherObjectTypes,
-          newObject,
-          graphics,
-          chart.timeline.measures[newObject.measureIndex]
         );
       }
     }
