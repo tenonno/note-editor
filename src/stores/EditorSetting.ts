@@ -258,4 +258,7 @@ export default class EditorSetting {
 
   @box
   public tabHeight = 0;
+
+  @box
+  public drawerOpened = true;
 }

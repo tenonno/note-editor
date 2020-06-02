@@ -93,6 +93,10 @@ export default observer(function Toolbar() {
     setState({ ...state, anchorEl: null });
   }
 
+  function handleDrawerToggle() {
+    editor.setting.drawerOpened = !editor.setting.drawerOpened;
+  }
+
   const { setting } = editor;
 
   const { anchorEl } = state;
@@ -108,6 +112,12 @@ export default observer(function Toolbar() {
         flexDirection: "row"
       }}
     >
+      <IconButton onClick={handleDrawerToggle}>
+        <MenuIcon />
+      </IconButton>
+
+      <VerticalDivider />
+
       {/* Undo */}
       <IconButton
         disabled={!chart.canUndo}

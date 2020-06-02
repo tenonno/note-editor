@@ -31,9 +31,14 @@ const useStyles = makeStyles((theme: Theme) =>
       /* ... */
     },
 
-    drawerPaper: {
+    drawerPaperOpen: {
       position: "relative",
       width: drawerWidth
+    },
+    drawerPaperClose: {
+      position: "relative",
+      width: 0,
+      border: "none"
     },
     button: {
       margin: theme.spacing()
@@ -55,11 +60,17 @@ const useStyles = makeStyles((theme: Theme) =>
       display: "flex",
       width: "100%"
     },
-    appBar: {
+    appBarOpen: {
       width: `calc(100% - ${drawerWidth}px)`
     },
-    "appBar-left": {
+    appBarClose: {
+      width: "100%"
+    },
+    appBarLeftOpen: {
       marginLeft: drawerWidth
+    },
+    appBarLeftClose: {
+      marginLeft: 0
     },
     toolbar: theme.mixins.toolbar,
 
@@ -107,13 +118,21 @@ const darkTheme = createMuiTheme({
 
 const Application = observer(function Application() {
   const classes = useStyles();
+  const { editor } = useStores();
   return (
     <div style={{ flexGrow: 1 }}>
       <div className={classes.appFrame} style={{ height: "100vh" }}>
         <AppBar
           position="absolute"
           color="default"
-          className={classNames(classes.appBar, classes[`appBar-left`])}
+          className={classNames(
+            editor.setting.drawerOpened
+              ? classes.appBarOpen
+              : classes.appBarClose,
+            editor.setting.drawerOpened
+              ? classes.appBarLeftOpen
+              : classes.appBarLeftClose
+          )}
         >
           <Toolbar />
           <Divider />
@@ -122,7 +141,9 @@ const Application = observer(function Application() {
         <Drawer
           variant="permanent"
           classes={{
-            paper: classes.drawerPaper
+            paper: editor.setting.drawerOpened
+              ? classes.drawerPaperOpen
+              : classes.drawerPaperClose
           }}
           anchor="left"
         >
