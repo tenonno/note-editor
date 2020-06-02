@@ -139,6 +139,7 @@ export default observer(function Toolbar() {
         badgeContent={setting.measureDivision}
         color="primary"
         classes={{ badge: classes.badge }}
+        max={999}
       >
         <IconButton aria-label="Delete" onClick={handleClick}>
           <MenuIcon />
@@ -149,6 +150,7 @@ export default observer(function Toolbar() {
         badgeContent={setting.objectSize}
         color="primary"
         classes={{ badge: classes.badge }}
+        max={999}
       >
         <IconButton
           aria-label="Delete"
