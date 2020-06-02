@@ -12,7 +12,6 @@ import { Theme } from "@material-ui/core/styles/createMuiTheme";
 import Switch from "@material-ui/core/Switch";
 import {
   Menu as MenuIcon,
-  Refresh as RefreshIcon,
   Visibility as VisibilityIcon
 } from "@material-ui/icons";
 import AddIcon from "@material-ui/icons/Add";
@@ -93,7 +92,6 @@ export default observer(function Toolbar() {
   function handleClose() {
     setState({ ...state, anchorEl: null });
   }
-  
 
   const { setting } = editor;
 
@@ -206,7 +204,7 @@ export default observer(function Toolbar() {
         editLaneTypeIndex={setting.editLaneTypeIndex}
         editOtherTypeIndex={setting.editOtherTypeIndex}
         otherValue={setting.otherValue}
-        onOtherValueChange={otherValue => setting.setOtherValue(otherValue)}
+        onOtherValueChange={otherValue => (setting.otherValue = otherValue)}
         onNote={noteAnchorEl => setState({ ...state, noteAnchorEl })}
         onLane={laneAnchorEl => setState({ ...state, laneAnchorEl })}
         onOther={otherAnchorEl => setState({ ...state, otherAnchorEl })}

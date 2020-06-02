@@ -162,11 +162,11 @@ export default class EditorSetting {
   setVerticalLaneCount = (value: number) =>
     (this.verticalLaneCount = verifyNumber(value, 1));
 
-  @observable
-  padding: number = 40;
+  @box
+  public horizontalPadding: number = 120;
 
-  @action
-  setPadding = (value: number) => (this.padding = value);
+  @box
+  public verticalPadding: number = 40;
 
   @observable
   reverseScroll = false;

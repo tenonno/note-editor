@@ -70,9 +70,16 @@ export default observer(function EditorSetting() {
         )}
 
         {renderTextField(
-          "余白",
-          setting.padding.toString(),
-          (value: any) => setting.setPadding(value | 0),
+          "水平余白",
+          setting.horizontalPadding.toString(),
+          (value: any) => (setting.horizontalPadding = value | 0),
+          "number"
+        )}
+
+        {renderTextField(
+          "垂直余白",
+          setting.verticalPadding.toString(),
+          (value: any) => (setting.verticalPadding = value | 0),
           "number"
         )}
 
