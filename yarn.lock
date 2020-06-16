@@ -6404,6 +6404,11 @@ tunnel-agent@^0.6.0:
   dependencies:
     safe-buffer "^5.0.1"
 
+tweakpane@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/tweakpane/-/tweakpane-1.5.0.tgz#68530a59fe01943b94f116a2ce3cddf48a00fc95"
+  integrity sha512-wXV3nHMOV9/TzIPPUBio3ZxhatPNv8kzbjWhBAqZSQAeBm1MDG7slN3bMpmbA9U30Cy/n080RprSkgNiHqexrA==
+
 tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   version "0.14.5"
   resolved "https://registry.yarnpkg.com/tweetnacl/-/tweetnacl-0.14.5.tgz#5ae68177f192d4456269d108afa93ff8743f4f64"

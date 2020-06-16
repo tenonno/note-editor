@@ -233,6 +233,11 @@ export default class EditorSetting {
     return this.measureLayouts[this.currentMeasureLayoutIndex];
   }
 
+  @box
+  public currentInspectorIndex = 0;
+
+  public readonly inspectorNames = ["Tweakpane", "dat.GUI"];
+
   @observable
   preserve3D = false;
 

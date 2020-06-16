@@ -106,6 +106,29 @@ export default observer(function EditorSetting() {
           </Select>
         </FormControl>
 
+        <FormControl style={{ width: "100%", margin: "6px 0" }}>
+          <InputLabel htmlFor="inspectorIndex" className={classes.label}>
+            インスペクタ
+          </InputLabel>
+          <Select
+            value={setting.currentInspectorIndex}
+            onChange={(e: any) => {
+              const value: number = e.target.value;
+              setting.currentInspectorIndex = value;
+            }}
+            inputProps={{
+              className: classes.input,
+              id: "inspectorIndex"
+            }}
+          >
+            {setting.inspectorNames.map((name, index) => (
+              <MenuItem value={index} key={index}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <FormControlLabel
           control={
             <Switch
