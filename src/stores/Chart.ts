@@ -75,6 +75,8 @@ export default class Chart {
 
   customProps: any = {};
 
+  public updatedAt = Date.now();
+
   @computed
   get currentLayer() {
     return this.layers[this.currentLayerIndex];
@@ -186,6 +188,7 @@ export default class Chart {
   @action
   save() {
     this.timeline.save();
+    this.updatedAt = Date.now();
   }
 
   static fromJSON(json: string) {
@@ -592,7 +595,7 @@ export default class Chart {
   }
 
   @action
-  toJSON(): string {
+  public toJSON(space: number | null = 2): string {
     if (!this.musicGameSystem) return "{}";
 
     // 最終小節のインデックスを取得
@@ -613,6 +616,7 @@ export default class Chart {
     delete chart.currentLayerIndex;
     delete chart.canRedo;
     delete chart.canUndo;
+    delete chart.updatedAt;
 
     chart.musicGameSystemName = this.musicGameSystem.name;
     chart.musicGameSystemVersion = this.musicGameSystem.version;
@@ -634,6 +638,10 @@ export default class Chart {
       }
     };
     deleteConfigKey(chart);
+
+    if (space === null) {
+      return JSON.stringify(chart);
+    }
 
     return JSON.stringify(chart, null, 2);
   }

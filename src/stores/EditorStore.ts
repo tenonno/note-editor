@@ -1,5 +1,6 @@
 import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
+import http from "http";
 import * as _ from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
@@ -539,6 +540,41 @@ export default class Editor {
       );
     });
 
+    this.updateServer(this.setting.serverEnabled);
+
     Editor.instance = this;
+  }
+
+  private server: http.Server | null = null;
+
+  public updateServer(enabled: boolean) {
+    this.setting.serverEnabled = enabled;
+
+    if (!enabled) {
+      this.server?.close();
+      this.server = null;
+      return;
+    }
+
+    this.server = http.createServer();
+
+    this.server.on("request", (req, res) => {
+      if (req.url === "/data") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.write(this.currentChart!.toJSON(null));
+        res.end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.write(
+        JSON.stringify({
+          name: this.currentChart?.filePath,
+          time: this.currentChart?.time,
+          updatedAt: this.currentChart?.updatedAt
+        })
+      );
+      res.end();
+    });
+    this.server.listen(this.setting.serverPort);
   }
 }

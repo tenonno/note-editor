@@ -47,6 +47,7 @@
     "webpack-merge": "^4.2.1"
   },
   "dependencies": {
+    "@types/node-ipc": "^9.1.2",
     "config": "^3.2.4",
     "dat.gui": "^0.7.5",
     "fast-json-patch": "^3.0.0-1",
@@ -58,6 +59,7 @@
     "mobx-react": "^6.1.4",
     "mobx-remotedev": "^0.3.6",
     "mousetrap": "^1.6.3",
+    "node-ipc": "^9.1.1",
     "notistack": "^0.9.5",
     "prettier": "^1.19.1",
     "react": "^16.12.0",

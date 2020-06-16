@@ -266,4 +266,10 @@ export default class EditorSetting {
 
   @box
   public drawerOpened = true;
+
+  @box
+  public serverEnabled = false;
+
+  @box
+  public serverPort = 3000;
 }

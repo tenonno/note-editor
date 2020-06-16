@@ -45,7 +45,7 @@ export default function Settings() {
       render: () => <EditorSetting />
     },
     {
-      key: "アセット設定",
+      key: "外部連携",
       render: () => <AssetSetting />
     }
   ];
