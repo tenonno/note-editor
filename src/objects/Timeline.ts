@@ -21,6 +21,10 @@ export type TimelineJsonData = {
   lanes: LaneData[];
   lanePoints: LanePointData[];
   otherObjects: OtherObjectData[];
+
+  // obsolete
+  bpmChanges?: any;
+  speedChanges?: any;
 };
 
 export type TimelineData = {

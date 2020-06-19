@@ -284,7 +284,7 @@ export default class Editor {
         properties: ["openFile", "multiSelections"],
         filters: this.dialogFilters
       },
-      paths => this.openCharts(paths)
+      paths => this.openCharts(paths ?? [])
     );
   }
 
