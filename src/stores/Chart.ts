@@ -315,6 +315,10 @@ export default class Chart {
 
     this.layers = layers.map(layer => LayerRecord.new(layer));
 
+    // ロックしていないレイヤーがあれば選択する
+    const notLockedLayerIndex = this.layers.findIndex(layer => !layer.lock);
+    this.selectLayer(notLockedLayerIndex === -1 ? 0 : notLockedLayerIndex);
+
     this.setName(chartData.name);
     this.setStartTime(chartData.startTime);
     this.setDifficulty(chartData.difficulty || 0);
