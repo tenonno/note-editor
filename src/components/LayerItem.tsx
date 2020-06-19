@@ -20,18 +20,13 @@ export default (props: IProps) => {
     <ListItem
       button
       style={{
-        padding: 0,
-        background: props.layer.lock ? "#eee" : ""
+        padding: 0
       }}
-      disableRipple={props.layer.lock}
       selected={props.selected}
-      onClick={() => {
-        if (!props.layer.lock) props.onSelect(index);
-      }}
+      onClick={() => props.onSelect(index)}
     >
       <IconButton
         style={{ padding: ".5rem" }}
-        disabled={false}
         onClick={() => props.onToggleVisible(index)}
       >
         {layer.visible ? (
@@ -41,7 +36,6 @@ export default (props: IProps) => {
         )}
       </IconButton>
       <IconButton
-        disabled={false}
         style={{ padding: ".5rem", marginLeft: "-.5rem" }}
         onClick={() => props.onToggleLock(index)}
       >
@@ -49,7 +43,6 @@ export default (props: IProps) => {
       </IconButton>
       <TextField
         value={layer.name}
-        disabled={props.layer.lock}
         margin="dense"
         onChange={({ target: { value } }) => props.onRename(value)}
       />

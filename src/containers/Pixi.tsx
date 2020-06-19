@@ -69,7 +69,11 @@ export default class Pixi extends InjectedComponent {
       () => {
         if (!key.isDown("Control") && !key.isDown("Meta"))
           this.injected.editor.clearInspectorTarget();
-        if (this.injected.editor.setting.editMode !== EditMode.Select) return;
+        if (
+          this.injected.editor.currentChart?.currentLayer.lock ||
+          this.injected.editor.setting.editMode !== EditMode.Select
+        )
+          return;
         this.isRangeSelection = true;
         this.rangeSelectStartPoint = this.getMousePosition();
         this.rangeSelectEndPoint = this.getMousePosition();
@@ -276,6 +280,11 @@ export default class Pixi extends InjectedComponent {
 
     const viewRect = this.app!.view.getBoundingClientRect();
 
+    const isLock = chart.currentLayer.lock;
+    const canEdit = !isLock;
+
+    this.app.view.style.cursor = isLock ? "not-allowed" : "default";
+
     // 編集画面外ならクリックしていないことにする
     const mousePosition = _.clone(
       this.app!.renderer.plugins.interaction.mouse.global
@@ -311,10 +320,15 @@ export default class Pixi extends InjectedComponent {
     chart.updateTime();
     const currentTime = chart.time - chart.startTime;
 
+    const measureTimes = Array.from(
+      { length: chart.timeline.measures.length + 1 },
+      (_, i) => timeCalculator.getTime(i)
+    );
+
     for (const measure of chart.timeline.measures) {
       // 小節の開始時刻、終了時刻
-      measure.beginTime = timeCalculator.getTime(measure.index);
-      measure.endTime = timeCalculator.getTime(measure.index + 1);
+      measure.beginTime = measureTimes[measure.index];
+      measure.endTime = measureTimes[measure.index + 1];
       measure.containsCurrentTime = false;
 
       // 小節の中に現在時刻があるなら
@@ -370,29 +384,32 @@ export default class Pixi extends InjectedComponent {
 
     if (targetMeasure) {
       // ターゲット小節の枠を描画
-      if (!targetMeasure.isSelected) {
+      if (canEdit && !targetMeasure.isSelected) {
         targetMeasure.drawBounds(graphics, theme.hover);
       }
 
       const s = targetMeasure;
 
       // ターゲット小節の分割線を描画
-      const div = targetMeasureDivision;
-      for (var i = 1; i < div; ++i) {
-        const y = s.y + (s.height / div) * (div - i);
-        graphics
-          .lineStyle(2, 0xffffff, (4 * i) % measureDivision === 0 ? 1 : 0.6)
-          .moveTo(s.x, y)
-          .lineTo(s.x + measureWidth, y);
+      if (canEdit) {
+        const div = targetMeasureDivision;
+        for (let i = 1; i < div; ++i) {
+          const y = s.y + (s.height / div) * (div - i);
+          graphics
+            .lineStyle(2, 0xffffff, (4 * i) % measureDivision === 0 ? 1 : 0.6)
+            .moveTo(s.x, y)
+            .lineTo(s.x + measureWidth, y);
+        }
       }
 
       // 小節選択
-      if (setting.editMode === EditMode.Select && isClick) {
+      if (canEdit && setting.editMode === EditMode.Select && isClick) {
         this.inspect(targetMeasure);
       }
 
       // レーン追加モードなら小節の横分割線を描画
       if (
+        canEdit &&
         setting.editMode === EditMode.Add &&
         setting.editObjectCategory === ObjectCategory.Lane
       ) {
@@ -448,6 +465,7 @@ export default class Pixi extends InjectedComponent {
       {
         if (
           !(
+            canEdit &&
             setting.editMode === EditMode.Add &&
             setting.editObjectCategory === ObjectCategory.Note
           ) ||
@@ -511,6 +529,7 @@ export default class Pixi extends InjectedComponent {
 
     // その他オブジェクト配置
     if (
+      canEdit &&
       targetMeasure &&
       setting.editMode === EditMode.Add &&
       setting.editObjectCategory === ObjectCategory.Other
@@ -546,8 +565,9 @@ export default class Pixi extends InjectedComponent {
 
     // その他オブジェクト選択/削除
     if (
-      setting.editMode === EditMode.Select ||
-      setting.editMode === EditMode.Delete
+      canEdit &&
+      (setting.editMode === EditMode.Select ||
+        setting.editMode === EditMode.Delete)
     ) {
       const selectObjectOptions: {
         object: OtherObject;
@@ -615,8 +635,9 @@ export default class Pixi extends InjectedComponent {
 
       // ノート選択 or 削除
       if (
-        setting.editMode === EditMode.Select ||
-        setting.editMode === EditMode.Delete
+        canEdit &&
+        (setting.editMode === EditMode.Select ||
+          setting.editMode === EditMode.Delete)
       ) {
         if (!note.isSelected) note.drawBounds(graphics, theme.hover);
 
@@ -699,6 +720,7 @@ export default class Pixi extends InjectedComponent {
 
     // レーン選択中ならノートを配置する
     if (
+      canEdit &&
       targetMeasure &&
       targetNotePoint &&
       setting.editMode === EditMode.Add &&
@@ -711,7 +733,7 @@ export default class Pixi extends InjectedComponent {
       const newNote = NoteRecord.new(
         {
           guid: guid(),
-          horizontalSize: editor.setting!.objectSize,
+          horizontalSize: setting.objectSize,
           horizontalPosition: new Fraction(
             targetNotePoint!.horizontalIndex,
             targetNotePoint!.lane.division
@@ -770,10 +792,10 @@ export default class Pixi extends InjectedComponent {
 
     // 接続モード && レーン編集
     if (
+      canEdit &&
       targetMeasure &&
-      // isClick &&
-      this.injected.editor.setting!.editMode === EditMode.Connect &&
-      this.injected.editor.setting!.editObjectCategory === ObjectCategory.Lane
+      setting.editMode === EditMode.Connect &&
+      setting.editObjectCategory === ObjectCategory.Lane
     ) {
       for (const lanePoint of this.injected.editor.currentChart!.timeline
         .lanePoints) {
@@ -783,8 +805,6 @@ export default class Pixi extends InjectedComponent {
             chart.timeline.measures[lanePoint.measureIndex]
           ).contains(mousePosition.x, mousePosition.y)
         ) {
-          // console.log("接続！", lanePoint);
-
           const laneTemplate = chart.musicGameSystem.laneTemplateMap.get(
             lanePoint.templateName
           )!;
@@ -844,13 +864,14 @@ export default class Pixi extends InjectedComponent {
 
     // レーン配置
     if (
+      canEdit &&
       targetMeasure &&
       setting.editMode === EditMode.Add &&
       setting.editObjectCategory === ObjectCategory.Lane
     ) {
       // レーンテンプレ
       const laneTemplate = editor.currentChart!.musicGameSystem.laneTemplates[
-        editor.setting!.editLaneTypeIndex
+        setting.editLaneTypeIndex
       ];
 
       const [nx, ny] = normalizeContainsPoint(targetMeasure, mousePosition);
@@ -862,7 +883,7 @@ export default class Pixi extends InjectedComponent {
 
       const maxObjectSize = 16;
 
-      const p = (editor.setting!.objectSize - 1) / maxObjectSize / 2;
+      const p = (setting.objectSize - 1) / maxObjectSize / 2;
 
       const newLanePoint = {
         measureIndex: targetMeasure.index,
@@ -872,14 +893,10 @@ export default class Pixi extends InjectedComponent {
         ),
         guid: guid(),
         color: Number(laneTemplate.color),
-        horizontalSize: editor.setting!.objectSize,
+        horizontalSize: setting.objectSize,
         templateName: laneTemplate.name,
         horizontalPosition: new Fraction(
-          _.clamp(
-            Math.floor((nx - p) * hlDiv),
-            0,
-            hlDiv - editor.setting!.objectSize
-          ),
+          _.clamp(Math.floor((nx - p) * hlDiv), 0, hlDiv - setting.objectSize),
           hlDiv
         )
       } as LanePoint;

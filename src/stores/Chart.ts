@@ -86,15 +86,25 @@ export default class Chart {
    * 新規レイヤーを作成する
    */
   @action
-  addLayer() {
+  public addLayer({
+    name,
+    visible,
+    lock,
+    layerIndex
+  }: {
+    name?: string;
+    visible?: boolean;
+    lock?: boolean;
+    layerIndex?: number;
+  } = {}) {
     this.layers.splice(
-      this.currentLayerIndex,
+      layerIndex ?? this.currentLayerIndex,
       0,
       LayerRecord.new({
         guid: guid(),
-        name: `レイヤー${this.layers.length + 1}`,
-        visible: true,
-        lock: false
+        name: name ?? `レイヤー${this.layers.length + 1}`,
+        visible: visible ?? true,
+        lock: lock ?? false
       })
     );
 
