@@ -66,14 +66,16 @@ export default class MeasureController {
           { fontSize: 20 },
           horizontalPadding
         );
-        // 拍子
-        pixi.drawText(
-          Fraction.to01(measure.beat).toString(),
-          x - measureIndexTextWidth,
-          y + hh - 30,
-          { fontSize: 20, fill: 0xcccccc },
-          horizontalPadding
-        );
+        // 特殊な拍子なら表示する
+        if (measure.beat.numerator !== measure.beat.denominator) {
+          pixi.drawText(
+            `${measure.beat.numerator}/${measure.beat.denominator}`,
+            x - measureIndexTextWidth,
+            y + hh - 30,
+            { fontSize: 20, fill: 0xcccccc },
+            horizontalPadding
+          );
+        }
       }
     }
     return {
