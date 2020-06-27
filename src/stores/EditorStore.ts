@@ -17,6 +17,7 @@ import AssetStore from "./Asset";
 import Chart from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
+import extensionUtility from "../utils/ExtensionUtility";
 
 const { dialog } = remote;
 
@@ -543,6 +544,7 @@ export default class Editor {
     this.updateServer(this.setting.serverEnabled);
 
     Editor.instance = this;
+    (window as any).extensionUtility = extensionUtility;
   }
 
   private server: http.Server | null = null;
