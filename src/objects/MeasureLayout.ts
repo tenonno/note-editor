@@ -29,13 +29,13 @@ export class DefaultMeasureLayout implements IMeasureLayout {
   ) {
     // 縦に何個小節を配置するか
     const hC = editorSetting.verticalLaneCount;
-    const padding = editorSetting.padding;
+    const { horizontalPadding, verticalPadding } = editorSetting;
     const laneWidth = editorSetting.measureWidth;
 
-    const baseHeight = (renderer.height - padding * 2) / hC;
+    const baseHeight = (renderer.height - verticalPadding * 2) / hC;
 
-    let x = padding;
-    let y = renderer.height - padding;
+    let x = horizontalPadding;
+    let y = renderer.height - verticalPadding;
 
     // レーンを描画
     for (const measure of measures) {
@@ -44,8 +44,8 @@ export class DefaultMeasureLayout implements IMeasureLayout {
       y -= measure.height;
       // 収まりきらないなら次の列へ
       if (y < 0) {
-        x += laneWidth + padding;
-        y = renderer.height - padding - measure.height;
+        x += laneWidth + horizontalPadding;
+        y = renderer.height - verticalPadding - measure.height;
       }
       measure.x = x;
       measure.y = y;
@@ -71,7 +71,7 @@ export class GameMeasureLayout implements IMeasureLayout {
     graphics: PIXI.Graphics,
     measures: Measure[]
   ) {
-    const { measureWidth, measureHeight, padding } = editorSetting;
+    const { measureWidth, measureHeight, horizontalPadding } = editorSetting;
 
     const w = renderer.width;
     const h = renderer.height;
@@ -97,7 +97,7 @@ export class GameMeasureLayout implements IMeasureLayout {
 
     for (const measure of measures) {
       measure.x = w / 2;
-      measure.y -= scrollOffset + padding;
+      measure.y -= scrollOffset + horizontalPadding;
       measure.width = measureWidth;
 
       // 画面内に表示されているか

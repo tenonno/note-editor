@@ -1,28 +1,14 @@
-import { GUI } from "dat.gui";
+import InspectorController from "../inspector/inspectorController";
 
 export class GuiUtility {
-  gui: GUI | null = null;
+  public inspectorController?: InspectorController;
 
-  update() {
-    if (!this.gui) return;
-
-    for (const button of (window as any).customButtons || []) {
-      this.gui.remove(button);
-    }
-    (window as any).customButtons = [];
+  public update() {
+    this.inspectorController?.resetCustomButton();
   }
 
-  addButton(name: string, onClick: any) {
-    if (!this.gui) return;
-
-    (window as any).customButtons.push(
-      this.gui.add(
-        {
-          [name]: onClick
-        },
-        name
-      )
-    );
+  public addButton(name: string, onClick: any) {
+    this.inspectorController?.addCustomButton(name, onClick);
   }
 }
 

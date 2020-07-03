@@ -43,6 +43,7 @@ export interface NoteType {
 export interface OtherObjectType {
   name: string;
   color: string;
+  valueType: "number" | "text" | "none";
 }
 
 export interface CustomNoteLineRenderer {

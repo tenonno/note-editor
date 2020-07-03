@@ -70,9 +70,16 @@ export default observer(function EditorSetting() {
         )}
 
         {renderTextField(
-          "余白",
-          setting.padding.toString(),
-          (value: any) => setting.setPadding(value | 0),
+          "水平余白",
+          setting.horizontalPadding.toString(),
+          (value: any) => (setting.horizontalPadding = value | 0),
+          "number"
+        )}
+
+        {renderTextField(
+          "垂直余白",
+          setting.verticalPadding.toString(),
+          (value: any) => (setting.verticalPadding = value | 0),
           "number"
         )}
 
@@ -94,6 +101,29 @@ export default observer(function EditorSetting() {
             {setting.measureLayouts.map((layout, index) => (
               <MenuItem value={index} key={index}>
                 {layout.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl style={{ width: "100%", margin: "6px 0" }}>
+          <InputLabel htmlFor="inspectorIndex" className={classes.label}>
+            インスペクタ
+          </InputLabel>
+          <Select
+            value={setting.currentInspectorIndex}
+            onChange={(e: any) => {
+              const value: number = e.target.value;
+              setting.currentInspectorIndex = value;
+            }}
+            inputProps={{
+              className: classes.input,
+              id: "inspectorIndex"
+            }}
+          >
+            {setting.inspectorNames.map((name, index) => (
+              <MenuItem value={index} key={index}>
+                {name}
               </MenuItem>
             ))}
           </Select>

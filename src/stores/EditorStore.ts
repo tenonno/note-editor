@@ -1,5 +1,6 @@
 import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
+import http from "http";
 import * as _ from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
@@ -16,6 +17,7 @@ import AssetStore from "./Asset";
 import Chart from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
+import extensionUtility from "../utils/ExtensionUtility";
 
 const { dialog } = remote;
 
@@ -238,7 +240,7 @@ export default class Editor {
    * インスペクタの対象を更新する
    */
   @action
-  updateInspector() {
+  public updateInspector() {
     const targets = this.inspectorTargets;
     this.inspectorTargets = [];
 
@@ -251,11 +253,10 @@ export default class Editor {
 
       // その他オブジェクト
       else if (t instanceof OtherObjectRecord) {
-        this.inspectorTargets.push(
-          this.currentChart!.timeline.otherObjects.find(
-            object => object.guid === t.guid
-          )
+        const otherObject = this.currentChart!.timeline.otherObjects.find(
+          object => object.guid === t.guid
         );
+        if (otherObject) this.inspectorTargets.push(otherObject);
       }
 
       // その他
@@ -284,7 +285,7 @@ export default class Editor {
         properties: ["openFile", "multiSelections"],
         filters: this.dialogFilters
       },
-      paths => this.openCharts(paths)
+      paths => this.openCharts(paths ?? [])
     );
   }
 
@@ -477,7 +478,17 @@ export default class Editor {
         target => target instanceof NoteRecord
       );
       removeNotes.forEach(n => this.currentChart!.timeline.removeNote(n));
-      if (removeNotes.length > 0) this.currentChart!.save();
+
+      const removeOtherObjects = this.inspectorTargets.filter(
+        target => target instanceof OtherObjectRecord
+      );
+      removeOtherObjects.forEach(o =>
+        this.currentChart!.timeline.removeOtherObject(o)
+      );
+
+      if (removeNotes.length > 0 || removeOtherObjects.length > 0)
+        this.currentChart!.save();
+      this.updateInspector();
     });
 
     ipcRenderer.on("moveDivision", (_: any, index: number) =>
@@ -530,6 +541,42 @@ export default class Editor {
       );
     });
 
+    this.updateServer(this.setting.serverEnabled);
+
     Editor.instance = this;
+    (window as any).extensionUtility = extensionUtility;
+  }
+
+  private server: http.Server | null = null;
+
+  public updateServer(enabled: boolean) {
+    this.setting.serverEnabled = enabled;
+
+    if (!enabled) {
+      this.server?.close();
+      this.server = null;
+      return;
+    }
+
+    this.server = http.createServer();
+
+    this.server.on("request", (req, res) => {
+      if (req.url === "/data") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.write(this.currentChart!.toJSON(null));
+        res.end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.write(
+        JSON.stringify({
+          name: this.currentChart?.filePath,
+          time: this.currentChart?.time,
+          updatedAt: this.currentChart?.updatedAt
+        })
+      );
+      res.end();
+    });
+    this.server.listen(this.setting.serverPort);
   }
 }

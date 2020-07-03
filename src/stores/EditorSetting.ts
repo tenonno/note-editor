@@ -162,11 +162,11 @@ export default class EditorSetting {
   setVerticalLaneCount = (value: number) =>
     (this.verticalLaneCount = verifyNumber(value, 1));
 
-  @observable
-  padding: number = 40;
+  @box
+  public horizontalPadding: number = 120;
 
-  @action
-  setPadding = (value: number) => (this.padding = value);
+  @box
+  public verticalPadding: number = 40;
 
   @observable
   reverseScroll = false;
@@ -212,13 +212,8 @@ export default class EditorSetting {
   @action
   setObjectSize = (value: number) => (this.objectSize = value);
 
-  @observable
-  otherValue = 120;
-
-  @action
-  setOtherValue(value: number) {
-    this.otherValue = value;
-  }
+  @box
+  public otherValue: number | string = 120;
 
   measureLayouts: IMeasureLayout[] = [
     new DefaultMeasureLayout(),
@@ -237,6 +232,11 @@ export default class EditorSetting {
   get measureLayout() {
     return this.measureLayouts[this.currentMeasureLayoutIndex];
   }
+
+  @box
+  public currentInspectorIndex = 0;
+
+  public readonly inspectorNames = ["Tweakpane", "dat.GUI"];
 
   @observable
   preserve3D = false;
@@ -263,4 +263,13 @@ export default class EditorSetting {
 
   @box
   public tabHeight = 0;
+
+  @box
+  public drawerOpened = true;
+
+  @box
+  public serverEnabled = false;
+
+  @box
+  public serverPort = 3000;
 }

@@ -24,9 +24,10 @@ class BPMChangeData {
   ) {
     this.measurePosition =
       current.measureIndex + Fraction.to01(current.measurePosition);
-    this.unitTime = (240 / current.value) * Fraction.to01(current.beat);
+    this.unitTime =
+      (240 / (current.value as number)) * Fraction.to01(current.beat);
     this.time = prev ? prev.getTime(this.measurePosition) : 0;
-    this.bpm = current.value;
+    this.bpm = current.value as number;
     this.stopTime = 0;
 
     // 停止時間を計算する
@@ -41,7 +42,7 @@ class BPMChangeData {
       ) {
         const bpm = prev.bpm;
         // NOTE: 停止時間は192分音符を基準にする
-        this.stopTime += (240 / bpm) * ((1 / 192) * stop.value);
+        this.stopTime += (240 / bpm) * ((1 / 192) * (stop.value as number));
       }
     }
   }
@@ -111,7 +112,7 @@ export class TimeCalculator {
         bpmChanges.push(newBpm);
       }
 
-      prevBpm = newBpm.value;
+      prevBpm = newBpm.value as number;
       prevBeat = newBpm.beat;
     }
 
@@ -135,13 +136,13 @@ export class TimeCalculator {
           )
         );
         const prevBpmAndBeat = bpmChangeMap.get(prevKey)!;
-        bpmChangeMap.set(stop.getMeasurePosition(), Object.assign(
-          _.cloneDeep(stop),
-          {
+        bpmChangeMap.set(
+          stop.getMeasurePosition(),
+          Object.assign(_.cloneDeep(stop), {
             value: prevBpmAndBeat.value,
             beat: measures[stop.measureIndex].beat
-          }
-        ) as BpmChangeAndBeat);
+          }) as BpmChangeAndBeat
+        );
       }
     }
 
