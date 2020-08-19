@@ -218,21 +218,33 @@ export default class Editor {
     }
   }
 
+  /**
+   * 譜面を開いてるかチェックする
+   * 開いてなかったら warning 出す
+   * @returns 譜面を開いているか
+   */
+  private existsCurrentChart(): boolean {
+    const exists = this.currentChart !== null;
+    if (!exists) console.warn("譜面を開いていません");
+    return exists;
+  }
+
   @action
   private saveAs() {
-    const window = remote.getCurrentWindow();
-    const filePath = dialog.showSaveDialogSync(window, {
-      title: "タイトル",
-      filters: this.dialogFilters,
-      properties: ["createDirectory"],
-    });
+    if (!this.existsCurrentChart()) return;
 
-    if (!filePath) return;
-
-    runInAction(() => {
-      this.currentChart!.filePath = filePath;
-      this.save();
-    });
+    dialog
+      .showSaveDialog(remote.getCurrentWindow(), {
+        title: "タイトル",
+        filters: this.dialogFilters,
+        properties: ["createDirectory"],
+      })
+      .then((result) => {
+        if (result.filePath) {
+          this.currentChart!.filePath = result.filePath;
+          this.save();
+        }
+      });
   }
 
   /**
@@ -278,14 +290,13 @@ export default class Editor {
   }
 
   @action
-  private open() {
-    const window = BrowserWindow.getFocusedWindow();
-    if (!window) return;
-    const paths = dialog.showOpenDialogSync(window, {
-      properties: ["openFile", "multiSelections"],
-      filters: this.dialogFilters,
-    });
-    this.openCharts(paths ?? []);
+  open() {
+    dialog
+      .showOpenDialog({
+        properties: ["openFile", "multiSelections"],
+        filters: this.dialogFilters,
+      })
+      .then((result) => this.openCharts(result.filePaths));
   }
 
   /**

@@ -15,15 +15,12 @@ type Stop = {
 
 export default class BMSImporter {
   public static async import() {
-    const window = remote.getCurrentWindow();
-
-    const filenames = dialog.showOpenDialogSync(window, {
+    const result = await dialog.showOpenDialog({
       properties: ["openFile", "multiSelections"],
+      // filters: [{ name: "BMS 譜面データ", extensions: ["bms", "bme"] }]
     });
 
-    if (!filenames) return;
-
-    for (const filename of filenames) {
+    for (const filename of result.filePaths) {
       const file = await util.promisify(fs.readFile)(filename);
 
       this.importImplement(file.toString());
