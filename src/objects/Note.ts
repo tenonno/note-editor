@@ -51,7 +51,7 @@ export type NoteData = {
 const defaultNoteData: NoteData = {
   guid: "GUID",
   editorProps: {
-    time: 1
+    time: 1,
   },
   measureIndex: -1,
   measurePosition: new Fraction(0, 1),
@@ -67,7 +67,7 @@ const defaultNoteData: NoteData = {
 
   layer: "GUID",
 
-  customProps: {}
+  customProps: {},
 };
 
 export type Note = Mutable<NoteRecord>;
@@ -190,7 +190,7 @@ export class NoteRecord extends Record<NoteData>(defaultNoteData) {
 
         // 不要カスタムプロパティの削除と新規カスタムプロパティの追加
         const newProps: any = {
-          inspectorConfig: noteType.customPropsInspectorConfig
+          inspectorConfig: noteType.customPropsInspectorConfig,
         };
         for (const prop of noteType.customProps) {
           if (prop.key in data.customProps) {

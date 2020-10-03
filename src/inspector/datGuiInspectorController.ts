@@ -15,7 +15,7 @@ Object.defineProperty(GUI.prototype, "removeFolder", {
     this.__ul.removeChild(folder.domElement.parentNode);
     delete this.__folders[name];
     this.onResize();
-  }
+  },
 });
 
 export default class DatGuiInspectorController implements InspectorController {
@@ -38,7 +38,7 @@ export default class DatGuiInspectorController implements InspectorController {
     (window as any).GUI = GUI;
 
     // インスペクタの領域を調整する
-    new MutationObserver(_ => {
+    new MutationObserver((_) => {
       const w = gui.domElement.offsetWidth;
       const h = gui.domElement.offsetHeight;
       gui.domElement.style.transform = `scale(${scale})`;
@@ -150,7 +150,7 @@ export default class DatGuiInspectorController implements InspectorController {
     this.customButtons.push(
       this.gui.add(
         {
-          [name]: onClick
+          [name]: onClick,
         },
         name
       )

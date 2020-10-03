@@ -28,7 +28,7 @@ const defaultOtherObjectData: OtherObjectData = {
   guid: "",
   measureIndex: 0,
   measurePosition: Fraction.none,
-  value: 1
+  value: 1,
 };
 
 export type OtherObject = Mutable<OtherObjectRecord>;
@@ -174,7 +174,7 @@ class _OtherObjectRenderer {
       bounds.y + bounds.height / 2 - labelAddY,
       {
         fontSize: 16,
-        fill: Number(otherObjectTypes[object.type].color)
+        fill: Number(otherObjectTypes[object.type].color),
       },
       measure.width,
       [0, 0.5]

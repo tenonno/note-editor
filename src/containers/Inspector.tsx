@@ -22,7 +22,7 @@ export default class Inspector extends InjectedComponent {
 
   private controllers: InspectorController[] = [
     new TweakpaneInspectorController(this.injected.editor),
-    new DatGuiInspectorController(this.injected.editor)
+    new DatGuiInspectorController(this.injected.editor),
   ];
 
   private currentInspectorIndex = 0;
@@ -93,7 +93,7 @@ export default class Inspector extends InjectedComponent {
     return (
       <div>
         <div
-          ref={thisDiv => {
+          ref={(thisDiv) => {
             component.element = thisDiv!;
           }}
         />

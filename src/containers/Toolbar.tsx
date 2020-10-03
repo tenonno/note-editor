@@ -5,14 +5,14 @@ import {
   IconButton,
   makeStyles,
   Menu,
-  MenuItem
+  MenuItem,
 } from "@material-ui/core";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import { Theme } from "@material-ui/core/styles/createMuiTheme";
 import Switch from "@material-ui/core/Switch";
 import {
   Menu as MenuIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
 } from "@material-ui/icons";
 import AddIcon from "@material-ui/icons/Add";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
@@ -38,12 +38,12 @@ const useStyles = makeStyles((theme: Theme) =>
         theme.palette.type === "light"
           ? theme.palette.grey[200]
           : theme.palette.grey[900]
-      }`
+      }`,
     },
     displaySetting: {
       outline: 0,
-      padding: theme.spacing(2)
-    }
+      padding: theme.spacing(2),
+    },
   })
 );
 
@@ -79,13 +79,13 @@ export default observer(function Toolbar() {
 
     customColorAnchorEl: null,
 
-    anchorEl: null
+    anchorEl: null,
   });
 
   function handleClick(event: any) {
     setState({
       ...state,
-      anchorEl: event.currentTarget as HTMLElement
+      anchorEl: event.currentTarget as HTMLElement,
     });
   }
 
@@ -109,7 +109,7 @@ export default observer(function Toolbar() {
     <div
       style={{
         display: "flex",
-        flexDirection: "row"
+        flexDirection: "row",
       }}
     >
       <IconButton onClick={handleDrawerToggle}>
@@ -154,7 +154,7 @@ export default observer(function Toolbar() {
       >
         <IconButton
           aria-label="Delete"
-          onClick={e =>
+          onClick={(e) =>
             setState({ ...state, objectSizeAnchorEl: e.currentTarget })
           }
         >
@@ -203,12 +203,12 @@ export default observer(function Toolbar() {
 
       <EditModeSelect
         value={setting.editMode}
-        onChange={editMode => setting.setEditMode(editMode)}
+        onChange={(editMode) => setting.setEditMode(editMode)}
       />
 
       <EditTargetSelect
         value={setting.editObjectCategory}
-        onChange={editObjectCategory =>
+        onChange={(editObjectCategory) =>
           setting.setEditObjectCategory(editObjectCategory)
         }
         musicGameSystem={chart.musicGameSystem}
@@ -216,10 +216,10 @@ export default observer(function Toolbar() {
         editLaneTypeIndex={setting.editLaneTypeIndex}
         editOtherTypeIndex={setting.editOtherTypeIndex}
         otherValue={setting.otherValue}
-        onOtherValueChange={otherValue => (setting.otherValue = otherValue)}
-        onNote={noteAnchorEl => setState({ ...state, noteAnchorEl })}
-        onLane={laneAnchorEl => setState({ ...state, laneAnchorEl })}
-        onOther={otherAnchorEl => setState({ ...state, otherAnchorEl })}
+        onOtherValueChange={(otherValue) => (setting.otherValue = otherValue)}
+        onNote={(noteAnchorEl) => setState({ ...state, noteAnchorEl })}
+        onLane={(laneAnchorEl) => setState({ ...state, laneAnchorEl })}
+        onOther={(otherAnchorEl) => setState({ ...state, otherAnchorEl })}
       />
 
       {/* 配置ノートタイプ */}
@@ -302,7 +302,7 @@ export default observer(function Toolbar() {
 
       {/* 表示設定 */}
       <IconButton
-        onClick={event => {
+        onClick={(event) => {
           setState({ ...state, displaySettingAnchorEl: event.currentTarget });
         }}
       >
@@ -317,7 +317,7 @@ export default observer(function Toolbar() {
           {[
             ["レーン中間ポイント", "lanePoint"],
             ["レーン", "b"],
-            ["ノート", "b"]
+            ["ノート", "b"],
           ].map(([label, key], index) => (
             <FormControlLabel
               key={index}
@@ -325,7 +325,7 @@ export default observer(function Toolbar() {
                 <Switch
                   onChange={(_, v) => {
                     setting.setObjectVisibility({
-                      [key]: v
+                      [key]: v,
                     });
                   }}
                   checked={(setting.objectVisibility as any)[key]}

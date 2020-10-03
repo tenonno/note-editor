@@ -19,7 +19,7 @@ import NoteRendererResolver from "../objects/NoteRendererResolver";
 import {
   OtherObject,
   OtherObjectRecord,
-  OtherObjectRenderer
+  OtherObjectRenderer,
 } from "../objects/OtherObject";
 import { EditMode, ObjectCategory } from "../stores/EditorSetting";
 import { inject, InjectedComponent } from "../stores/inject";
@@ -47,7 +47,7 @@ export default class Pixi extends InjectedComponent {
     this.app = new PIXI.Application({
       width: window.innerWidth,
       height: window.innerHeight,
-      antialias: true
+      antialias: true,
     });
 
     this.app.view.style.width = "100%";
@@ -202,7 +202,7 @@ export default class Pixi extends InjectedComponent {
           dropShadow: true,
           dropShadowBlur: 8,
           dropShadowColor: "#000000",
-          dropShadowDistance: 0
+          dropShadowDistance: 0,
         },
         option
       ) as PIXI.TextStyle;
@@ -305,14 +305,14 @@ export default class Pixi extends InjectedComponent {
     graphics.clear();
 
     // BPM が 1 つも存在しなかったら仮 BPM を先頭に配置する
-    if (!chart.timeline.otherObjects.some(object => object.isBPM())) {
+    if (!chart.timeline.otherObjects.some((object) => object.isBPM())) {
       chart.timeline.addOtherObject(
         OtherObjectRecord.new({
           type: 0,
           guid: guid(),
           measureIndex: 0,
           measurePosition: new Fraction(0, 1),
-          value: 120
+          value: 120,
         })
       );
       chart.save();
@@ -375,7 +375,7 @@ export default class Pixi extends InjectedComponent {
     if (graphics.x > 0) graphics.x = 0;
 
     // カーソルを合わせている小節
-    const targetMeasure = chart.timeline.measures.find(measure =>
+    const targetMeasure = chart.timeline.measures.find((measure) =>
       measure.containsPoint(mousePosition)
     );
     const measureDivision = this.injected.editor.setting.measureDivision;
@@ -495,7 +495,7 @@ export default class Pixi extends InjectedComponent {
 
     // 可視レイヤーの GUID
     const visibleLayers = new Set(
-      chart.layers.filter(layer => layer.visible).map(layer => layer.guid)
+      chart.layers.filter((layer) => layer.visible).map((layer) => layer.guid)
     );
 
     // ノート更新
@@ -547,7 +547,7 @@ export default class Pixi extends InjectedComponent {
           vlDiv
         ),
         guid: guid(),
-        value: setting.otherValue
+        value: setting.otherValue,
       });
 
       if (isClick) {
@@ -680,7 +680,7 @@ export default class Pixi extends InjectedComponent {
           const newNoteLine = NoteLineRecord.new({
             guid: guid(),
             head: head.guid,
-            tail: tail.guid
+            tail: tail.guid,
           });
 
           // ノートラインプレビュー
@@ -749,11 +749,11 @@ export default class Pixi extends InjectedComponent {
           lane: targetNotePoint!.lane.guid,
           layer: chart.currentLayer.guid,
           editorProps: {
-            time: 0
+            time: 0,
           },
           customProps: {
-            customColor: setting.customPropColor
-          }
+            customColor: setting.customPropColor,
+          },
         },
         chart
       );
@@ -761,7 +761,7 @@ export default class Pixi extends InjectedComponent {
       if (isClick) {
         // 同じレーンの重なっているノートを取得する
         const overlapNotes = chart.timeline.notes.filter(
-          note =>
+          (note) =>
             note.lane === newNote.lane &&
             note.layer === newNote.layer &&
             note.measureIndex === newNote.measureIndex &&
@@ -787,7 +787,7 @@ export default class Pixi extends InjectedComponent {
     function normalizeContainsPoint(measure: Measure, point: PIXI.Point) {
       return [
         (point.x - measure.x) / measure.width,
-        (point.y - measure.y) / measure.height
+        (point.y - measure.y) / measure.height,
       ];
     }
 
@@ -821,7 +821,7 @@ export default class Pixi extends InjectedComponent {
               guid: guid(),
               templateName: laneTemplate.name,
               division: laneTemplate.division,
-              points: [this.connectTargetLanePoint.guid, lanePoint.guid]
+              points: [this.connectTargetLanePoint.guid, lanePoint.guid],
             } as Lane;
 
             LaneRendererResolver.resolve(newLane).render(
@@ -899,7 +899,7 @@ export default class Pixi extends InjectedComponent {
         horizontalPosition: new Fraction(
           _.clamp(Math.floor((nx - p) * hlDiv), 0, hlDiv - setting.objectSize),
           hlDiv
-        )
+        ),
       } as LanePoint;
 
       if (isClick) {
@@ -931,11 +931,11 @@ export default class Pixi extends InjectedComponent {
       // start, end を左上から近い順にソートする
       const x = [
         this.rangeSelectStartPoint!.x,
-        this.rangeSelectEndPoint!.x
+        this.rangeSelectEndPoint!.x,
       ].sort((a, b) => a - b);
       const y = [
         this.rangeSelectStartPoint!.y,
-        this.rangeSelectEndPoint!.y
+        this.rangeSelectEndPoint!.y,
       ].sort((a, b) => a - b);
 
       const rect = new PIXI.Rectangle(x[0], y[0], x[1] - x[0], y[1] - y[0]);
@@ -957,7 +957,7 @@ export default class Pixi extends InjectedComponent {
         // 選択済みのものが範囲外になっていたら選択を外す
         if (!inRange && isSelected) {
           this.rangeSelectedObjects = this.rangeSelectedObjects.filter(
-            x => x !== note
+            (x) => x !== note
           );
           editor.removeInspectorTarget(note);
         }
@@ -1043,11 +1043,11 @@ export default class Pixi extends InjectedComponent {
           setting.preserve3D
             ? {
                 transformStyle: "preserve-3d",
-                perspective: setting.perspective + "px"
+                perspective: setting.perspective + "px",
               }
             : {}
         }
-        ref={thisDiv => {
+        ref={(thisDiv) => {
           component.container = thisDiv!;
         }}
       />

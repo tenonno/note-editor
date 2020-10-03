@@ -80,7 +80,7 @@ export default class MeasureController {
     }
     return {
       x: cx,
-      y: cy
+      y: cy,
     };
   }
 }

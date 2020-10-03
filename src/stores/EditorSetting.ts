@@ -4,7 +4,7 @@ import { verifyNumber } from "../math";
 import {
   DefaultMeasureLayout,
   GameMeasureLayout,
-  IMeasureLayout
+  IMeasureLayout,
 } from "../objects/MeasureLayout";
 import box from "../utils/mobx-box";
 
@@ -15,7 +15,7 @@ export enum EditMode {
   Select = 1,
   Add,
   Delete,
-  Connect
+  Connect,
 }
 
 /**
@@ -27,7 +27,7 @@ export enum ObjectCategory {
   // レーン
   Lane,
   // 特殊
-  Other
+  Other,
 }
 
 /**
@@ -35,7 +35,7 @@ export enum ObjectCategory {
  */
 export enum ChartTabLabelType {
   Name,
-  FilePath
+  FilePath,
 }
 
 export interface ObjectVisibility {
@@ -71,7 +71,7 @@ export default class EditorSetting {
    */
   public theme = {
     hover: 0xff990099,
-    selected: 0xff9900ff
+    selected: 0xff9900ff,
   };
 
   /**
@@ -103,7 +103,7 @@ export default class EditorSetting {
 
   @observable
   objectVisibility: ObjectVisibility = {
-    lanePoint: true
+    lanePoint: true,
   };
 
   @action
@@ -201,7 +201,7 @@ export default class EditorSetting {
     64,
     96,
     128,
-    192
+    192,
   ];
 
   /**
@@ -218,7 +218,7 @@ export default class EditorSetting {
 
   measureLayouts: IMeasureLayout[] = [
     new DefaultMeasureLayout(),
-    new GameMeasureLayout()
+    new GameMeasureLayout(),
   ];
 
   @observable

@@ -17,7 +17,7 @@ export default class TweakpaneInspectorController
   public mount(element: HTMLElement): void {
     this.pane = new Tweakpane({
       container: element,
-      title: "Inspector"
+      title: "Inspector",
     });
   }
 
@@ -97,7 +97,7 @@ export default class TweakpaneInspectorController
     if (!this.pane) return;
 
     const button = this.pane.addButton({
-      title: name
+      title: name,
     });
     button.on("click", onClick);
     this.customButtons.push(button);
