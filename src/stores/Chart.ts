@@ -579,16 +579,25 @@ export default class Chart {
 
     let chart = Object.assign({}, this);
 
+    // @ts-ignore
     delete chart.filePath;
     delete chart.audio;
     delete chart.audioBuffer;
+    // @ts-ignore
     delete chart.isPlaying;
+    // @ts-ignore
     delete chart.volume;
+    // @ts-ignore
     delete (chart as any)._musicGameSystem;
+    // @ts-ignore
     delete chart.musicGameSystem;
+    // @ts-ignore
     delete chart.currentLayerIndex;
+    // @ts-ignore
     delete chart.canRedo;
+    // @ts-ignore
     delete chart.canUndo;
+    // @ts-ignore
     delete chart.updatedAt;
 
     chart.musicGameSystemName = this.musicGameSystem.name;
@@ -596,6 +605,7 @@ export default class Chart {
 
     chart.timeline = TimelineRecord.newnew(this, chart.timeline.toJS());
 
+    // @ts-ignore
     delete chart.time;
 
     chart.timeline.measures = chart.timeline.measures.slice(

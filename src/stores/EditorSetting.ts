@@ -48,6 +48,7 @@ export default class EditorSetting {
     observe(this, () => {
       const setting = _.clone(this);
       // 保存してはいけないプロパティを削除する
+      // @ts-ignore
       delete setting.measureLayouts;
       localStorage.setItem("editorSetting", JSON.stringify(setting));
     });

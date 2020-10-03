@@ -1,4 +1,4 @@
-import { ipcRenderer, remote } from "electron";
+import { ipcRenderer, remote, BrowserWindow } from "electron";
 import * as fs from "fs";
 import http from "http";
 import * as _ from "lodash";
@@ -219,20 +219,19 @@ export default class Editor {
   }
 
   @action
-  saveAs() {
-    var window = remote.getCurrentWindow();
-    var options = {
+  private saveAs() {
+    const window = remote.getCurrentWindow();
+    const filePath = dialog.showSaveDialogSync(window, {
       title: "タイトル",
       filters: this.dialogFilters,
-      properties: ["openFile", "createDirectory"]
-    };
-    dialog.showSaveDialog(window, options, (filePath: any) => {
-      runInAction(() => {
-        if (filePath) {
-          this.currentChart!.filePath = filePath;
-          this.save();
-        }
-      });
+      properties: ["createDirectory"]
+    });
+
+    if (!filePath) return;
+
+    runInAction(() => {
+      this.currentChart!.filePath = filePath;
+      this.save();
     });
   }
 
@@ -279,14 +278,14 @@ export default class Editor {
   }
 
   @action
-  open() {
-    dialog.showOpenDialog(
-      {
-        properties: ["openFile", "multiSelections"],
-        filters: this.dialogFilters
-      },
-      paths => this.openCharts(paths ?? [])
-    );
+  private open() {
+    const window = BrowserWindow.getFocusedWindow();
+    if (!window) return;
+    const paths = dialog.showOpenDialogSync(window, {
+      properties: ["openFile", "multiSelections"],
+      filters: this.dialogFilters
+    });
+    this.openCharts(paths ?? []);
   }
 
   /**

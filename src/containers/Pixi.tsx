@@ -1,3 +1,4 @@
+import { Howl } from "howler";
 import * as _ from "lodash";
 import { observer } from "mobx-react";
 import * as PIXI from "pixi.js";
@@ -109,7 +110,7 @@ export default class Pixi extends InjectedComponent {
 
       // リサイズ
       if (app.renderer.width !== w || app.renderer.height !== h) {
-        app.renderer.resize(w, h);
+        //   app.renderer.resize(w, h);
         this.update3D();
       }
       this.renderCanvas();
@@ -239,7 +240,7 @@ export default class Pixi extends InjectedComponent {
     this.inspectTarget = target;
   }
 
-  seMap = new Map<string, Howl>();
+  private seMap = new Map<string, Howl>();
 
   /**
    * canvas を再描画する

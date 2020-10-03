@@ -1,5 +1,6 @@
-import { ipcRenderer, remote } from "electron";
+import { ipcRenderer } from "electron";
 import * as fs from "fs";
+import { Howl } from "howler";
 import * as _ from "lodash";
 import { action, flow, observable } from "mobx";
 import * as path from "path";
