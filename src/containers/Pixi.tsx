@@ -667,11 +667,10 @@ export default class Pixi extends InjectedComponent {
 
         if (
           this.connectTargetNote &&
-          // 同じノートタイプか接続可能なノートタイプなら
-          (this.connectTargetNote.type === note.type ||
-            musicGameSystem.noteTypeMap
-              .get(this.connectTargetNote.type)!
-              .connectableTypes.includes(note.type))
+          // 接続可能なノートタイプなら
+          musicGameSystem.noteTypeMap
+            .get(this.connectTargetNote.type)!
+            .connectableTypes.includes(note.type)
         ) {
           const [head, tail] = [this.connectTargetNote, note].sort(
             sortMeasureData
