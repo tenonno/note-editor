@@ -665,12 +665,17 @@ export default class Pixi extends InjectedComponent {
           .lineStyle(2, 0xff9900)
           .drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
+        const { allowRightAngle } = musicGameSystem.noteTypeMap.get(note.type)!;
+
         if (
           this.connectTargetNote &&
           // 接続可能なノートタイプなら
           musicGameSystem.noteTypeMap
             .get(this.connectTargetNote.type)!
-            .connectableTypes.includes(note.type)
+            .connectableTypes.includes(note.type) &&
+          // 直角配置チェック
+          (allowRightAngle ||
+            !note.isSameMeasurePosition(this.connectTargetNote))
         ) {
           const [head, tail] = [this.connectTargetNote, note].sort(
             sortMeasureData
@@ -763,8 +768,7 @@ export default class Pixi extends InjectedComponent {
           (note) =>
             note.lane === newNote.lane &&
             note.layer === newNote.layer &&
-            note.measureIndex === newNote.measureIndex &&
-            Fraction.equal(note.measurePosition, newNote.measurePosition) &&
+            note.isSameMeasurePosition(newNote) &&
             newNote.horizontalPosition.numerator <=
               note.horizontalPosition.numerator + note.horizontalSize - 1 &&
             note.horizontalPosition.numerator <=

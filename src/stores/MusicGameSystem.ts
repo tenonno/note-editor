@@ -24,6 +24,11 @@ export interface NoteType {
   rendererReference: any;
   excludeLanes: string[];
 
+  /**
+   * 直角ロングを生成できるか
+   */
+  allowRightAngle: boolean;
+
   connectableTypes: string[];
 
   /**

@@ -179,6 +179,17 @@ export class NoteRecord extends Record<NoteData>(defaultNoteData) {
       );
   }
 
+  /**
+   * 他のノートと小節位置が同じか判定する
+   * @param note
+   */
+  public isSameMeasurePosition(note: Note): boolean {
+    return (
+      this.measureIndex === note.measureIndex &&
+      Fraction.equal(this.measurePosition, note.measurePosition)
+    );
+  }
+
   private constructor(data: NoteData, chart: Chart) {
     super(
       (() => {
