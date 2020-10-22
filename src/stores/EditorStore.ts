@@ -1,6 +1,5 @@
-import { ipcRenderer, remote, BrowserWindow } from "electron";
+import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
-import http from "http";
 import * as _ from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
@@ -17,7 +16,6 @@ import AssetStore from "./Asset";
 import Chart from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
-import extensionUtility from "../utils/ExtensionUtility";
 
 const { dialog } = remote;
 
@@ -178,16 +176,24 @@ export default class Editor {
   public static instance: Editor | null = null;
 
   /**
+   * 譜面を開いてるかチェックする
+   * 開いてなかったら warning 出す
+   * @returns 譜面を開いているか
+   */
+  private existsCurrentChart(): boolean {
+    const exists = this.currentChart !== null;
+    if (!exists) console.warn("譜面を開いていません");
+    return exists;
+  }
+
+  /**
    * 譜面を保存する
    */
   @action
   private save() {
-    const chart = this.currentChart;
+    if (!this.existsCurrentChart()) return;
 
-    if (!chart) {
-      console.warn("譜面を開いていません");
-      return;
-    }
+    const chart = this.currentChart!;
 
     if (!chart.filePath) {
       this.saveAs();
@@ -218,19 +224,8 @@ export default class Editor {
     }
   }
 
-  /**
-   * 譜面を開いてるかチェックする
-   * 開いてなかったら warning 出す
-   * @returns 譜面を開いているか
-   */
-  private existsCurrentChart(): boolean {
-    const exists = this.currentChart !== null;
-    if (!exists) console.warn("譜面を開いていません");
-    return exists;
-  }
-
   @action
-  private saveAs() {
+  saveAs() {
     if (!this.existsCurrentChart()) return;
 
     dialog
@@ -251,7 +246,7 @@ export default class Editor {
    * インスペクタの対象を更新する
    */
   @action
-  public updateInspector() {
+  updateInspector() {
     const targets = this.inspectorTargets;
     this.inspectorTargets = [];
 
@@ -264,10 +259,11 @@ export default class Editor {
 
       // その他オブジェクト
       else if (t instanceof OtherObjectRecord) {
-        const otherObject = this.currentChart!.timeline.otherObjects.find(
-          (object) => object.guid === t.guid
+        this.inspectorTargets.push(
+          this.currentChart!.timeline.otherObjects.find(
+            (object) => object.guid === t.guid
+          )
         );
-        if (otherObject) this.inspectorTargets.push(otherObject);
       }
 
       // その他
@@ -313,6 +309,7 @@ export default class Editor {
 
   @action
   copy() {
+    if (!this.existsCurrentChart()) return;
     this.copiedNotes = this.getInspectNotes();
 
     this.notify(`${this.copiedNotes.length} 個のオブジェクトをコピーしました`);
@@ -320,6 +317,7 @@ export default class Editor {
 
   @action
   paste() {
+    if (!this.existsCurrentChart()) return;
     if (this.inspectorTargets.length != 1) return;
     if (!(this.inspectorTargets[0] instanceof MeasureRecord)) return;
     if (this.copiedNotes.length == 0) return;
@@ -474,9 +472,10 @@ export default class Editor {
     ipcRenderer.on("importBMS", () => BMSImporter.import());
 
     // 編集
-    Mousetrap.bind("mod+z", () => this.currentChart!.timeline.undo());
-    Mousetrap.bind("mod+shift+z", () => this.currentChart!.timeline.redo());
+    Mousetrap.bind("mod+z", () => this.currentChart?.timeline.undo());
+    Mousetrap.bind("mod+shift+z", () => this.currentChart?.timeline.redo());
     Mousetrap.bind("mod+x", () => {
+      if (!this.existsCurrentChart()) return;
       this.copy();
       this.copiedNotes.forEach((n) =>
         this.currentChart!.timeline.removeNote(n)
@@ -486,20 +485,12 @@ export default class Editor {
     Mousetrap.bind("mod+c", () => this.copy());
     Mousetrap.bind("mod+v", () => this.paste());
     Mousetrap.bind(["del", "backspace"], () => {
+      if (!this.currentChart) return;
       const removeNotes = this.inspectorTargets.filter(
         (target) => target instanceof NoteRecord
       );
       removeNotes.forEach((n) => this.currentChart!.timeline.removeNote(n));
-
-      const removeOtherObjects = this.inspectorTargets.filter(
-        (target) => target instanceof OtherObjectRecord
-      );
-      removeOtherObjects.forEach((o) =>
-        this.currentChart!.timeline.removeOtherObject(o)
-      );
-
-      if (removeNotes.length > 0 || removeOtherObjects.length > 0)
-        this.currentChart!.save();
+      if (removeNotes.length > 0) this.currentChart!.save();
       this.updateInspector();
     });
 
@@ -553,42 +544,6 @@ export default class Editor {
       );
     });
 
-    this.updateServer(this.setting.serverEnabled);
-
     Editor.instance = this;
-    (window as any).extensionUtility = extensionUtility;
-  }
-
-  private server: http.Server | null = null;
-
-  public updateServer(enabled: boolean) {
-    this.setting.serverEnabled = enabled;
-
-    if (!enabled) {
-      this.server?.close();
-      this.server = null;
-      return;
-    }
-
-    this.server = http.createServer();
-
-    this.server.on("request", (req, res) => {
-      if (req.url === "/data") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.write(this.currentChart!.toJSON(null));
-        res.end();
-        return;
-      }
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.write(
-        JSON.stringify({
-          name: this.currentChart?.filePath,
-          time: this.currentChart?.time,
-          updatedAt: this.currentChart?.updatedAt,
-        })
-      );
-      res.end();
-    });
-    this.server.listen(this.setting.serverPort);
   }
 }

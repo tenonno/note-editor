@@ -1,6 +1,5 @@
-import { ipcRenderer } from "electron";
+import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
-import { Howl } from "howler";
 import * as _ from "lodash";
 import { action, flow, observable } from "mobx";
 import * as path from "path";
@@ -141,17 +140,14 @@ export default class AssetStore {
     musicGameSystems.otherObjectTypes.unshift({
       name: "Stop",
       color: "0x0000ff",
-      valueType: "none",
     });
     musicGameSystems.otherObjectTypes.unshift({
       name: "Speed",
       color: "0x00ff00",
-      valueType: "number",
     });
     musicGameSystems.otherObjectTypes.unshift({
       name: "BPM",
       color: "0xff0000",
-      valueType: "number",
     });
 
     // イベントリスナーを読み込む
@@ -312,5 +308,14 @@ export default class AssetStore {
     const buffer: Buffer = fs.readFileSync(foundPath);
 
     return buffer;
+  }
+
+  @action
+  openAudioAssetDirectory() {
+    remote.dialog
+      .showOpenDialog({
+        properties: ["openDirectory"],
+      })
+      .then((result) => (this.audioAssetPath = result.filePaths[0]));
   }
 }

@@ -1,4 +1,5 @@
 import { Howl } from "howler";
+import { List, Record } from "immutable";
 import * as _ from "lodash";
 import { action, computed, observable } from "mobx";
 import { Fraction } from "../math";
@@ -6,6 +7,8 @@ import { Lane } from "../objects/Lane";
 import { LanePoint } from "../objects/LanePoint";
 import { Layer, LayerData, LayerRecord } from "../objects/Layer";
 import { MeasureRecord } from "../objects/Measure";
+import { Note } from "../objects/Note";
+import { OtherObjectData } from "../objects/OtherObject";
 import {
   Timeline,
   TimelineData,
@@ -15,28 +18,46 @@ import {
 import { guid } from "../utils/guid";
 import HotReload from "../utils/HotReload";
 import box from "../utils/mobx-box";
-import updateChart from "../utils/updateChart";
 import Editor from "./EditorStore";
 import MusicGameSystem from "./MusicGameSystem";
 
-export type ChartJsonData = {
+type ChartData = {
   name: string;
-  version: number;
+
   editorVersion: number;
-  difficulty: number;
-  startTime: number;
+
   musicGameSystem: {
     name: string;
     version: number;
   };
+
   audio: {
     source: string;
     startTime: number;
   };
-  timeline: TimelineJsonData;
-  layers: LayerData[];
-  customProps: any;
+
+  timeline: {
+    notes: List<Note>;
+  };
 };
+
+class ChartRecord extends Record<ChartData>({
+  name: "新規譜面",
+  editorVersion: 1,
+  musicGameSystem: {
+    name: "string",
+    version: 1,
+  },
+
+  audio: {
+    source: "string",
+    startTime: 0,
+  },
+
+  timeline: {
+    notes: List<Note>(),
+  },
+}) {}
 
 export default class Chart {
   // TODO: Record にする
@@ -54,8 +75,6 @@ export default class Chart {
 
   customProps: any = {};
 
-  public updatedAt = Date.now();
-
   @computed
   get currentLayer() {
     return this.layers[this.currentLayerIndex];
@@ -65,25 +84,15 @@ export default class Chart {
    * 新規レイヤーを作成する
    */
   @action
-  public addLayer({
-    name,
-    visible,
-    lock,
-    layerIndex,
-  }: {
-    name?: string;
-    visible?: boolean;
-    lock?: boolean;
-    layerIndex?: number;
-  } = {}) {
+  addLayer() {
     this.layers.splice(
-      layerIndex ?? this.currentLayerIndex,
+      this.currentLayerIndex,
       0,
       LayerRecord.new({
         guid: guid(),
-        name: name ?? `レイヤー${this.layers.length + 1}`,
-        visible: visible ?? true,
-        lock: lock ?? false,
+        name: `レイヤー${this.layers.length + 1}`,
+        visible: true,
+        lock: false,
       })
     );
 
@@ -177,10 +186,9 @@ export default class Chart {
   @action
   save() {
     this.timeline.save();
-    this.updatedAt = Date.now();
   }
 
-  public static fromJSON(json: string) {
+  static fromJSON(json: string) {
     const editor = Editor.instance!;
 
     const jsonChart: Chart = JSON.parse(json);
@@ -233,11 +241,33 @@ export default class Chart {
   }
 
   @action
-  private load(json: string) {
-    const chartData: ChartJsonData = JSON.parse(json);
+  load(json: string) {
+    const chartData = JSON.parse(json);
     console.log("譜面を読み込みます", chartData);
 
-    updateChart(chartData, this.version);
+    const timelineData: TimelineJsonData = chartData.timeline;
+
+    chartData.version = chartData.version | 0;
+    if (chartData.version < this.version) {
+      console.warn("譜面フォーマットをアップデートします。");
+    }
+
+    // BPM変更と速度変更をOtherObjectsに統合
+    if (chartData.version === 0) {
+      timelineData.otherObjects = chartData.timeline.bpmChanges.map(
+        (object: any) => {
+          object.type = 0;
+          object.value = object.bpm;
+          return object as OtherObjectData;
+        }
+      );
+      chartData.timeline.speedChanges.map((object: any) => {
+        object.type = 1;
+        object.value = object.speed;
+        timelineData.otherObjects.push(object as OtherObjectData);
+      });
+      console.log(timelineData.otherObjects);
+    }
 
     // 譜面のカスタムオプションを読み込む
     (() => {
@@ -276,8 +306,6 @@ export default class Chart {
       );
     }
 
-    const timelineData: TimelineJsonData = chartData.timeline;
-
     // 1000 小節まで生成する
     for (let i = timelineData.measures.length; i <= 999; i++) {
       timelineData.measures.push({
@@ -314,10 +342,6 @@ export default class Chart {
     }
 
     this.layers = layers.map((layer) => LayerRecord.new(layer));
-
-    // ロックしていないレイヤーがあれば選択する
-    const notLockedLayerIndex = this.layers.findIndex((layer) => !layer.lock);
-    this.selectLayer(notLockedLayerIndex === -1 ? 0 : notLockedLayerIndex);
 
     this.setName(chartData.name);
     this.setStartTime(chartData.startTime);
@@ -568,7 +592,7 @@ export default class Chart {
   }
 
   @action
-  public toJSON(space: number | null = 2): string {
+  toJSON(): string {
     if (!this.musicGameSystem) return "{}";
 
     // 最終小節のインデックスを取得
@@ -579,33 +603,22 @@ export default class Chart {
 
     let chart = Object.assign({}, this);
 
-    // @ts-ignore
     delete chart.filePath;
     delete chart.audio;
     delete chart.audioBuffer;
-    // @ts-ignore
     delete chart.isPlaying;
-    // @ts-ignore
     delete chart.volume;
-    // @ts-ignore
     delete (chart as any)._musicGameSystem;
-    // @ts-ignore
     delete chart.musicGameSystem;
-    // @ts-ignore
     delete chart.currentLayerIndex;
-    // @ts-ignore
     delete chart.canRedo;
-    // @ts-ignore
     delete chart.canUndo;
-    // @ts-ignore
-    delete chart.updatedAt;
 
     chart.musicGameSystemName = this.musicGameSystem.name;
     chart.musicGameSystemVersion = this.musicGameSystem.version;
 
     chart.timeline = TimelineRecord.newnew(this, chart.timeline.toJS());
 
-    // @ts-ignore
     delete chart.time;
 
     chart.timeline.measures = chart.timeline.measures.slice(
@@ -621,10 +634,6 @@ export default class Chart {
       }
     };
     deleteConfigKey(chart);
-
-    if (space === null) {
-      return JSON.stringify(chart);
-    }
 
     return JSON.stringify(chart, null, 2);
   }

@@ -26,8 +26,8 @@ export default function EditTargetSelect({
   editNoteTypeIndex: number;
   editLaneTypeIndex: number;
   editOtherTypeIndex: number;
-  otherValue: number | string;
-  onOtherValueChange: (value: number | string) => void;
+  otherValue: number;
+  onOtherValueChange: (value: number) => void;
   onNote: (el: Element) => void;
   onLane: (el: Element) => void;
   onOther: (el: Element) => void;
@@ -37,8 +37,6 @@ export default function EditTargetSelect({
   const noteDisabled = musicGameSystem.noteTypes.length === 0;
   const laneDisabled = musicGameSystem.laneTemplates.length === 0;
   const otherDisabled = musicGameSystem.otherObjectTypes.length === 0;
-
-  const otherObjectType = musicGameSystem.otherObjectTypes[editOtherTypeIndex];
 
   return (
     <div className={classes.toggleContainer}>
@@ -76,31 +74,26 @@ export default function EditTargetSelect({
         >
           {otherDisabled ? null : (
             <span>
-              {otherObjectType.name}
-              {otherObjectType.valueType === "none" ? null : (
-                <TextField
-                  required
-                  defaultValue={otherValue}
-                  margin="none"
-                  type={otherObjectType.valueType}
-                  InputProps={{
-                    inputProps: {
-                      style: {
-                        width: "4rem",
-                        marginRight: "-.8rem",
-                        textAlign: "center",
-                      },
+              {musicGameSystem.otherObjectTypes[editOtherTypeIndex]?.name}
+              <TextField
+                required
+                defaultValue={otherValue}
+                margin="none"
+                type="number"
+                InputProps={{
+                  inputProps: {
+                    style: {
+                      width: "4rem",
+                      marginRight: "-.8rem",
+                      textAlign: "center",
                     },
-                  }}
-                  style={{ height: 24 }}
-                  onChange={({ target: { value } }) => {
-                    if (otherObjectType.valueType === "number") {
-                      onOtherValueChange(Number(value));
-                    }
-                    onOtherValueChange(value);
-                  }}
-                />
-              )}
+                  },
+                }}
+                style={{ height: 24 }}
+                onChange={({ target: { value } }) =>
+                  onOtherValueChange(Number(value))
+                }
+              />
             </span>
           )}
           <ArrowDropDownIcon onClick={(e) => onOther(e.currentTarget)} />

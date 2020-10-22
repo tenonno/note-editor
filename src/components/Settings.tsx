@@ -1,9 +1,9 @@
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   createStyles,
   Divider,
+  ExpansionPanel,
+  ExpansionPanelDetails,
+  ExpansionPanelSummary,
   makeStyles,
 } from "@material-ui/core";
 import { Theme } from "@material-ui/core/styles/createMuiTheme";
@@ -45,7 +45,7 @@ export default function Settings() {
       render: () => <EditorSetting />,
     },
     {
-      key: "外部連携",
+      key: "アセット設定",
       render: () => <AssetSetting />,
     },
   ];
@@ -54,17 +54,17 @@ export default function Settings() {
     <>
       {settings.map((setting, index) => (
         <div key={index}>
-          <Accordion className={classes.panel}>
-            <AccordionSummary
+          <ExpansionPanel className={classes.panel}>
+            <ExpansionPanelSummary
               expandIcon={<ExpandMoreIcon />}
               className={classes.panelSummary}
             >
               {setting.key}
-            </AccordionSummary>
-            <AccordionDetails className={classes.panelDetails}>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails className={classes.panelDetails}>
               {setting.render()}
-            </AccordionDetails>
-          </Accordion>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
           <Divider />
         </div>
       ))}

@@ -4,6 +4,7 @@ import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureData } from "../objects/Measure";
 import Chart from "../stores/Chart";
+import store from "../stores/stores";
 import { guid } from "../utils/guid";
 const { dialog } = remote;
 
@@ -415,7 +416,7 @@ export default class BMSImporter {
       }
     }
 
-    const maxMeasureIndex = 999; //Math.max(...measures.map(m => m.index));
+    const maxMeasureIndex = Math.max(...measures.map((m) => m.index));
 
     const newMeasures: MeasureData[] = Array(maxMeasureIndex + 1)
       .fill(0)
