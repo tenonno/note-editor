@@ -18,7 +18,7 @@ export default function EditTargetSelect({
   onOtherValueChange,
   onNote,
   onLane,
-  onOther
+  onOther,
 }: {
   value: ObjectCategory;
   onChange: (editObjectCategory: ObjectCategory) => void;
@@ -57,7 +57,7 @@ export default function EditTargetSelect({
           disabled={noteDisabled}
         >
           {musicGameSystem.noteTypes[editNoteTypeIndex]?.name}
-          <ArrowDropDownIcon onClick={e => onNote(e.currentTarget)} />
+          <ArrowDropDownIcon onClick={(e) => onNote(e.currentTarget)} />
         </ToggleButton>
         {/* Lane */}
         <ToggleButton
@@ -66,7 +66,7 @@ export default function EditTargetSelect({
           disabled={laneDisabled}
         >
           {musicGameSystem.laneTemplates[editLaneTypeIndex]?.name}
-          <ArrowDropDownIcon onClick={e => onLane(e.currentTarget)} />
+          <ArrowDropDownIcon onClick={(e) => onLane(e.currentTarget)} />
         </ToggleButton>
         {/* Other */}
         <ToggleButton
@@ -88,9 +88,10 @@ export default function EditTargetSelect({
                       style: {
                         width: "4rem",
                         marginRight: "-.8rem",
-                        textAlign: "center"
-                      }
-                    }
+                        textAlign: "center",
+                        marginTop: "-.25rem",
+                      },
+                    },
                   }}
                   style={{ height: 24 }}
                   onChange={({ target: { value } }) => {
@@ -103,7 +104,7 @@ export default function EditTargetSelect({
               )}
             </span>
           )}
-          <ArrowDropDownIcon onClick={e => onOther(e.currentTarget)} />
+          <ArrowDropDownIcon onClick={(e) => onOther(e.currentTarget)} />
         </ToggleButton>
       </ToggleButtonGroup>
     </div>

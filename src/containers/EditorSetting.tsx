@@ -5,7 +5,7 @@ import {
   MenuItem,
   Select,
   Switch,
-  TextField
+  TextField,
 } from "@material-ui/core";
 import { observer } from "mobx-react";
 import * as React from "react";
@@ -31,12 +31,12 @@ export default observer(function EditorSetting() {
         value={value}
         onChange={(e: any) => onChange(e.target.value)}
         InputLabelProps={{
-          className: classes.label
+          className: classes.label,
         }}
         InputProps={{
           classes: {
-            input: classes.input
-          }
+            input: classes.input,
+          },
         }}
       />
     );
@@ -95,7 +95,7 @@ export default observer(function EditorSetting() {
             }}
             inputProps={{
               className: classes.input,
-              id: "measureLayout"
+              id: "measureLayout",
             }}
           >
             {setting.measureLayouts.map((layout, index) => (
@@ -118,7 +118,7 @@ export default observer(function EditorSetting() {
             }}
             inputProps={{
               className: classes.input,
-              id: "inspectorIndex"
+              id: "inspectorIndex",
             }}
           >
             {setting.inspectorNames.map((name, index) => (

@@ -1,5 +1,6 @@
-import { ipcRenderer, remote } from "electron";
+import { ipcRenderer } from "electron";
 import * as fs from "fs";
+import { Howl } from "howler";
 import * as _ from "lodash";
 import { action, flow, observable } from "mobx";
 import * as path from "path";
@@ -9,7 +10,7 @@ import {
   HowlPool,
   LaneTemplate,
   normalizeMusicGameSystem,
-  NoteType
+  NoteType,
 } from "../stores/MusicGameSystem";
 import { guid } from "../utils/guid";
 import { replaceAsync } from "../utils/string";
@@ -41,7 +42,7 @@ export default class AssetStore {
   addMusicGameSystem = (value: MusicGameSystem) =>
     this.musicGameSystems.push(value);
 
-  private loadAssets = flow(function*(this: AssetStore) {
+  private loadAssets = flow(function* (this: AssetStore) {
     const urlParams = yield this.getAssetPath;
 
     // 音源のパスを設定する
@@ -59,7 +60,7 @@ export default class AssetStore {
 
         const files = (yield util.promisify(fs.readdir)(dirPath)) as any[];
 
-        var fileList = files.filter(file => file.endsWith(".json"));
+        var fileList = files.filter((file) => file.endsWith(".json"));
         console.log("MusicGameSystem を読み込みます", fileList);
         for (const file of fileList) {
           const buffer: Buffer = yield util.promisify(fs.readFile)(
@@ -96,7 +97,7 @@ export default class AssetStore {
     const source = (await util.promisify(fs.readFile)(scriptPath)).toString();
 
     // include コメントを処理する
-    return await replaceAsync(source, /\/\/ *include.+/g, async match => {
+    return await replaceAsync(source, /\/\/ *include.+/g, async (match) => {
       const includePath = path.join(
         path.dirname(scriptPath),
         match.split(" ").pop()!
@@ -140,17 +141,17 @@ export default class AssetStore {
     musicGameSystems.otherObjectTypes.unshift({
       name: "Stop",
       color: "0x0000ff",
-      valueType: "none"
+      valueType: "none",
     });
     musicGameSystems.otherObjectTypes.unshift({
       name: "Speed",
       color: "0x00ff00",
-      valueType: "number"
+      valueType: "number",
     });
     musicGameSystems.otherObjectTypes.unshift({
       name: "BPM",
       color: "0xff0000",
-      valueType: "number"
+      valueType: "number",
     });
 
     // イベントリスナーを読み込む
@@ -190,7 +191,7 @@ export default class AssetStore {
 
       // config生成
       noteType.customPropsInspectorConfig = {};
-      for (const prop of noteType.customProps.filter(p => p.config)) {
+      for (const prop of noteType.customProps.filter((p) => p.config)) {
         noteType.customPropsInspectorConfig[prop.key] = prop.config;
       }
 
@@ -211,9 +212,9 @@ export default class AssetStore {
       const renderers = [
         ...new Set(
           musicGameSystems.laneTemplates
-            .map(lt => ({ renderer: lt.renderer, laneTemplate: lt }))
-            .filter(r => r.renderer !== "default")
-        )
+            .map((lt) => ({ renderer: lt.renderer, laneTemplate: lt }))
+            .filter((r) => r.renderer !== "default")
+        ),
       ];
 
       for (const renderer of renderers) {
@@ -228,9 +229,9 @@ export default class AssetStore {
       const renderers = [
         ...new Set(
           (musicGameSystems.noteTypes || [])
-            .map(lt => ({ renderer: lt.renderer, noteTemplate: lt }))
-            .filter(r => r.renderer !== "default")
-        )
+            .map((lt) => ({ renderer: lt.renderer, noteTemplate: lt }))
+            .filter((r) => r.renderer !== "default")
+        ),
       ];
 
       for (const renderer of renderers) {
@@ -276,7 +277,7 @@ export default class AssetStore {
 
   private assetPathResolve?: (assetPath: IAssetPath) => void;
 
-  getAssetPath = new Promise<IAssetPath>(resolve => {
+  getAssetPath = new Promise<IAssetPath>((resolve) => {
     this.assetPathResolve = resolve;
   });
 
@@ -291,7 +292,7 @@ export default class AssetStore {
     })();
   }
 
-  loadAudioAsset(fileName: string) {
+  public loadAudioAsset(fileName: string) {
     // サブディレクトリも検索
     const findRecursive = (dir: string): string | undefined => {
       for (const file of fs.readdirSync(dir)) {
@@ -304,9 +305,11 @@ export default class AssetStore {
       }
     };
 
-    console.log("loadAudioAsset", fileName);
     const foundPath = findRecursive(this.audioAssetPath);
-    if (!foundPath) return;
+    if (!foundPath) {
+      alert("音源が見つかりませんでした\n" + fileName);
+      return;
+    }
 
     const buffer: Buffer = fs.readFileSync(foundPath);
 

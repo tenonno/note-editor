@@ -4,7 +4,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  TextField
+  TextField,
 } from "@material-ui/core";
 import { observer } from "mobx-react";
 import * as React from "react";
@@ -50,12 +50,12 @@ export default observer(function ChartSetting() {
         value={value}
         onChange={(e: any) => onChange(e.target.value)}
         InputLabelProps={{
-          className: classes.label
+          className: classes.label,
         }}
         InputProps={{
           classes: {
-            input: classes.input
-          }
+            input: classes.input,
+          },
         }}
       />
     );
@@ -93,7 +93,7 @@ export default observer(function ChartSetting() {
           }}
           inputProps={{
             className: classes.input,
-            id: "difficulty"
+            id: "difficulty",
           }}
         >
           {chart.musicGameSystem.difficulties.map((difficulty, index) => (
@@ -103,9 +103,14 @@ export default observer(function ChartSetting() {
           ))}
         </Select>
       </FormControl>
+      {renderTextField(
+        "レベル",
+        chart.level,
+        (value: string) => (chart.level = value)
+      )}
       <MusicGameSystemSelect
         value={editor.asset.musicGameSystems.findIndex(
-          path => path === chart.musicGameSystem
+          (path) => path === chart.musicGameSystem
         )}
         onChange={handleMusicGameSystemsChange}
       />
@@ -114,7 +119,7 @@ export default observer(function ChartSetting() {
           maxHeight: 200,
           whiteSpace: "pre",
           overflow: "scroll",
-          background: "#eee"
+          background: "#eee",
         }}
       />
       <Button

@@ -20,7 +20,7 @@ export default (props: IProps) => {
     <ListItem
       button
       style={{
-        padding: 0
+        padding: 0,
       }}
       selected={props.selected}
       onClick={() => props.onSelect(index)}

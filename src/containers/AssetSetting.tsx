@@ -2,7 +2,7 @@ import {
   FormControlLabel,
   FormGroup,
   Switch,
-  TextField
+  TextField,
 } from "@material-ui/core";
 import { observer } from "mobx-react";
 import * as React from "react";
@@ -28,12 +28,12 @@ const AssetSetting = observer(() => {
         value={value}
         onChange={(e: any) => onChange(e.target.value)}
         InputLabelProps={{
-          className: classes.label
+          className: classes.label,
         }}
         InputProps={{
           classes: {
-            input: classes.input
-          }
+            input: classes.input,
+          },
         }}
       />
     );

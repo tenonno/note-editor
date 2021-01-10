@@ -12,12 +12,12 @@ import { Note, NoteRecord } from "../objects/Note";
 import { OtherObjectRecord } from "../objects/OtherObject";
 import { TimelineData } from "../objects/Timeline";
 import BMSImporter from "../plugins/BMSImporter";
+import extensionUtility from "../utils/ExtensionUtility";
 import { guid } from "../utils/guid";
 import AssetStore from "./Asset";
 import Chart from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
-import extensionUtility from "../utils/ExtensionUtility";
 
 const { dialog } = remote;
 
@@ -44,7 +44,7 @@ export default class Editor {
     this.notification = {
       text,
       guid: guid(),
-      type
+      type,
     };
   }
 
@@ -65,7 +65,7 @@ export default class Editor {
 
   @action
   removeInspectorTarget(target: any) {
-    this.inspectorTargets = this.inspectorTargets.filter(x => x !== target);
+    this.inspectorTargets = this.inspectorTargets.filter((x) => x !== target);
     target.isSelected = false;
   }
 
@@ -89,7 +89,7 @@ export default class Editor {
       if (target instanceof MeasureRecord) {
         notes.push(
           ...this.currentChart!.timeline.notes.filter(
-            n => n.measureIndex == target.index
+            (n) => n.measureIndex == target.index
           )
         );
       }
@@ -178,10 +178,23 @@ export default class Editor {
   public static instance: Editor | null = null;
 
   /**
+   * 譜面を開いてるかチェックする
+   * 開いてなかったら warning 出す
+   * @returns 譜面を開いているか
+   */
+  private existsCurrentChart(): boolean {
+    const exists = this.currentChart !== null;
+    if (!exists) console.warn("譜面を開いていません");
+    return exists;
+  }
+
+  /**
    * 譜面を保存する
    */
   @action
   private save() {
+    if (!this.existsCurrentChart()) return;
+
     const chart = this.currentChart;
 
     if (!chart) {
@@ -219,20 +232,21 @@ export default class Editor {
   }
 
   @action
-  saveAs() {
-    var window = remote.getCurrentWindow();
-    var options = {
+  private saveAs() {
+    if (!this.existsCurrentChart()) return;
+
+    const window = remote.getCurrentWindow();
+    const filePath = dialog.showSaveDialogSync(window, {
       title: "タイトル",
       filters: this.dialogFilters,
-      properties: ["openFile", "createDirectory"]
-    };
-    dialog.showSaveDialog(window, options, (filePath: any) => {
-      runInAction(() => {
-        if (filePath) {
-          this.currentChart!.filePath = filePath;
-          this.save();
-        }
-      });
+      properties: ["createDirectory"],
+    });
+
+    if (!filePath) return;
+
+    runInAction(() => {
+      this.currentChart!.filePath = filePath;
+      this.save();
     });
   }
 
@@ -254,7 +268,7 @@ export default class Editor {
       // その他オブジェクト
       else if (t instanceof OtherObjectRecord) {
         const otherObject = this.currentChart!.timeline.otherObjects.find(
-          object => object.guid === t.guid
+          (object) => object.guid === t.guid
         );
         if (otherObject) this.inspectorTargets.push(otherObject);
       }
@@ -279,30 +293,31 @@ export default class Editor {
   }
 
   @action
-  open() {
-    dialog.showOpenDialog(
-      {
-        properties: ["openFile", "multiSelections"],
-        filters: this.dialogFilters
-      },
-      paths => this.openCharts(paths ?? [])
-    );
+  private open() {
+    const window = remote.getCurrentWindow();
+    if (!window) return;
+    const paths = dialog.showOpenDialogSync(window, {
+      properties: ["openFile", "multiSelections"],
+      filters: this.dialogFilters,
+    });
+    this.openCharts(paths ?? []);
   }
 
   /**
    * 譜面を開く
    * @param filePaths 譜面のパスのリスト
    */
-  private openCharts = flow(function*(this: Editor, filePaths: string[]) {
+  private openCharts = flow(function* (this: Editor, filePaths: string[]) {
     for (const filePath of filePaths) {
       const file = yield util.promisify(fs.readFile)(filePath);
-      Chart.fromJSON(file.toString());
+      Chart.loadFromJson(file.toString());
       this.currentChart!.filePath = filePath;
     }
   });
 
   @action
   copy() {
+    if (!this.existsCurrentChart()) return;
     this.copiedNotes = this.getInspectNotes();
 
     this.notify(`${this.copiedNotes.length} 個のオブジェクトをコピーしました`);
@@ -310,6 +325,7 @@ export default class Editor {
 
   @action
   paste() {
+    if (!this.existsCurrentChart()) return;
     if (this.inspectorTargets.length != 1) return;
     if (!(this.inspectorTargets[0] instanceof MeasureRecord)) return;
     if (this.copiedNotes.length == 0) return;
@@ -321,14 +337,14 @@ export default class Editor {
     }
 
     const tl = this.currentChart!.timeline;
-    if (!this.copiedNotes.every(note => tl.laneMap.has(note.lane))) {
+    if (!this.copiedNotes.every((note) => tl.laneMap.has(note.lane))) {
       this.notify("レーンIDが一致しません", "error");
       return;
     }
 
     const diff =
       this.inspectorTargets[0].index -
-      Math.min(...this.copiedNotes.map(note => note.measureIndex));
+      Math.min(...this.copiedNotes.map((note) => note.measureIndex));
 
     const guidMap = new Map<string, string>();
     for (let note of this.copiedNotes) {
@@ -383,10 +399,10 @@ export default class Editor {
     const lanes = this.currentChart!.timeline.lanes;
     const notes = this.getInspectNotes();
 
-    notes.forEach(note => {
+    notes.forEach((note) => {
       // 移動先レーンを取得
       const lane =
-        lanes[indexer(lanes.findIndex(lane => lane.guid === note.lane))];
+        lanes[indexer(lanes.findIndex((lane) => lane.guid === note.lane))];
       if (lane === undefined) return;
 
       // 置けないならやめる
@@ -437,7 +453,7 @@ export default class Editor {
     const notes = this.getInspectNotes();
     const measures = this.currentChart!.timeline.measures;
 
-    notes.forEach(note => {
+    notes.forEach((note) => {
       const p = Fraction.add(
         note.measurePosition,
         Fraction.div(frac, measures[note.measureIndex].beat)
@@ -468,21 +484,23 @@ export default class Editor {
     Mousetrap.bind("mod+shift+z", () => this.currentChart!.timeline.redo());
     Mousetrap.bind("mod+x", () => {
       this.copy();
-      this.copiedNotes.forEach(n => this.currentChart!.timeline.removeNote(n));
+      this.copiedNotes.forEach((n) =>
+        this.currentChart!.timeline.removeNote(n)
+      );
       if (this.copiedNotes.length > 0) this.currentChart!.save();
     });
     Mousetrap.bind("mod+c", () => this.copy());
     Mousetrap.bind("mod+v", () => this.paste());
     Mousetrap.bind(["del", "backspace"], () => {
       const removeNotes = this.inspectorTargets.filter(
-        target => target instanceof NoteRecord
+        (target) => target instanceof NoteRecord
       );
-      removeNotes.forEach(n => this.currentChart!.timeline.removeNote(n));
+      removeNotes.forEach((n) => this.currentChart!.timeline.removeNote(n));
 
       const removeOtherObjects = this.inspectorTargets.filter(
-        target => target instanceof OtherObjectRecord
+        (target) => target instanceof OtherObjectRecord
       );
-      removeOtherObjects.forEach(o =>
+      removeOtherObjects.forEach((o) =>
         this.currentChart!.timeline.removeOtherObject(o)
       );
 
@@ -495,11 +513,11 @@ export default class Editor {
       this.moveDivision(index)
     );
     ipcRenderer.on("moveLane", (_: any, index: number) => {
-      this.moveLane(i => i + index);
+      this.moveLane((i) => i + index);
       this.moveSelectedNotes(index);
     });
     ipcRenderer.on("flipLane", () => {
-      this.moveLane(i => this.currentChart!.timeline.lanes.length - i - 1);
+      this.moveLane((i) => this.currentChart!.timeline.lanes.length - i - 1);
       this.flipSelectedNotes();
     });
 
@@ -528,7 +546,7 @@ export default class Editor {
     ipcRenderer.on("reload", () => {
       localStorage.setItem(
         "filePaths",
-        JSON.stringify(this.charts.map(c => c.filePath).filter(p => p))
+        JSON.stringify(this.charts.map((c) => c.filePath).filter((p) => p))
       );
       location.reload();
     });
@@ -537,7 +555,7 @@ export default class Editor {
       for (let i = 0; i < this.charts.length; i++) this.saveConfirm(i);
       localStorage.setItem(
         "filePaths",
-        JSON.stringify(this.charts.map(c => c.filePath).filter(p => p))
+        JSON.stringify(this.charts.map((c) => c.filePath).filter((p) => p))
       );
     });
 
@@ -572,7 +590,7 @@ export default class Editor {
         JSON.stringify({
           name: this.currentChart?.filePath,
           time: this.currentChart?.time,
-          updatedAt: this.currentChart?.updatedAt
+          updatedAt: this.currentChart?.updatedAt,
         })
       );
       res.end();

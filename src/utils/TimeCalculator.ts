@@ -75,10 +75,10 @@ export class TimeCalculator {
 
     // 小節の開始位置に配置されている BPM 変更命令に拍子情報を追加
     let bpmChanges = data
-      .filter(object => object.isBPM())
-      .map(bpmChange => {
+      .filter((object) => object.isBPM())
+      .map((bpmChange) => {
         const bpmAndBeat = Object.assign(bpmChange, {
-          beat: measures[bpmChange.measureIndex].beat
+          beat: measures[bpmChange.measureIndex].beat,
         }) as BpmChangeAndBeat;
         bpmAndBeatMap.set(bpmAndBeat.measureIndex, bpmAndBeat);
         return bpmAndBeat;
@@ -97,7 +97,7 @@ export class TimeCalculator {
             measureIndex: i,
             measurePosition: new Fraction(0, 1),
             value: prevBpm,
-            beat: measures[i].beat
+            beat: measures[i].beat,
           };
 
       // 前の小節と比較して BPM か拍子が変わっているなら命令を追加する
@@ -126,13 +126,13 @@ export class TimeCalculator {
     }
 
     // 一時停止の位置にBPM拍子変更命令がなければ複製して配置する
-    const stops = data.filter(object => object.isStop());
+    const stops = data.filter((object) => object.isStop());
     for (const stop of stops) {
       if (!bpmChangeMap.has(stop.getMeasurePosition())) {
         // 一時停止命令の直前にある BPM 変更命令を探す
         const prevKey = Math.max(
           ...[...bpmChangeMap.keys()].filter(
-            measurePosition => measurePosition <= stop.getMeasurePosition()
+            (measurePosition) => measurePosition <= stop.getMeasurePosition()
           )
         );
         const prevBpmAndBeat = bpmChangeMap.get(prevKey)!;
@@ -140,7 +140,7 @@ export class TimeCalculator {
           stop.getMeasurePosition(),
           Object.assign(_.cloneDeep(stop), {
             value: prevBpmAndBeat.value,
-            beat: measures[stop.measureIndex].beat
+            beat: measures[stop.measureIndex].beat,
           }) as BpmChangeAndBeat
         );
       }
