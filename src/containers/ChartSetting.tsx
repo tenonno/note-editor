@@ -103,6 +103,11 @@ export default observer(function ChartSetting() {
           ))}
         </Select>
       </FormControl>
+      {renderTextField(
+        "レベル",
+        chart.level,
+        (value: string) => (chart.level = value)
+      )}
       <MusicGameSystemSelect
         value={editor.asset.musicGameSystems.findIndex(
           (path) => path === chart.musicGameSystem

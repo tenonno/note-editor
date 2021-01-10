@@ -346,6 +346,9 @@ export default class Chart {
   }
 
   @box
+  public level: string = "0";
+
+  @box
   public musicGameSystem: MusicGameSystem;
 
   @observable
@@ -588,6 +591,10 @@ export default class Chart {
     // @ts-ignore
     delete chart.volume;
     // @ts-ignore
+    delete chart.seVolume;
+    // @ts-ignore
+    delete chart.speed;
+    // @ts-ignore
     delete (chart as any)._musicGameSystem;
     // @ts-ignore
     delete chart.musicGameSystem;
@@ -599,6 +606,9 @@ export default class Chart {
     delete chart.canUndo;
     // @ts-ignore
     delete chart.updatedAt;
+
+    chart.level = (chart as any)._level;
+    delete (chart as any)._level;
 
     chart.musicGameSystemName = this.musicGameSystem.name;
     chart.musicGameSystemVersion = this.musicGameSystem.version;
