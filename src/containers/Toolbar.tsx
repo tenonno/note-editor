@@ -185,7 +185,7 @@ export default observer(function Toolbar() {
         open={Boolean(state.objectSizeAnchorEl)}
         onClose={() => setState({ ...state, objectSizeAnchorEl: null })}
       >
-        {Array.from({ length: 16 })
+        {Array.from({ length: 24 })
           .fill(0)
           .map((_, index) => index + 1)
           .map((value, index) => (
