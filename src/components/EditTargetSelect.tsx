@@ -89,6 +89,7 @@ export default function EditTargetSelect({
                         width: "4rem",
                         marginRight: "-.8rem",
                         textAlign: "center",
+                        marginTop: "-.25rem",
                       },
                     },
                   }}
