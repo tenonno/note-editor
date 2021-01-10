@@ -1,5 +1,6 @@
 import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
+import http from "http";
 import * as _ from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
@@ -11,6 +12,7 @@ import { Note, NoteRecord } from "../objects/Note";
 import { OtherObjectRecord } from "../objects/OtherObject";
 import { TimelineData } from "../objects/Timeline";
 import BMSImporter from "../plugins/BMSImporter";
+import extensionUtility from "../utils/ExtensionUtility";
 import { guid } from "../utils/guid";
 import AssetStore from "./Asset";
 import Chart from "./Chart";
@@ -193,7 +195,12 @@ export default class Editor {
   private save() {
     if (!this.existsCurrentChart()) return;
 
-    const chart = this.currentChart!;
+    const chart = this.currentChart;
+
+    if (!chart) {
+      console.warn("譜面を開いていません");
+      return;
+    }
 
     if (!chart.filePath) {
       this.saveAs();
@@ -225,28 +232,29 @@ export default class Editor {
   }
 
   @action
-  saveAs() {
+  private saveAs() {
     if (!this.existsCurrentChart()) return;
 
-    dialog
-      .showSaveDialog(remote.getCurrentWindow(), {
-        title: "タイトル",
-        filters: this.dialogFilters,
-        properties: ["createDirectory"],
-      })
-      .then((result) => {
-        if (result.filePath) {
-          this.currentChart!.filePath = result.filePath;
-          this.save();
-        }
-      });
+    const window = remote.getCurrentWindow();
+    const filePath = dialog.showSaveDialogSync(window, {
+      title: "タイトル",
+      filters: this.dialogFilters,
+      properties: ["createDirectory"],
+    });
+
+    if (!filePath) return;
+
+    runInAction(() => {
+      this.currentChart!.filePath = filePath;
+      this.save();
+    });
   }
 
   /**
    * インスペクタの対象を更新する
    */
   @action
-  updateInspector() {
+  public updateInspector() {
     const targets = this.inspectorTargets;
     this.inspectorTargets = [];
 
@@ -259,11 +267,10 @@ export default class Editor {
 
       // その他オブジェクト
       else if (t instanceof OtherObjectRecord) {
-        this.inspectorTargets.push(
-          this.currentChart!.timeline.otherObjects.find(
-            (object) => object.guid === t.guid
-          )
+        const otherObject = this.currentChart!.timeline.otherObjects.find(
+          (object) => object.guid === t.guid
         );
+        if (otherObject) this.inspectorTargets.push(otherObject);
       }
 
       // その他
@@ -286,13 +293,14 @@ export default class Editor {
   }
 
   @action
-  open() {
-    dialog
-      .showOpenDialog({
-        properties: ["openFile", "multiSelections"],
-        filters: this.dialogFilters,
-      })
-      .then((result) => this.openCharts(result.filePaths));
+  private open() {
+    const window = remote.getCurrentWindow();
+    if (!window) return;
+    const paths = dialog.showOpenDialogSync(window, {
+      properties: ["openFile", "multiSelections"],
+      filters: this.dialogFilters,
+    });
+    this.openCharts(paths ?? []);
   }
 
   /**
@@ -302,7 +310,7 @@ export default class Editor {
   private openCharts = flow(function* (this: Editor, filePaths: string[]) {
     for (const filePath of filePaths) {
       const file = yield util.promisify(fs.readFile)(filePath);
-      Chart.fromJSON(file.toString());
+      Chart.loadFromJson(file.toString());
       this.currentChart!.filePath = filePath;
     }
   });
@@ -472,10 +480,9 @@ export default class Editor {
     ipcRenderer.on("importBMS", () => BMSImporter.import());
 
     // 編集
-    Mousetrap.bind("mod+z", () => this.currentChart?.timeline.undo());
-    Mousetrap.bind("mod+shift+z", () => this.currentChart?.timeline.redo());
+    Mousetrap.bind("mod+z", () => this.currentChart!.timeline.undo());
+    Mousetrap.bind("mod+shift+z", () => this.currentChart!.timeline.redo());
     Mousetrap.bind("mod+x", () => {
-      if (!this.existsCurrentChart()) return;
       this.copy();
       this.copiedNotes.forEach((n) =>
         this.currentChart!.timeline.removeNote(n)
@@ -485,12 +492,20 @@ export default class Editor {
     Mousetrap.bind("mod+c", () => this.copy());
     Mousetrap.bind("mod+v", () => this.paste());
     Mousetrap.bind(["del", "backspace"], () => {
-      if (!this.currentChart) return;
       const removeNotes = this.inspectorTargets.filter(
         (target) => target instanceof NoteRecord
       );
       removeNotes.forEach((n) => this.currentChart!.timeline.removeNote(n));
-      if (removeNotes.length > 0) this.currentChart!.save();
+
+      const removeOtherObjects = this.inspectorTargets.filter(
+        (target) => target instanceof OtherObjectRecord
+      );
+      removeOtherObjects.forEach((o) =>
+        this.currentChart!.timeline.removeOtherObject(o)
+      );
+
+      if (removeNotes.length > 0 || removeOtherObjects.length > 0)
+        this.currentChart!.save();
       this.updateInspector();
     });
 
@@ -544,6 +559,42 @@ export default class Editor {
       );
     });
 
+    this.updateServer(this.setting.serverEnabled);
+
     Editor.instance = this;
+    (window as any).extensionUtility = extensionUtility;
+  }
+
+  private server: http.Server | null = null;
+
+  public updateServer(enabled: boolean) {
+    this.setting.serverEnabled = enabled;
+
+    if (!enabled) {
+      this.server?.close();
+      this.server = null;
+      return;
+    }
+
+    this.server = http.createServer();
+
+    this.server.on("request", (req, res) => {
+      if (req.url === "/data") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.write(this.currentChart!.toJSON(null));
+        res.end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.write(
+        JSON.stringify({
+          name: this.currentChart?.filePath,
+          time: this.currentChart?.time,
+          updatedAt: this.currentChart?.updatedAt,
+        })
+      );
+      res.end();
+    });
+    this.server.listen(this.setting.serverPort);
   }
 }

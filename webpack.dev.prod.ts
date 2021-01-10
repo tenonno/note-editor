@@ -8,11 +8,12 @@ const src = path.resolve(__dirname, "./");
 export default merge(
   common,
   {
-    mode: "development",
+    mode: "production",
     devtool: "eval",
     plugins: [
+      // new HardSourceWebpackPlugin(),
       new HtmlWebpackPlugin({
-        template: src + "/index.dev.html",
+        template: src + "/index.prod.html",
         filename: "index.html",
       }),
     ],

@@ -22,14 +22,11 @@ export default function ({
       <Select
         value={0}
         onClick={() => {
-          remote.dialog
-            .showOpenDialog({
-              defaultPath: audioAssetPath,
-              filters: [{ name: "音源", extensions: ["mp3", "wav"] }],
-            })
-            .then((result) =>
-              onChange(result.filePaths[0].split(/[\/\\]/).pop()!)
-            );
+          const result = remote.dialog.showOpenDialogSync({
+            defaultPath: audioAssetPath,
+            filters: [{ name: "音源", extensions: ["mp3", "wav"] }],
+          });
+          if (result) onChange(result[0].split(/[\/\\]/).pop()!);
         }}
         inputProps={{ disabled: true }}
       >

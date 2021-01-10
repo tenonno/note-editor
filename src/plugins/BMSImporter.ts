@@ -4,7 +4,6 @@ import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureData } from "../objects/Measure";
 import Chart from "../stores/Chart";
-import store from "../stores/stores";
 import { guid } from "../utils/guid";
 const { dialog } = remote;
 
@@ -16,12 +15,15 @@ type Stop = {
 
 export default class BMSImporter {
   public static async import() {
-    const result = await dialog.showOpenDialog({
+    const window = remote.getCurrentWindow();
+
+    const filenames = dialog.showOpenDialogSync(window, {
       properties: ["openFile", "multiSelections"],
-      // filters: [{ name: "BMS 譜面データ", extensions: ["bms", "bme"] }]
     });
 
-    for (const filename of result.filePaths) {
+    if (!filenames) return;
+
+    for (const filename of filenames) {
       const file = await util.promisify(fs.readFile)(filename);
 
       this.importImplement(file.toString());
@@ -416,7 +418,7 @@ export default class BMSImporter {
       }
     }
 
-    const maxMeasureIndex = Math.max(...measures.map((m) => m.index));
+    const maxMeasureIndex = 999; //Math.max(...measures.map(m => m.index));
 
     const newMeasures: MeasureData[] = Array(maxMeasureIndex + 1)
       .fill(0)
@@ -433,7 +435,7 @@ export default class BMSImporter {
       newMeasures[measure.index].beat = measure.beat;
     }
 
-    Chart.fromJSON(
+    Chart.loadFromJson(
       JSON.stringify({
         version: 2,
         layers: [

@@ -46,6 +46,19 @@ const useStyles = makeStyles((theme: Theme) =>
     rightDrawerPaper: {
       width: rightDrawerWidth,
     },
+    drawerLeftPaperClose: {
+      width: 0,
+      // border: "none",
+    },
+
+    drawerRight: {
+      width: rightDrawerWidth,
+      flexShrink: 0,
+    },
+    drawerRightPaper: {
+      width: rightDrawerWidth,
+    },
+
     button: {
       margin: theme.spacing(),
     },
@@ -129,7 +142,14 @@ const Application = observer(function Application() {
       <AppBar
         position="absolute"
         color="default"
-        className={classNames(classes.appBarOpen, classes.appBarLeftOpen)}
+        className={classNames(
+          editor.setting.drawerOpened
+            ? classes.appBarOpen
+            : classes.appBarClose,
+          editor.setting.drawerOpened
+            ? classes.appBarLeftOpen
+            : classes.appBarLeftClose
+        )}
       >
         <Toolbar />
         <Divider />

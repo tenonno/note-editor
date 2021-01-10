@@ -15,11 +15,9 @@ const musicGameSystemsPath = path.resolve(dirname, "assets/musicGameSystems");
 let mainWindow: BrowserWindow | null;
 
 function createWindow() {
-  // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    // title: "NoteEditor",
     webPreferences: { nodeIntegration: true, enableRemoteModule: true },
   });
 
@@ -289,6 +287,13 @@ function initWindowMenu() {
           accelerator: "CmdOrCtrl+R",
           click() {
             mainWindow!.webContents.send("reload");
+          },
+        },
+        {
+          label: "Toggle Developer Tools",
+          accelerator: "F12",
+          click: () => {
+            mainWindow?.webContents.toggleDevTools();
           },
         },
       ],

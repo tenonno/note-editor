@@ -22,10 +22,12 @@ class BPMChangeData {
     prev: BPMChangeData,
     stops: OtherObject[]
   ) {
-    this.measurePosition = current.measurePosition;
-    this.unitTime = (240 / current.bpm) * Fraction.to01(current.beat);
+    this.measurePosition =
+      current.measureIndex + Fraction.to01(current.measurePosition);
+    this.unitTime =
+      (240 / (current.value as number)) * Fraction.to01(current.beat);
     this.time = prev ? prev.getTime(this.measurePosition) : 0;
-    this.bpm = current.bpm;
+    this.bpm = current.value as number;
     this.stopTime = 0;
 
     // 停止時間を計算する
@@ -40,7 +42,7 @@ class BPMChangeData {
       ) {
         const bpm = prev.bpm;
         // NOTE: 停止時間は192分音符を基準にする
-        this.stopTime += (240 / bpm) * ((1 / 192) * stop.value);
+        this.stopTime += (240 / bpm) * ((1 / 192) * (stop.value as number));
       }
     }
   }
@@ -61,55 +63,66 @@ class BPMChangeData {
 /**
  * BPM 変更命令 + 拍子
  */
-type BpmChangeAndBeat = {
+type BpmChangeAndBeat = OtherObjectData & {
   beat: IFraction;
-  bpm: number;
-  measurePosition: number;
 };
 
 export class TimeCalculator {
   data: BPMChangeData[] = [];
   constructor(data: OtherObject[], measures: Measure[]) {
-    // BPM 変更命令に拍子情報を追加
+    // 小節番号をキーにした BPM と拍子の変更命令マップ
+    const bpmAndBeatMap = new Map<number, BpmChangeAndBeat>();
+
+    // 小節の開始位置に配置されている BPM 変更命令に拍子情報を追加
     let bpmChanges = data
       .filter((object) => object.isBPM())
-      .map((bpmChange) => ({
-        beat: measures[bpmChange.measureIndex].beat,
-        bpm: bpmChange.value,
-        measurePosition: bpmChange.getMeasurePosition(),
-      }));
-
-    // 拍子変更対応
-    let index = 0;
-    for (let i = 0; i < measures.length; i++) {
-      // 直前の BPM 変更を取得
-      while (
-        index + 1 < bpmChanges.length &&
-        bpmChanges[index + 1].measurePosition <= i
-      )
-        index++;
-      const prev = bpmChanges[index];
-
-      // 拍子が変わっているか
-      if (Fraction.equal(prev.beat, measures[i].beat)) continue;
-
-      // 小節の頭なら上書き
-      if (prev.measurePosition == i) {
-        prev.beat = measures[i].beat;
-        continue;
-      }
-      // それ以外は追加
-      bpmChanges.splice(index + 1, 0, {
-        beat: measures[i].beat,
-        bpm: prev.bpm,
-        measurePosition: i,
+      .map((bpmChange) => {
+        const bpmAndBeat = Object.assign(bpmChange, {
+          beat: measures[bpmChange.measureIndex].beat,
+        }) as BpmChangeAndBeat;
+        bpmAndBeatMap.set(bpmAndBeat.measureIndex, bpmAndBeat);
+        return bpmAndBeat;
       });
+
+    // 前の小節情報
+    let prevBpm = 0;
+    let prevBeat = Fraction.none as IFraction;
+
+    for (let i = 0; i < measures.length; i++) {
+      const newBpm = bpmAndBeatMap.has(i)
+        ? bpmAndBeatMap.get(i)!
+        : {
+            type: 0,
+            guid: guid(),
+            measureIndex: i,
+            measurePosition: new Fraction(0, 1),
+            value: prevBpm,
+            beat: measures[i].beat,
+          };
+
+      // 前の小節と比較して BPM か拍子が変わっているなら命令を追加する
+      if (
+        (!(
+          bpmAndBeatMap.has(i) &&
+          bpmAndBeatMap.get(i)!.measurePosition.numerator === 0
+        ) &&
+          prevBpm !== newBpm.value) ||
+        !Fraction.equal(prevBeat, newBpm.beat)
+      ) {
+        bpmChanges.push(newBpm);
+      }
+
+      prevBpm = newBpm.value as number;
+      prevBeat = newBpm.beat;
     }
 
     // 同じ位置にBPM拍子変更命令が配置されないようにマップで管理する
     const bpmChangeMap = new Map<number, BpmChangeAndBeat>();
     for (const bpmChange of bpmChanges) {
-      bpmChangeMap.set(bpmChange.measurePosition, bpmChange);
+      bpmChangeMap.set(
+        bpmChange.measureIndex + Fraction.to01(bpmChange.measurePosition),
+        bpmChange
+      );
     }
 
     // 一時停止の位置にBPM拍子変更命令がなければ複製して配置する
@@ -123,17 +136,17 @@ export class TimeCalculator {
           )
         );
         const prevBpmAndBeat = bpmChangeMap.get(prevKey)!;
-        bpmChangeMap.set(stop.getMeasurePosition(), {
-          beat: measures[stop.measureIndex].beat,
-          bpm: prevBpmAndBeat.bpm,
-          measurePosition: stop.getMeasurePosition(),
-        });
+        bpmChangeMap.set(
+          stop.getMeasurePosition(),
+          Object.assign(_.cloneDeep(stop), {
+            value: prevBpmAndBeat.value,
+            beat: measures[stop.measureIndex].beat,
+          }) as BpmChangeAndBeat
+        );
       }
     }
 
-    bpmChanges = [...bpmChangeMap.values()].sort(
-      (a, b) => a.measurePosition - b.measurePosition
-    );
+    bpmChanges = [...bpmChangeMap.values()].sort(sortMeasure);
 
     for (let i = 0; i < bpmChanges.length; i++) {
       this.data.push(new BPMChangeData(bpmChanges[i], this.data[i - 1], stops));

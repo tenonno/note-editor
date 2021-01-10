@@ -12,7 +12,6 @@ import { Theme } from "@material-ui/core/styles/createMuiTheme";
 import Switch from "@material-ui/core/Switch";
 import {
   Menu as MenuIcon,
-  Refresh as RefreshIcon,
   Visibility as VisibilityIcon,
 } from "@material-ui/icons";
 import AddIcon from "@material-ui/icons/Add";
@@ -94,6 +93,10 @@ export default observer(function Toolbar() {
     setState({ ...state, anchorEl: null });
   }
 
+  function handleDrawerToggle() {
+    editor.setting.drawerOpened = !editor.setting.drawerOpened;
+  }
+
   const { setting } = editor;
 
   const { anchorEl } = state;
@@ -109,6 +112,12 @@ export default observer(function Toolbar() {
         flexDirection: "row",
       }}
     >
+      <IconButton onClick={handleDrawerToggle}>
+        <MenuIcon />
+      </IconButton>
+
+      <VerticalDivider />
+
       {/* Undo */}
       <IconButton
         disabled={!chart.canUndo}
@@ -130,6 +139,7 @@ export default observer(function Toolbar() {
         badgeContent={setting.measureDivision}
         color="primary"
         classes={{ badge: classes.badge }}
+        max={999}
       >
         <IconButton aria-label="Delete" onClick={handleClick}>
           <MenuIcon />
@@ -140,6 +150,7 @@ export default observer(function Toolbar() {
         badgeContent={setting.objectSize}
         color="primary"
         classes={{ badge: classes.badge }}
+        max={999}
       >
         <IconButton
           aria-label="Delete"
@@ -205,7 +216,7 @@ export default observer(function Toolbar() {
         editLaneTypeIndex={setting.editLaneTypeIndex}
         editOtherTypeIndex={setting.editOtherTypeIndex}
         otherValue={setting.otherValue}
-        onOtherValueChange={(otherValue) => setting.setOtherValue(otherValue)}
+        onOtherValueChange={(otherValue) => (setting.otherValue = otherValue)}
         onNote={(noteAnchorEl) => setState({ ...state, noteAnchorEl })}
         onLane={(laneAnchorEl) => setState({ ...state, laneAnchorEl })}
         onOther={(otherAnchorEl) => setState({ ...state, otherAnchorEl })}
