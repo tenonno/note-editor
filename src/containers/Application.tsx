@@ -31,12 +31,20 @@ const useStyles = makeStyles((theme: Theme) =>
     root: {
       display: "flex",
     },
-    leftDrawer: {
+    leftDrawerOpen: {
       width: drawerWidth,
       flexShrink: 0,
     },
-    leftDrawerPaper: {
+    leftDrawerClose: {
+      width: 0,
+      flexShrink: 0,
+    },
+    leftDrawerPaperOpen: {
       width: drawerWidth,
+    },
+    leftDrawerPaperClose: {
+      width: 0,
+      marginLeft: -1,
     },
     rightDrawer: {
       width: rightDrawerWidth,
@@ -46,11 +54,6 @@ const useStyles = makeStyles((theme: Theme) =>
     rightDrawerPaper: {
       width: rightDrawerWidth,
     },
-    drawerLeftPaperClose: {
-      width: 0,
-      // border: "none",
-    },
-
     drawerRight: {
       width: rightDrawerWidth,
       flexShrink: 0,
@@ -58,7 +61,6 @@ const useStyles = makeStyles((theme: Theme) =>
     drawerRightPaper: {
       width: rightDrawerWidth,
     },
-
     button: {
       margin: theme.spacing(),
     },
@@ -156,10 +158,16 @@ const Application = observer(function Application() {
         <ChartTab />
       </AppBar>
       <Drawer
-        className={classes.leftDrawer}
+        className={
+          editor.setting.drawerOpened
+            ? classes.leftDrawerOpen
+            : classes.leftDrawerClose
+        }
         variant="permanent"
         classes={{
-          paper: classes.leftDrawerPaper,
+          paper: editor.setting.drawerOpened
+            ? classes.leftDrawerPaperOpen
+            : classes.leftDrawerPaperClose,
         }}
         anchor="left"
       >
