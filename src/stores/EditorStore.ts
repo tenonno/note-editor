@@ -438,12 +438,22 @@ export default class Editor {
    */
   @action
   private flipSelectedNotes() {
+    if (!this.currentChart) return;
+    const { noteTypeMap } = this.currentChart.musicGameSystem;
+
     const notes = this.getInspectNotes();
 
     for (const note of notes) {
       const { numerator, denominator } = note.horizontalPosition;
       note.horizontalPosition.numerator =
         denominator - 1 - numerator - (note.horizontalSize - 1);
+
+      const { mirrorType } = noteTypeMap.get(note.type)!;
+      if (mirrorType) {
+        note.updateType(mirrorType);
+      }
+
+      note.type;
     }
   }
 
