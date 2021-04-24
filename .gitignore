@@ -6,3 +6,4 @@ node_modules/
 dist/
 electron-main.js
 yarn-error.log
+note-editor.app

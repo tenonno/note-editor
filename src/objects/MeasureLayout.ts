@@ -11,7 +11,7 @@ export interface IMeasureLayout {
    */
   layout(
     editorSetting: EditorSetting,
-    renderer: PIXI.Renderer,
+    renderer: PIXI.Renderer | PIXI.AbstractRenderer,
     graphics: PIXI.Graphics,
     measures: Measure[]
   ): void;
