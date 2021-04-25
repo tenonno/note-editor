@@ -438,12 +438,22 @@ export default class Editor {
    */
   @action
   private flipSelectedNotes() {
+    if (!this.currentChart) return;
+    const { noteTypeMap } = this.currentChart.musicGameSystem;
+
     const notes = this.getInspectNotes();
 
     for (const note of notes) {
       const { numerator, denominator } = note.horizontalPosition;
       note.horizontalPosition.numerator =
         denominator - 1 - numerator - (note.horizontalSize - 1);
+
+      const { mirrorType } = noteTypeMap.get(note.type)!;
+      if (mirrorType) {
+        note.updateType(mirrorType);
+      }
+
+      note.type;
     }
   }
 
@@ -472,12 +482,24 @@ export default class Editor {
     if (notes.length > 0) this.currentChart!.save();
   }
 
-  constructor() {
+  /**
+   * mod キーを押しているか
+   */
+  public isPressingModKey = false;
+
+  public constructor() {
     // ファイル
     ipcRenderer.on("open", () => this.open());
     ipcRenderer.on("save", () => this.save());
     ipcRenderer.on("saveAs", () => this.saveAs());
     ipcRenderer.on("importBMS", () => BMSImporter.import());
+
+    Mousetrap.bind("mod", () => (this.setting.isPressingModKey = true));
+    Mousetrap.bind(
+      "mod",
+      () => (this.setting.isPressingModKey = false),
+      "keyup"
+    );
 
     // 編集
     Mousetrap.bind("mod+z", () => this.currentChart!.timeline.undo());
@@ -525,15 +547,17 @@ export default class Editor {
     ipcRenderer.on("changeMeasureDivision", (_: any, index: number) =>
       this.changeMeasureDivision(index)
     );
-    ipcRenderer.on("changeObjectSize", (_: any, index: number) =>
-      this.setting.setObjectSize(Math.max(1, this.setting.objectSize + index))
+    ipcRenderer.on(
+      "changeObjectSize",
+      (_: any, index: number) =>
+        (this.setting.objectSize = Math.max(1, this.setting.objectSize + index))
     );
     ipcRenderer.on("changeEditMode", (_: any, index: number) =>
       this.setting.setEditMode(index)
     );
     ipcRenderer.on("changeNoteTypeIndex", (_: any, index: number) => {
       const max = this.currentChart!.musicGameSystem.noteTypes.length - 1;
-      this.setting.setEditNoteTypeIndex(Math.min(index, max));
+      this.setting.editNoteTypeIndex = Math.min(index, max);
     });
 
     // 制御

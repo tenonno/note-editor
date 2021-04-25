@@ -192,7 +192,7 @@ export default observer(function Toolbar() {
             <MenuItem
               key={index}
               onClick={(e: any) => {
-                setting.setObjectSize(value);
+                setting.objectSize = value;
                 setState({ ...state, objectSizeAnchorEl: null });
               }}
             >
@@ -236,7 +236,7 @@ export default observer(function Toolbar() {
             <MenuItem
               key={index}
               onClick={() => {
-                setting.setEditNoteTypeIndex(index);
+                setting.editNoteTypeIndex = index;
                 setState({ ...state, noteAnchorEl: null });
               }}
             >

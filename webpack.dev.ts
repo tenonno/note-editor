@@ -9,7 +9,7 @@ export default merge(
   common,
   {
     mode: "development",
-    devtool: "eval",
+    devtool: "eval-source-map",
     plugins: [
       new HtmlWebpackPlugin({
         template: src + "/index.dev.html",

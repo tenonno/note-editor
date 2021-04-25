@@ -24,6 +24,7 @@ export type ChartJsonData = {
   version: number;
   editorVersion: number;
   difficulty: number;
+  level: string;
   startTime: number;
   musicGameSystem: {
     name: string;
@@ -322,6 +323,7 @@ export default class Chart {
     this.setName(chartData.name);
     this.setStartTime(chartData.startTime);
     this.setDifficulty(chartData.difficulty || 0);
+    this.level = chartData.level;
   }
 
   constructor(musicGameSystem: MusicGameSystem, audioSource: string) {

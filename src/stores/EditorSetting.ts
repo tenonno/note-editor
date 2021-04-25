@@ -120,11 +120,8 @@ export default class EditorSetting {
   setEditObjectCategory = (value: ObjectCategory) =>
     (this.editObjectCategory = value);
 
-  @observable
-  editNoteTypeIndex = 0;
-
-  @action
-  setEditNoteTypeIndex = (value: number) => (this.editNoteTypeIndex = value);
+  @box
+  public editNoteTypeIndex = 0;
 
   @observable
   editLaneTypeIndex = 0;
@@ -204,14 +201,34 @@ export default class EditorSetting {
     192,
   ];
 
-  /**
-   * 配置するオブジェクトのサイズ
-   */
   @observable
-  objectSize: number = 1;
+  private objectSizes: number[] = [];
 
+  /**
+   * objectSizes の要素数が足りなかったら拡張
+   */
   @action
-  setObjectSize = (value: number) => (this.objectSize = value);
+  private resizeObjectSizes() {
+    if (this.editNoteTypeIndex >= this.objectSizes.length) {
+      this.objectSizes = [
+        ...this.objectSizes,
+        ...Array.from<number>({
+          length: this.editNoteTypeIndex - this.objectSizes.length + 1,
+        }).fill(1),
+      ];
+    }
+  }
+
+  @computed
+  public get objectSize() {
+    this.resizeObjectSizes();
+    return this.objectSizes[this.editNoteTypeIndex];
+  }
+
+  public set objectSize(value) {
+    this.resizeObjectSizes();
+    this.objectSizes[this.editNoteTypeIndex] = value;
+  }
 
   @box
   public otherValue: number | string = 120;
@@ -273,4 +290,9 @@ export default class EditorSetting {
 
   @box
   public serverPort = 3000;
+
+  /**
+   * mod キーを押しているか
+   */
+  public isPressingModKey = false;
 }

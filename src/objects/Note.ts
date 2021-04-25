@@ -227,12 +227,22 @@ export class NoteRecord extends Record<NoteData>(defaultNoteData) {
     );
     this.chart = chart;
 
-    const noteType = chart.musicGameSystem.noteTypeMap.get(data.type)!;
+    this.updateColor();
+  }
+
+  public updateType(type: string) {
+    (this as any).type = type;
+    this.updateColor();
+  }
+
+  private updateColor() {
+    const { chart, type, lane } = this;
+    const noteType = chart.musicGameSystem.noteTypeMap.get(type)!;
 
     if (noteType.editorProps.color === "$laneColor") {
       this.color = Number(
         chart.musicGameSystem.laneTemplateMap.get(
-          chart.timeline.laneMap.get(data.lane)!.templateName
+          chart.timeline.laneMap.get(lane)!.templateName
         )!.color
       );
     } else {

@@ -18,7 +18,11 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    webPreferences: { nodeIntegration: true, enableRemoteModule: true },
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true,
+      contextIsolation: false,
+    },
   });
 
   if (isDevelopment) {
@@ -78,7 +82,7 @@ app.on("activate", () => {
 });
 
 function initWindowMenu() {
-  const template = [
+  const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: "ファイル",
       submenu: [
@@ -300,7 +304,7 @@ function initWindowMenu() {
     },
   ];
 
-  const menu = Menu.buildFromTemplate(template as any);
+  const menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);
 }

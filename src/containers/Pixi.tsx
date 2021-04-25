@@ -286,6 +286,18 @@ export default class Pixi extends InjectedComponent {
 
     this.app.view.style.cursor = isLock ? "not-allowed" : "default";
 
+    const canConnect = (head: Note, tail: Note) => {
+      const { allowRightAngle } = musicGameSystem.noteTypeMap.get(tail.type)!;
+      return (
+        // 接続可能なノートタイプなら
+        musicGameSystem.noteTypeMap
+          .get(head.type)!
+          .connectableTypes.includes(tail.type) &&
+        // 直角配置チェック
+        (allowRightAngle || !tail.isSameMeasurePosition(head))
+      );
+    };
+
     // 編集画面外ならクリックしていないことにする
     const mousePosition = _.clone(
       this.app!.renderer.plugins.interaction.mouse.global
@@ -665,19 +677,11 @@ export default class Pixi extends InjectedComponent {
           .lineStyle(2, 0xff9900)
           .drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-        const { allowRightAngle } = musicGameSystem.noteTypeMap.get(note.type)!;
-
         if (
           this.connectTargetNote &&
-          // 接続可能なノートタイプなら
-          musicGameSystem.noteTypeMap
-            .get(this.connectTargetNote.type)!
-            .connectableTypes.includes(note.type) &&
-          // 直角配置チェック
-          (allowRightAngle ||
-            !note.isSameMeasurePosition(this.connectTargetNote))
+          canConnect(this.connectTargetNote, note)
         ) {
-          const [head, tail] = [this.connectTargetNote, note].sort(
+          const [head, tail] = [this.connectTargetNote!, note!].sort(
             sortMeasureData
           );
 
@@ -762,6 +766,22 @@ export default class Pixi extends InjectedComponent {
         chart
       );
 
+      const { previouslyCreatedNote } = chart.timeline;
+
+      if (setting.isPressingModKey && previouslyCreatedNote) {
+        const head = previouslyCreatedNote;
+        const tail = newNote;
+
+        if (canConnect(head, tail)) {
+          // ノートラインプレビュー
+          NoteLineRendererResolver.resolveByNoteType(head.type).renderByNote(
+            head,
+            tail,
+            this.graphics!
+          );
+        }
+      }
+
       if (isClick) {
         // 同じレーンの重なっているノートを取得する
         const overlapNotes = chart.timeline.notes.filter(
@@ -781,6 +801,24 @@ export default class Pixi extends InjectedComponent {
         }
 
         chart.timeline.addNote(newNote);
+
+        // 接続
+        const head = previouslyCreatedNote;
+        const tail = newNote;
+
+        if (setting.isPressingModKey && head && canConnect(head, tail)) {
+          const newNoteLine = NoteLineRecord.new({
+            guid: guid(),
+            head: head.guid,
+            tail: tail.guid,
+          });
+
+          chart.timeline.addNoteLine(newNoteLine);
+          chart.save();
+        }
+
+        chart.timeline.previouslyCreatedNote = newNote;
+
         chart.save();
       } else {
         NoteRendererResolver.resolve(newNote).render(newNote, graphics);

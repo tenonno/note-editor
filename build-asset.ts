@@ -66,7 +66,7 @@ console.log(files);
 function sleep(time: number) {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve();
+      resolve(null);
     }, time);
   });
 }

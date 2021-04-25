@@ -32,6 +32,11 @@ export interface NoteType {
   connectableTypes: string[];
 
   /**
+   * 左右反転した場合のタイプ
+   */
+  mirrorType: string;
+
+  /**
    * カスタムプロパティ
    */
   customProps: { key: string; defaultValue: any; config?: any }[];

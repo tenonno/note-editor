@@ -1,5 +1,5 @@
-import Pixi from "../containers/Pixi";
 import * as PIXI from "pixi.js";
+import Pixi from "../containers/Pixi";
 import { Fraction } from "../math";
 import Vector2 from "../math/Vector2";
 import { drawQuad } from "../utils/drawQuad";
@@ -18,6 +18,7 @@ export interface INoteLineRenderer {
     tail: Note
   ): void;
 
+  renderByNote(head: Note, tail: Note, graphics: PIXI.Graphics): void;
   render(noteLine: NoteLine, graphics: PIXI.Graphics, notes: Note[]): void;
 }
 
@@ -51,18 +52,15 @@ class NoteLineRenderer implements INoteLineRenderer {
     }
   }
 
-  render(noteLine: NoteLine, graphics: PIXI.Graphics, notes: Note[]) {
+  public renderByNote(head: Note, tail: Note, graphics: PIXI.Graphics) {
+    if (!head.isVisible && !tail.isVisible) return;
+
     const {
       lanePointMap,
       noteMap,
       laneMap,
       measures,
     } = Pixi.instance!.injected.editor!.currentChart!.timeline;
-
-    let head = noteMap.get(noteLine.head)!;
-    let tail = noteMap.get(noteLine.tail)!;
-
-    if (!head.isVisible && !tail.isVisible) return;
 
     // head, tail をソート
     [head, tail] = [head, tail].sort(sortMeasureData);
@@ -177,6 +175,15 @@ class NoteLineRenderer implements INoteLineRenderer {
     const lines = getLines(lps, measures);
 
     this.customRender(graphics, lines, head, tail);
+  }
+
+  public render(noteLine: NoteLine, graphics: PIXI.Graphics, notes: Note[]) {
+    const { noteMap } = Pixi.instance!.injected.editor!.currentChart!.timeline;
+
+    const head = noteMap.get(noteLine.head)!;
+    const tail = noteMap.get(noteLine.tail)!;
+
+    return this.renderByNote(head, tail, graphics);
   }
 }
 
