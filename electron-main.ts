@@ -82,7 +82,7 @@ app.on("activate", () => {
 });
 
 function initWindowMenu() {
-  const template = [
+  const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: "ファイル",
       submenu: [
@@ -304,7 +304,7 @@ function initWindowMenu() {
     },
   ];
 
-  const menu = Menu.buildFromTemplate(template as any);
+  const menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);
 }

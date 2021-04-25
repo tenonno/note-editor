@@ -290,4 +290,9 @@ export default class EditorSetting {
 
   @box
   public serverPort = 3000;
+
+  /**
+   * mod キーを押しているか
+   */
+  public isPressingModKey = false;
 }

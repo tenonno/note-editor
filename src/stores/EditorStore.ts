@@ -482,12 +482,24 @@ export default class Editor {
     if (notes.length > 0) this.currentChart!.save();
   }
 
-  constructor() {
+  /**
+   * mod キーを押しているか
+   */
+  public isPressingModKey = false;
+
+  public constructor() {
     // ファイル
     ipcRenderer.on("open", () => this.open());
     ipcRenderer.on("save", () => this.save());
     ipcRenderer.on("saveAs", () => this.saveAs());
     ipcRenderer.on("importBMS", () => BMSImporter.import());
+
+    Mousetrap.bind("mod", () => (this.setting.isPressingModKey = true));
+    Mousetrap.bind(
+      "mod",
+      () => (this.setting.isPressingModKey = false),
+      "keyup"
+    );
 
     // 編集
     Mousetrap.bind("mod+z", () => this.currentChart!.timeline.undo());

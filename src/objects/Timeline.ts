@@ -1,5 +1,6 @@
 import * as jsonpatch from "fast-json-patch";
 import { Record } from "immutable";
+import _ from "lodash";
 import { action, observable } from "mobx";
 import { Mutable } from "src/utils/mutable";
 import { Fraction } from "../math";
@@ -12,7 +13,6 @@ import { Measure, MeasureData, MeasureRecord, sortMeasure } from "./Measure";
 import { Note, NoteData, NoteRecord } from "./Note";
 import { NoteLine, NoteLineData, NoteLineRecord } from "./NoteLine";
 import { OtherObject, OtherObjectData, OtherObjectRecord } from "./OtherObject";
-import _ from "lodash";
 
 export type TimelineJsonData = {
   notes: NoteData[];
@@ -219,6 +219,8 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     this.chart!.canRedo = true;
     this.chart!.canUndo = this.historyIndex > 1;
 
+    this.previouslyCreatedNote = null;
+
     Editor.instance!.updateInspector();
   }
 
@@ -237,6 +239,8 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
     this.chart!.canUndo = true;
     this.chart!.canRedo = this.historyIndex < this.histories.length;
+
+    this.previouslyCreatedNote = null;
 
     Editor.instance!.updateInspector();
   }
@@ -259,12 +263,21 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
   private chart: Chart | null = null;
 
-  addNote(note: Note, updateNoteMap = true) {
+  public addNote(note: Note, updateNoteMap = true) {
     this.notes.push(note);
     if (updateNoteMap) this.updateNoteMap();
   }
 
-  removeNote(note: Note, updateNoteMap = true) {
+  /**
+   * 前回作成したノート
+   */
+  public previouslyCreatedNote: Note | null = null;
+
+  public removeNote(note: Note, updateNoteMap = true) {
+    if (note.guid === this.previouslyCreatedNote?.guid) {
+      this.previouslyCreatedNote = null;
+    }
+
     // ノートを参照しているノートラインを削除する
     for (const noteLine of this.noteLines.filter(
       (noteLine) => noteLine.head === note.guid || noteLine.tail === note.guid
