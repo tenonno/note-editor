@@ -1,4 +1,3 @@
-import { Howl } from "howler";
 import * as _ from "lodash";
 import { observer } from "mobx-react";
 import * as PIXI from "pixi.js";
@@ -25,7 +24,6 @@ import { EditMode, ObjectCategory } from "../stores/EditorSetting";
 import { inject, InjectedComponent } from "../stores/inject";
 import CustomRendererUtility from "../utils/CustomRendererUtility";
 import { guid } from "../utils/guid";
-import * as key from "../utils/keyboard";
 import * as pool from "../utils/pool";
 
 @inject
@@ -68,13 +66,16 @@ export default class Pixi extends InjectedComponent {
     this.container!.addEventListener(
       "mousedown",
       () => {
-        if (!key.isDown("Control") && !key.isDown("Meta"))
+        if (!this.injected.editor.setting.isPressingModKey) {
           this.injected.editor.clearInspectorTarget();
+        }
+
         if (
           this.injected.editor.currentChart?.currentLayer.lock ||
           this.injected.editor.setting.editMode !== EditMode.Select
-        )
+        ) {
           return;
+        }
         this.isRangeSelection = true;
         this.rangeSelectStartPoint = this.getMousePosition();
         this.rangeSelectEndPoint = this.getMousePosition();
@@ -90,8 +91,6 @@ export default class Pixi extends InjectedComponent {
       },
       false
     );
-
-    key.beginWatch();
 
     const app = this.app;
 
