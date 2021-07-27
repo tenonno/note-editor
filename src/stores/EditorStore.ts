@@ -551,10 +551,8 @@ export default class Editor {
     ipcRenderer.on("changeMeasureDivision", (_: any, index: number) =>
       this.changeMeasureDivision(index)
     );
-    ipcRenderer.on(
-      "changeObjectSize",
-      (_: any, index: number) =>
-        (this.setting.objectSize = Math.max(1, this.setting.objectSize + index))
+    ipcRenderer.on("changeObjectSize", (_: any, index: number) =>
+      this.setting.setObjectSize(Math.max(1, this.setting.objectSize + index))
     );
     ipcRenderer.on("changeEditMode", (_: any, index: number) =>
       this.setting.setEditMode(index)
