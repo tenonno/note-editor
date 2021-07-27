@@ -48,7 +48,7 @@ export default class EditorSetting {
     observe(this, () => {
       const setting = _.clone(this);
       // 保存してはいけないプロパティを削除する
-      delete setting.measureLayouts;
+      delete (setting as any).measureLayouts;
       localStorage.setItem("editorSetting", JSON.stringify(setting));
     });
   }
@@ -185,23 +185,8 @@ export default class EditorSetting {
   @action
   setMeasureDivision = (value: number) => (this.measureDivision = value);
 
-  static readonly MEASURE_DIVISIONS = [
-    1,
-    2,
-    3,
-    4,
-    6,
-    8,
-    12,
-    16,
-    24,
-    32,
-    48,
-    64,
-    96,
-    128,
-    192,
-  ];
+  @observable
+  private objectSizes: number[] = [];
 
   /**
    * 配置するオブジェクトのサイズ
