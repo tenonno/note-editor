@@ -167,17 +167,22 @@ export default observer(function Toolbar() {
         open={Boolean(anchorEl)}
         onClose={handleClose}
       >
-        {EditorSetting.MEASURE_DIVISIONS.map((value, index) => (
-          <MenuItem
-            key={index}
-            onClick={(e: any) => {
-              setting.setMeasureDivision(value);
-              handleClose();
-            }}
-          >
-            {value}
-          </MenuItem>
-        ))}
+        {(() => {
+          if (!chart.musicGameSystem) return;
+          return chart.musicGameSystem.measureDivisions.map(
+            (division, index) => (
+              <MenuItem
+                key={index}
+                onClick={() => {
+                  setting.setMeasureDivision(division);
+                  handleClose();
+                }}
+              >
+                {division}
+              </MenuItem>
+            )
+          );
+        })()}
       </Menu>
       {/* 配置オブジェクトサイズ */}
       <Menu
