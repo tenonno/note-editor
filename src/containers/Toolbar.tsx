@@ -25,7 +25,6 @@ import EditTargetSelect from "../components/EditTargetSelect";
 import NewChartDialog from "../components/NewChartDialog";
 import ThemeButton from "../components/ThemeButton";
 import VerticalDivider from "../components/VerticalDivider";
-import EditorSetting from "../stores/EditorSetting";
 import { emptyChart, IEmptyChart } from "../stores/EmptyChart";
 import { useStores } from "../stores/stores";
 
@@ -167,17 +166,22 @@ export default observer(function Toolbar() {
         open={Boolean(anchorEl)}
         onClose={handleClose}
       >
-        {EditorSetting.MEASURE_DIVISIONS.map((value, index) => (
-          <MenuItem
-            key={index}
-            onClick={(e: any) => {
-              setting.setMeasureDivision(value);
-              handleClose();
-            }}
-          >
-            {value}
-          </MenuItem>
-        ))}
+        {(() => {
+          if (!chart.musicGameSystem) return;
+          return chart.musicGameSystem.measureDivisions.map(
+            (division, index) => (
+              <MenuItem
+                key={index}
+                onClick={() => {
+                  setting.setMeasureDivision(division);
+                  handleClose();
+                }}
+              >
+                {division}
+              </MenuItem>
+            )
+          );
+        })()}
       </Menu>
       {/* 配置オブジェクトサイズ */}
       <Menu
@@ -192,7 +196,7 @@ export default observer(function Toolbar() {
             <MenuItem
               key={index}
               onClick={(e: any) => {
-                setting.objectSize = value;
+                setting.setObjectSize(value);
                 setState({ ...state, objectSizeAnchorEl: null });
               }}
             >

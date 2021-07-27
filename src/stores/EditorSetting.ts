@@ -63,6 +63,7 @@ export default class EditorSetting {
     if (editorSetting) {
       _.merge(this, JSON.parse(editorSetting));
     }
+    this.initializeObjectSizes();
   }
 
   /**
@@ -183,24 +184,6 @@ export default class EditorSetting {
   @action
   setMeasureDivision = (value: number) => (this.measureDivision = value);
 
-  static readonly MEASURE_DIVISIONS = [
-    1,
-    2,
-    3,
-    4,
-    6,
-    8,
-    12,
-    16,
-    24,
-    32,
-    48,
-    64,
-    96,
-    128,
-    192,
-  ];
-
   @observable
   private objectSizes: number[] = [];
 
@@ -208,12 +191,13 @@ export default class EditorSetting {
    * objectSizes の要素数が足りなかったら拡張
    */
   @action
-  private resizeObjectSizes() {
-    if (this.editNoteTypeIndex >= this.objectSizes.length) {
+  private initializeObjectSizes() {
+    const maxNoteTypes = 20;
+    if (maxNoteTypes >= this.objectSizes.length) {
       this.objectSizes = [
         ...this.objectSizes,
         ...Array.from<number>({
-          length: this.editNoteTypeIndex - this.objectSizes.length + 1,
+          length: maxNoteTypes - this.objectSizes.length + 1,
         }).fill(1),
       ];
     }
@@ -221,12 +205,11 @@ export default class EditorSetting {
 
   @computed
   public get objectSize() {
-    this.resizeObjectSizes();
     return this.objectSizes[this.editNoteTypeIndex];
   }
 
-  public set objectSize(value) {
-    this.resizeObjectSizes();
+  @action
+  public setObjectSize(value: number) {
     this.objectSizes[this.editNoteTypeIndex] = value;
   }
 

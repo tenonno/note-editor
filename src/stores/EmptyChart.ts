@@ -45,6 +45,7 @@ export const emptyChart = {
       rendererReference: null,
       customProps: [],
     },
+    measureDivisions: [0],
     customProps: [],
     eventListener: null,
     eventListeners: {},

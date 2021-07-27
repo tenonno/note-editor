@@ -388,7 +388,11 @@ export default class Editor {
 
   @action
   changeMeasureDivision(index: number) {
-    const divs = EditorSetting.MEASURE_DIVISIONS;
+    if (!this.currentChart) {
+      return;
+    }
+
+    const divs = this.currentChart.musicGameSystem.measureDivisions;
     index += divs.indexOf(this.setting.measureDivision);
     index = Math.max(0, Math.min(divs.length - 1, index));
     this.setting.measureDivision = divs[index];
@@ -547,10 +551,8 @@ export default class Editor {
     ipcRenderer.on("changeMeasureDivision", (_: any, index: number) =>
       this.changeMeasureDivision(index)
     );
-    ipcRenderer.on(
-      "changeObjectSize",
-      (_: any, index: number) =>
-        (this.setting.objectSize = Math.max(1, this.setting.objectSize + index))
+    ipcRenderer.on("changeObjectSize", (_: any, index: number) =>
+      this.setting.setObjectSize(Math.max(1, this.setting.objectSize + index))
     );
     ipcRenderer.on("changeEditMode", (_: any, index: number) =>
       this.setting.setEditMode(index)

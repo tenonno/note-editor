@@ -122,6 +122,7 @@ export default interface MusicGameSystem {
   customNoteLineRendererMap: Map<string, CustomNoteLineRenderer>;
 
   measure: MusicGameSystemMeasure;
+  measureDivisions: number[];
 
   customProps: {
     key: string;
@@ -154,7 +155,24 @@ export function normalizeMusicGameSystem(
         renderer: "default",
         customProps: [],
       },
-
+      measureDivisions: [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        12,
+        16,
+        24,
+        32,
+        48,
+        64,
+        96,
+        128,
+        192,
+      ],
       eventListener: null,
       eventListeners: {},
     },
