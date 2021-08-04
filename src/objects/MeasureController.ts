@@ -1,6 +1,5 @@
 import { Graphics } from "pixi.js";
 import Pixi from "../containers/Pixi";
-import { Fraction } from "../math";
 import MeasureRendererResolver from "../objects/MeasureRendererResolver";
 import Chart from "../stores/Chart";
 import EditorSetting from "../stores/EditorSetting";

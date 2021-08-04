@@ -1,5 +1,5 @@
-import Pixi from "../containers/Pixi";
 import * as PIXI from "pixi.js";
+import Pixi from "../containers/Pixi";
 import { Fraction, IFraction, inverseLerp, lerp, Vector2 } from "../math";
 import { sortMeasure } from "../objects/Measure";
 import { LaneTemplate, NoteType } from "../stores/MusicGameSystem";
@@ -259,9 +259,10 @@ class LaneRenderer implements ILaneRenderer {
         );
 
     for (const line of targetMeasureLines) {
-      for (var i = 1; i < lane.division; ++i) {
+      for (let i = 1; i < lane.division; ++i) {
+        const width = !laneTemplate.boldInterval ? 1 : i % 4 === 0 ? 2 : 1;
         graphics
-          .lineStyle(1, 0xffffff)
+          .lineStyle(width, 0xffffff)
           .moveTo(
             line.start.point.x + (line.start.width / lane.division) * i,
             line.start.point.y

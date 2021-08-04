@@ -1,10 +1,10 @@
-import { Howl } from "howler";
 import IMusicGameSystemEventListener from "./musicGameSystem/eventListener";
 
 export interface LaneTemplate {
   name: string;
   color: string;
   division: number;
+  boldInterval: number;
   renderer: string;
   rendererReference: Function;
 }
@@ -12,7 +12,7 @@ export interface LaneTemplate {
 /**
  * 初期レーン情報
  */
-interface InitialLane {
+export interface InitialLane {
   template: string;
   horizontalSize: number;
   horizontalPosition: number;
