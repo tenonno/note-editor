@@ -491,6 +491,10 @@ export default class Editor {
    */
   public isPressingModKey = false;
 
+  private activeElementIsInput() {
+    return document.activeElement?.tagName === "INPUT";
+  }
+
   public constructor() {
     // ファイル
     ipcRenderer.on("open", () => this.open());
@@ -506,18 +510,32 @@ export default class Editor {
     );
 
     // 編集
-    Mousetrap.bind("mod+z", () => this.currentChart!.timeline.undo());
-    Mousetrap.bind("mod+shift+z", () => this.currentChart!.timeline.redo());
+    Mousetrap.bind("mod+z", () => {
+      if (this.activeElementIsInput()) return;
+      this.currentChart!.timeline.undo();
+    });
+    Mousetrap.bind("mod+shift+z", () => {
+      if (this.activeElementIsInput()) return;
+      this.currentChart!.timeline.redo();
+    });
     Mousetrap.bind("mod+x", () => {
+      if (this.activeElementIsInput()) return;
       this.copy();
       this.copiedNotes.forEach((n) =>
         this.currentChart!.timeline.removeNote(n)
       );
       if (this.copiedNotes.length > 0) this.currentChart!.save();
     });
-    Mousetrap.bind("mod+c", () => this.copy());
-    Mousetrap.bind("mod+v", () => this.paste());
+    Mousetrap.bind("mod+c", () => {
+      if (this.activeElementIsInput()) return;
+      this.copy();
+    });
+    Mousetrap.bind("mod+v", () => {
+      if (this.activeElementIsInput()) return;
+      this.paste();
+    });
     Mousetrap.bind(["del", "backspace"], () => {
+      if (this.activeElementIsInput()) return;
       const removeNotes = this.inspectorTargets.filter(
         (target) => target instanceof NoteRecord
       );
@@ -535,39 +553,47 @@ export default class Editor {
       this.updateInspector();
     });
 
-    ipcRenderer.on("moveDivision", (_: any, index: number) =>
-      this.moveDivision(index)
-    );
+    ipcRenderer.on("moveDivision", (_: any, index: number) => {
+      if (this.activeElementIsInput()) return;
+      this.moveDivision(index);
+    });
     ipcRenderer.on("moveLane", (_: any, index: number) => {
+      if (this.activeElementIsInput()) return;
       this.moveLane((i) => i + index);
       this.moveSelectedNotes(index);
     });
     ipcRenderer.on("flipLane", () => {
+      if (this.activeElementIsInput()) return;
       this.moveLane((i) => this.currentChart!.timeline.lanes.length - i - 1);
       this.flipSelectedNotes();
     });
 
     // 選択
-    ipcRenderer.on("changeMeasureDivision", (_: any, index: number) =>
-      this.changeMeasureDivision(index)
-    );
-    ipcRenderer.on("changeObjectSize", (_: any, index: number) =>
-      this.setting.setObjectSize(Math.max(1, this.setting.objectSize + index))
-    );
-    ipcRenderer.on("changeEditMode", (_: any, index: number) =>
-      this.setting.setEditMode(index)
-    );
+    ipcRenderer.on("changeMeasureDivision", (_: any, index: number) => {
+      if (this.activeElementIsInput()) return;
+      this.changeMeasureDivision(index);
+    });
+    ipcRenderer.on("changeObjectSize", (_: any, index: number) => {
+      if (this.activeElementIsInput()) return;
+      this.setting.setObjectSize(Math.max(1, this.setting.objectSize + index));
+    });
+    ipcRenderer.on("changeEditMode", (_: any, index: number) => {
+      if (this.activeElementIsInput()) return;
+      this.setting.setEditMode(index);
+    });
     ipcRenderer.on("changeNoteTypeIndex", (_: any, index: number) => {
+      if (this.activeElementIsInput()) return;
       const max = this.currentChart!.musicGameSystem.noteTypes.length - 1;
       this.setting.editNoteTypeIndex = Math.min(index, max);
     });
 
     // 制御
-    ipcRenderer.on("toggleMusicPlaying", () =>
+    ipcRenderer.on("toggleMusicPlaying", () => {
+      if (this.activeElementIsInput()) return;
       this.currentChart!.isPlaying
         ? this.currentChart!.pause()
-        : this.currentChart!.play()
-    );
+        : this.currentChart!.play();
+    });
 
     ipcRenderer.on("reload", () => {
       localStorage.setItem(
