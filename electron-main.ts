@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Menu } from "electron";
+import * as fs from "fs";
 import * as path from "path";
 
 const isDevelopment = process.env.NODE_ENV === "development";
@@ -11,8 +12,22 @@ if (dirname.includes(".app")) {
 
 const audioAssetPath = path.resolve(dirname, "assets/audio");
 const musicGameSystemsPath = path.resolve(dirname, "assets/musicGameSystems");
+const keyConfigPath = path.resolve(dirname, "assets/keyconfig.json");
 
 let mainWindow: BrowserWindow | null;
+
+const defaultKeyConfig = {
+  editModes: ["Q", "W", "E", "R"],
+  notes: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+};
+
+const keyConfigText = fs.existsSync(keyConfigPath)
+  ? fs.readFileSync(keyConfigPath)
+  : "";
+
+const userKeyConfig = JSON.parse(keyConfigText.toString() || "{}");
+
+const keyConfig = Object.assign(defaultKeyConfig, userKeyConfig);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -229,28 +244,28 @@ function initWindowMenu() {
           submenu: [
             {
               label: "選択モード",
-              accelerator: "Q",
+              accelerator: keyConfig.editModes[0],
               click() {
                 mainWindow!.webContents.send("changeEditMode", 1);
               },
             },
             {
               label: "追加モード",
-              accelerator: "W",
+              accelerator: keyConfig.editModes[1],
               click() {
                 mainWindow!.webContents.send("changeEditMode", 2);
               },
             },
             {
               label: "削除モード",
-              accelerator: "E",
+              accelerator: keyConfig.editModes[2],
               click() {
                 mainWindow!.webContents.send("changeEditMode", 3);
               },
             },
             {
               label: "接続モード",
-              accelerator: "R",
+              accelerator: keyConfig.editModes[3],
               click() {
                 mainWindow!.webContents.send("changeEditMode", 4);
               },
@@ -262,7 +277,7 @@ function initWindowMenu() {
           submenu: [
             ...[...Array(9)].fill(0).map((_, index) => ({
               label: `${index + 1}番目を選択`,
-              accelerator: `${index + 1}`,
+              accelerator: keyConfig.notes[index],
               click() {
                 mainWindow!.webContents.send("changeNoteTypeIndex", index);
               },
