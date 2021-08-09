@@ -13,7 +13,6 @@ import {
   TimelineRecord,
 } from "../objects/Timeline";
 import { guid } from "../utils/guid";
-import HotReload from "../utils/HotReload";
 import box from "../utils/mobx-box";
 import updateChart from "../utils/updateChart";
 import Editor from "./EditorStore";
@@ -455,9 +454,14 @@ export default class Chart {
   };
 
   @action
-  async setAudioFromSource(source: string) {
+  private setAudioFromSource(source: string) {
     const audioBuffer = Editor.instance!.asset.loadAudioAsset(source);
-    if (audioBuffer) this.setAudio(audioBuffer, source);
+
+    if (!audioBuffer) {
+      return;
+    }
+
+    this.setAudio(audioBuffer, source);
   }
 
   updateTime() {
@@ -467,7 +471,7 @@ export default class Chart {
   }
 
   @action
-  setAudio(buffer: Buffer, source: string) {
+  public setAudio(buffer: Buffer, source: string) {
     const extension = source.split(".").pop()!;
 
     const blob = new Blob([buffer], { type: `audio/${extension}` });
@@ -490,21 +494,14 @@ export default class Chart {
 
     if ((window as any).ps) (window as any).ps.stop();
 
-    var context: AudioContext = (this.audio as any)._sounds[0]._node.context;
+    const context: AudioContext = (this.audio as any)._sounds[0]._node.context;
 
-    const self = this;
-
-    HotReload.override(
-      context,
-      "decodeAudioData",
-      async (base: any, ...args: any[]) => {
-        const audioBuffer = await base(...args);
-
-        self.setAudioBuffer(audioBuffer);
-
-        return audioBuffer;
-      }
-    );
+    const originalDecodeAudioData = context.decodeAudioData as any;
+    (context as any).decodeAudioData = async (...args: any[]) => {
+      const audioBuffer = await originalDecodeAudioData.call(context, ...args);
+      this.setAudioBuffer(audioBuffer);
+      return audioBuffer;
+    };
   }
 
   private musicGameSystemName = "";
@@ -615,7 +612,10 @@ export default class Chart {
     chart.musicGameSystemName = this.musicGameSystem.name;
     chart.musicGameSystemVersion = this.musicGameSystem.version;
 
-    chart.timeline = TimelineRecord.newnew(this, chart.timeline.toJS());
+    chart.timeline = TimelineRecord.newnew(
+      this,
+      chart.timeline.toJS() as TimelineData
+    );
 
     // @ts-ignore
     delete chart.time;

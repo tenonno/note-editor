@@ -16,16 +16,4 @@ export default class HotReload {
 
     (window as any)[symbol] = setInterval(callback, ms);
   }
-
-  /**
-   *
-   */
-  static override(target: any, key: string, overrideFunction: Function) {
-    // 元のメソッドを保持しておく
-    const base = ((window as any)[key] = (window as any)[key] || target[key]);
-
-    target[key] = function (...args: any[]) {
-      return overrideFunction(base.bind(this), ...args);
-    };
-  }
 }

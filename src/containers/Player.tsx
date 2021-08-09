@@ -11,6 +11,7 @@ import * as React from "react";
 import { useState } from "react";
 import ChartInformation from "../components/ChartInformation";
 import { useStores } from "../stores/stores";
+import Skeleton from "@material-ui/lab/Skeleton";
 
 const useStyles = makeStyles((theme: Theme) => ({
   playerButton: {},
@@ -64,7 +65,9 @@ export default observer(function Player() {
 
   const chart = editor.currentChart;
 
-  if (!chart || !chart.audio || !chart.audioBuffer) return <div />;
+  if (!chart || !chart.audio || !chart.audioBuffer) {
+    return <Skeleton variant="rect" height={48} />;
+  }
 
   const time = chart.time / chart.audio.duration();
   return (

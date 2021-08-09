@@ -2,10 +2,10 @@ import * as jsonpatch from "fast-json-patch";
 import { Record } from "immutable";
 import _ from "lodash";
 import { action, observable } from "mobx";
-import { Mutable } from "src/utils/mutable";
 import { Fraction } from "../math";
 import Chart from "../stores/Chart";
 import Editor from "../stores/EditorStore";
+import { Mutable } from "../utils/mutable";
 import { TimeCalculator } from "../utils/TimeCalculator";
 import { Lane, LaneData, LaneRecord } from "./Lane";
 import { LanePoint, LanePointData, LanePointRecord } from "./LanePoint";
@@ -169,7 +169,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     });
 
     this.historyIndex++;
-    this.prevData = this.toJS();
+    this.prevData = this.toJS() as TimelineData;
   }
 
   /**
@@ -199,7 +199,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
     Editor.instance!.updateInspector();
 
-    this.prevData = this.toJS();
+    this.prevData = this.toJS() as TimelineData;
   }
 
   @action
