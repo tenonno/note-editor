@@ -513,6 +513,13 @@ export default class Editor {
     Mousetrap.bind("mod+z", () => {
       if (this.activeElementIsInput()) return;
       this.currentChart!.timeline.undo();
+
+      // undo すると直前に編集していた input 要素にフォーカスされる場合がある
+      setTimeout(() => {
+        if (this.activeElementIsInput()) {
+          (document.activeElement as HTMLInputElement)?.blur();
+        }
+      }, 16);
     });
     Mousetrap.bind("mod+shift+z", () => {
       if (this.activeElementIsInput()) return;
