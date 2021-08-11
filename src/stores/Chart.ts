@@ -447,7 +447,7 @@ export default class Chart {
   time: number = 0;
 
   @action
-  setTime = (time: number, seek: boolean = false) => {
+  public setTime = (time: number, seek: boolean = false) => {
     this.time = _.clamp(time, 0, this.audio!.duration());
 
     if (seek) this.audio!.seek(time);
@@ -464,7 +464,7 @@ export default class Chart {
     this.setAudio(audioBuffer, source);
   }
 
-  updateTime() {
+  public updateTime() {
     if (!this.audio) return;
     const time = this.audio!.seek() as number;
     if (this.time !== time) this.setTime(time);
