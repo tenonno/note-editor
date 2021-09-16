@@ -76,6 +76,9 @@ export default observer(function ChartSetting() {
         onChange={handleAudioChange}
         audioAssetPath={editor.asset.audioAssetPath}
       />
+      {renderTextField("製作者", chart.name, (value: any) =>
+        chart.setName(value)
+      )}
       {renderTextField(
         "開始時間",
         chart.startTime.toString(),
@@ -122,6 +125,12 @@ export default observer(function ChartSetting() {
           background: "#eee",
         }}
       />
+      {renderTextField(
+        "開発用開始時間",
+        chart.developmentStartTime.toString(),
+        (value: any) => (chart.developmentStartTime = parseFloat(value)),
+        "number"
+      )}
       <Button
         variant="outlined"
         onClick={() => editor.setInspectorTarget(chart.customProps)}

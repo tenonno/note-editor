@@ -18,7 +18,7 @@ export interface InitialLane {
   horizontalPosition: number;
 }
 
-export interface NoteType {
+export interface MusicGameSystemNoteType {
   name: string;
   renderer: string;
   rendererReference: any;
@@ -35,6 +35,11 @@ export interface NoteType {
    * 左右反転した場合のタイプ
    */
   mirrorType: string;
+
+  /**
+   * 重なりを無視するか
+   */
+  ignoreOverlap: boolean;
 
   /**
    * カスタムプロパティ
@@ -55,6 +60,12 @@ export interface OtherObjectType {
   name: string;
   color: string;
   valueType: "number" | "text" | "none";
+
+  /**
+   * value を , 区切りで分割する場合のラベル
+   */
+  splitValueLabels: string[];
+  splitValuePointLabel: string;
 }
 
 export interface CustomNoteLineRenderer {
@@ -100,13 +111,15 @@ export default interface MusicGameSystem {
 
   difficulties: string[];
 
+  checkNoteOverlap: boolean;
+
   laneTemplates: LaneTemplate[];
 
   laneTemplateMap: Map<string, LaneTemplate>;
 
   initialLanes: InitialLane[];
   measureHorizontalDivision: number;
-  noteTypes: NoteType[];
+  noteTypes: MusicGameSystemNoteType[];
   otherObjectTypes: OtherObjectType[];
 
   /**
@@ -115,7 +128,7 @@ export default interface MusicGameSystem {
    */
   seMap: Map<string, HowlPool>;
 
-  noteTypeMap: Map<string, NoteType>;
+  noteTypeMap: Map<string, MusicGameSystemNoteType>;
 
   customNoteLineRenderers: CustomNoteLineRenderer[];
 
@@ -178,6 +191,10 @@ export function normalizeMusicGameSystem(
     },
     musicGameSystem
   );
+
+  for (const otherObjectType of system.otherObjectTypes) {
+    otherObjectType.splitValueLabels ??= [];
+  }
 
   for (const noteType of system.noteTypes) {
     noteType.editorProps = Object.assign(

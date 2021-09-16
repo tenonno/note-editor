@@ -6,3 +6,18 @@ export default interface InspectorController {
   addCustomButton(name: string, onClick: any): void;
   resetCustomButton(): void;
 }
+
+export type InspectorConfigSplitValue = {
+  key: string;
+  labels: string[];
+
+  /**
+   * labels に x, y が含まれていた場合のラベル
+   */
+  pointLabel: string;
+  pointParams?: any;
+};
+
+export type InspectorConfig = {
+  splitValues: InspectorConfigSplitValue[];
+};

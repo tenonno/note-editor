@@ -2,7 +2,10 @@ import * as PIXI from "pixi.js";
 import Pixi from "../containers/Pixi";
 import { Fraction, IFraction, inverseLerp, lerp, Vector2 } from "../math";
 import { sortMeasure } from "../objects/Measure";
-import { LaneTemplate, NoteType } from "../stores/MusicGameSystem";
+import {
+  LaneTemplate,
+  MusicGameSystemNoteType,
+} from "../stores/MusicGameSystem";
 import { drawQuad } from "../utils/drawQuad";
 import { GetLineInfoFromPool, GetLinePointInfoFromPool } from "../utils/pool";
 import { Lane, LineInfo, LinePointInfo } from "./Lane";
@@ -93,7 +96,7 @@ export interface ILaneRenderer {
     lanePointMap: Map<string, LanePoint>,
     measures: Measure[],
     drawHorizontalLineTargetMeasure: Measure | null,
-    noteType: NoteType
+    noteType: MusicGameSystemNoteType
   ): void;
 
   defaultRender(
@@ -233,7 +236,7 @@ class LaneRenderer implements ILaneRenderer {
     lanePointMap: Map<string, LanePoint>,
     measures: Measure[],
     drawHorizontalLineTargetMeasure: Measure | null,
-    noteType: NoteType
+    noteType: MusicGameSystemNoteType
   ): void {
     const lines = getLines(
       lane.points.map((point) => lanePointMap.get(point)!),

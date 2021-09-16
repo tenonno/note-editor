@@ -121,7 +121,7 @@ export default class Editor {
    * 新規譜面を作成する
    */
   @action
-  newChart(
+  public newChart(
     musicGameSystem: MusicGameSystem,
     audioSource: string,
     data?: TimelineData
@@ -188,6 +188,46 @@ export default class Editor {
     return exists;
   }
 
+  private checkNoteOverlap() {
+    const errorMessages: string[] = [];
+
+    const chart = this.currentChart;
+    if (!chart || !chart.timeline) return;
+
+    const { noteTypeMap } = chart.musicGameSystem;
+
+    var aa = new Map<string, Set<string>>(
+      chart.timeline.lanes.map((lane) => [lane.guid, new Set<string>()])
+    );
+
+    for (const note of chart.timeline.notes) {
+      const noteType = noteTypeMap.get(note.type);
+      if (!noteType) continue;
+      if (noteType.ignoreOverlap) continue;
+
+      const laneAa = aa.get(note.lane);
+
+      if (!laneAa) continue;
+
+      const reducedMeasurePosition = Fraction.reduce(note.measurePosition);
+
+      for (let index = 0; index < note.horizontalSize; index++) {
+        const laneIndex = note.horizontalPosition.numerator + index;
+
+        const key = `${note.measureIndex}:${reducedMeasurePosition.numerator}:${reducedMeasurePosition.denominator}:${laneIndex}`;
+
+        if (laneAa.has(key)) {
+          errorMessages.push("重複しています: " + key);
+          continue;
+        }
+
+        laneAa.add(key);
+      }
+    }
+
+    return errorMessages;
+  }
+
   /**
    * 譜面を保存する
    */
@@ -209,6 +249,16 @@ export default class Editor {
 
     // 譜面を最適化する
     chart.timeline.optimise();
+
+    if (chart.musicGameSystem.checkNoteOverlap) {
+      const overlapErrorMessages = this.checkNoteOverlap();
+      if (overlapErrorMessages) {
+        for (const errorMessage of overlapErrorMessages) {
+          console.error(errorMessage);
+          this.notify(errorMessage, "error");
+        }
+      }
+    }
 
     chart.musicGameSystem.eventListeners.onSerialize?.(chart);
 

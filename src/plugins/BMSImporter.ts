@@ -384,17 +384,47 @@ export default class BMSImporter {
 
     console.log(notes, bpms, longNotes);
 
+    function getSize(id: number) {
+      if (id === 0) return 24;
+      return id % 2 === 0 ? 2 : 4;
+    }
+
+    function getPos(id: number) {
+      switch (id) {
+        case 0:
+          return 0;
+        case 1:
+          return 0;
+        case 2:
+          return 4;
+        case 3:
+          return 6;
+        case 4:
+          return 10;
+        case 5:
+          return 12;
+        case 6:
+          return 16;
+        case 7:
+          return 18;
+        case 8:
+          return 22;
+      }
+      return 0;
+    }
+
+    let flickIndex = 0;
     const toNote = (note: any) => ({
       guid: guid(),
-      horizontalSize: 1,
+      horizontalSize: getSize(note.id),
       horizontalPosition: {
-        numerator: note.id,
-        denominator: 8,
+        numerator: getPos(note.id),
+        denominator: 24,
       },
       measureIndex: note.laneIndex,
       measurePosition: note.position,
-      type: "tap",
-      lane: "60914b20c1205ff1563407fa2d2b233d",
+      type: note.id === 0 ? "flick-" + ["l", "r"][flickIndex++ % 2] : "tap-24",
+      lane: "initialLane1",
       layer: "<layer>",
       editorProps: {},
     });
@@ -472,9 +502,9 @@ export default class BMSImporter {
                 numerator: 0,
                 denominator: 1,
               },
-              guid: "2937357cffe6bec2c44cb9c13e3b17e4",
+              guid: "3a2858caafa3d3756255ad7110f39e19",
               horizontalSize: 1,
-              templateName: "normal",
+              templateName: "24-divisions",
               horizontalPosition: {
                 numerator: 0,
                 denominator: 1,
@@ -486,9 +516,9 @@ export default class BMSImporter {
                 numerator: 0,
                 denominator: 1,
               },
-              guid: "a90db42627230b200865d972b31196dc",
+              guid: "e81cd9f829dbb50a8cc16db187eaebe5",
               horizontalSize: 1,
-              templateName: "normal",
+              templateName: "24-divisions",
               horizontalPosition: {
                 numerator: 0,
                 denominator: 1,
@@ -514,13 +544,13 @@ export default class BMSImporter {
           noteLines: noteLines,
           lanes: [
             {
-              guid: "60914b20c1205ff1563407fa2d2b233d",
-              templateName: "normal",
-              division: 8,
+              guid: "initialLane1",
               points: [
-                "2937357cffe6bec2c44cb9c13e3b17e4",
-                "a90db42627230b200865d972b31196dc",
+                "3a2858caafa3d3756255ad7110f39e19",
+                "e81cd9f829dbb50a8cc16db187eaebe5",
               ],
+              templateName: "24-divisions",
+              division: 24,
             },
           ],
           measures: newMeasures,
@@ -530,7 +560,7 @@ export default class BMSImporter {
         startTime: 0,
         name: "新規譜面",
         audioSource: title + ".wav",
-        musicGameSystemName: "BMS",
+        musicGameSystemName: "zas",
         musicGameSystemVersion: 0.1,
       })
     );

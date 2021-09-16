@@ -25,6 +25,7 @@ export type ChartJsonData = {
   difficulty: number;
   level: string;
   startTime: number;
+  developmentStartTime: number;
   musicGameSystem: {
     name: string;
     version: number;
@@ -323,12 +324,12 @@ export default class Chart {
     this.setStartTime(chartData.startTime);
     this.setDifficulty(chartData.difficulty || 0);
     this.level = chartData.level;
+    this.developmentStartTime = chartData.developmentStartTime || 0;
   }
 
   constructor(musicGameSystem: MusicGameSystem, audioSource: string) {
-    this.timeline = TimelineRecord.new(this);
-
     this.musicGameSystem = musicGameSystem;
+    this.timeline = TimelineRecord.new(this);
     this.setAudioFromSource(audioSource);
   }
 
@@ -372,6 +373,9 @@ export default class Chart {
 
   @observable
   startTime: number = 0.0;
+
+  @box
+  public developmentStartTime = 0.0;
 
   @action
   setStartTime(startTime: number) {
@@ -608,6 +612,9 @@ export default class Chart {
 
     chart.level = (chart as any)._level;
     delete (chart as any)._level;
+
+    chart.developmentStartTime = (chart as any)._developmentStartTime;
+    delete (chart as any)._developmentStartTime;
 
     chart.musicGameSystemName = this.musicGameSystem.name;
     chart.musicGameSystemVersion = this.musicGameSystem.version;
