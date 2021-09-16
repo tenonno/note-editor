@@ -22,7 +22,7 @@ export class Fraction {
       numerator: a.numerator * b.denominator + b.numerator * a.denominator,
       denominator: a.denominator * b.denominator,
     };
-    this.reduce(fraction);
+    this.reduceDestructive(fraction);
     return fraction;
   }
 
@@ -31,7 +31,7 @@ export class Fraction {
       numerator: a.numerator * b.numerator,
       denominator: a.denominator * b.denominator,
     };
-    this.reduce(fraction);
+    this.reduceDestructive(fraction);
     return fraction;
   }
 
@@ -43,10 +43,16 @@ export class Fraction {
   }
 
   // 約分
-  static reduce(fraction: IFraction) {
+  public static reduceDestructive(fraction: IFraction): void {
     const div = math.gcd(fraction.numerator, fraction.denominator);
     fraction.numerator /= div;
     fraction.denominator /= div;
+  }
+
+  public static reduce(fraction: IFraction): IFraction {
+    const cloned = this.clone(fraction);
+    this.reduceDestructive(cloned);
+    return cloned;
   }
 
   static equal(a: IFraction, b: IFraction) {

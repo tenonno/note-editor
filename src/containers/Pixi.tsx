@@ -15,16 +15,13 @@ import { Note, NoteRecord } from "../objects/Note";
 import { NoteLineRecord } from "../objects/NoteLine";
 import NoteLineRendererResolver from "../objects/NoteLineRendererResolver";
 import NoteRendererResolver from "../objects/NoteRendererResolver";
-import {
-  OtherObject,
-  OtherObjectRecord,
-  OtherObjectRenderer,
-} from "../objects/OtherObject";
+import { OtherObject, OtherObjectRecord } from "../objects/OtherObject";
 import { EditMode, ObjectCategory } from "../stores/EditorSetting";
 import { inject, InjectedComponent } from "../stores/inject";
 import CustomRendererUtility from "../utils/CustomRendererUtility";
 import { guid } from "../utils/guid";
 import * as pool from "../utils/pool";
+import { OtherObjectRenderer } from "../objects/OtherObjectRenderer";
 
 @inject
 @observer
@@ -318,13 +315,16 @@ export default class Pixi extends InjectedComponent {
     // BPM が 1 つも存在しなかったら仮 BPM を先頭に配置する
     if (!chart.timeline.otherObjects.some((object) => object.isBPM())) {
       chart.timeline.addOtherObject(
-        OtherObjectRecord.new({
-          type: 0,
-          guid: guid(),
-          measureIndex: 0,
-          measurePosition: new Fraction(0, 1),
-          value: 120,
-        })
+        OtherObjectRecord.createInstance(
+          {
+            type: 0,
+            guid: guid(),
+            measureIndex: 0,
+            measurePosition: new Fraction(0, 1),
+            value: 120,
+          },
+          chart.musicGameSystem.otherObjectTypes
+        )
       );
       chart.save();
     }
@@ -550,16 +550,19 @@ export default class Pixi extends InjectedComponent {
 
       const vlDiv = targetMeasureDivision;
 
-      const newObject = OtherObjectRecord.new({
-        type: setting.editOtherTypeIndex,
-        measureIndex: targetMeasure.index,
-        measurePosition: new Fraction(
-          vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
-          vlDiv
-        ),
-        guid: guid(),
-        value: setting.otherValue,
-      });
+      const newObject = OtherObjectRecord.createInstance(
+        {
+          type: setting.editOtherTypeIndex,
+          measureIndex: targetMeasure.index,
+          measurePosition: new Fraction(
+            vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
+            vlDiv
+          ),
+          guid: guid(),
+          value: setting.otherValue,
+        },
+        chart.musicGameSystem.otherObjectTypes
+      );
 
       if (isClick) {
         chart.timeline.addOtherObject(newObject);

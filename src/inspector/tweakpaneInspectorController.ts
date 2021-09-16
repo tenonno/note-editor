@@ -4,6 +4,7 @@ import { ComponentApi } from "tweakpane/dist/types/api/component-api";
 import { FolderApi } from "tweakpane/dist/types/api/folder";
 import Editor from "../stores/EditorStore";
 import InspectorController from "./inspectorController";
+import { TweakpaneSplitValueController } from "./tweakpaneSplitValueController";
 
 export default class TweakpaneInspectorController
   implements InspectorController {
@@ -29,15 +30,25 @@ export default class TweakpaneInspectorController
       }
 
       const config = obj.inspectorConfig || {};
+      console.log(obj);
+      console.log(Object.keys(obj));
+
+      const splitValueController = new TweakpaneSplitValueController(config);
 
       for (const key of Object.keys(obj)) {
-        if (key == "inspectorConfig") continue;
+        if (key === "inspectorConfig") continue;
 
         // オブジェクトなら再帰
         if (obj[key] instanceof Object) {
           const folder = gui.addFolder({ title: key });
           add(folder, obj[key], parent[key]);
           this.components.push(folder);
+          continue;
+        }
+
+        if (splitValueController.isSplitValue(key)) {
+          const inputs = splitValueController.addInput(gui, parent, key);
+          this.components.push(...inputs);
           continue;
         }
 
@@ -72,6 +83,14 @@ export default class TweakpaneInspectorController
           this.editor.currentChart!.save();
         });
       }
+
+      /*
+      if (config?.splitValues) {
+        for (const splitValue of config?.splitValues as any[]) {
+          console.warn(splitValue);
+        }
+      }
+      */
     };
 
     add(

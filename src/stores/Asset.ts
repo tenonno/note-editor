@@ -10,7 +10,7 @@ import {
   HowlPool,
   LaneTemplate,
   normalizeMusicGameSystem,
-  NoteType,
+  MusicGameSystemNoteType,
 } from "../stores/MusicGameSystem";
 import { guid } from "../utils/guid";
 import { replaceAsync } from "../utils/string";
@@ -142,16 +142,22 @@ export default class AssetStore {
       name: "Stop",
       color: "0x0000ff",
       valueType: "none",
+      splitValueLabels: [],
+      splitValuePointLabel: "",
     });
     musicGameSystems.otherObjectTypes.unshift({
       name: "Speed",
       color: "0x00ff00",
       valueType: "number",
+      splitValueLabels: [],
+      splitValuePointLabel: "",
     });
     musicGameSystems.otherObjectTypes.unshift({
       name: "BPM",
       color: "0xff0000",
       valueType: "number",
+      splitValueLabels: [],
+      splitValuePointLabel: "",
     });
 
     // イベントリスナーを読み込む
@@ -185,7 +191,7 @@ export default class AssetStore {
     }
 
     // 名前をキーにしたノートタイプのマップを生成する
-    musicGameSystems.noteTypeMap = new Map<string, NoteType>();
+    musicGameSystems.noteTypeMap = new Map<string, MusicGameSystemNoteType>();
     for (const noteType of musicGameSystems.noteTypes || []) {
       if (!noteType.customProps) noteType.customProps = [];
 

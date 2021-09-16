@@ -13,6 +13,7 @@ import { Measure, MeasureData, MeasureRecord, sortMeasure } from "./Measure";
 import { Note, NoteData, NoteRecord } from "./Note";
 import { NoteLine, NoteLineData, NoteLineRecord } from "./NoteLine";
 import { OtherObject, OtherObjectData, OtherObjectRecord } from "./OtherObject";
+import { OtherObjectType } from "../stores/MusicGameSystem";
 
 export type TimelineJsonData = {
   notes: NoteData[];
@@ -59,7 +60,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
     timeline.chart = chart;
 
-    timeline.toMutable(timeline);
+    timeline.toMutable(timeline, chart.musicGameSystem.otherObjectTypes);
 
     timeline.save();
 
@@ -69,7 +70,10 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
   /**
    * 各 Record を mutable に変換する
    */
-  private toMutable(data: TimelineJsonData) {
+  private toMutable(
+    data: TimelineJsonData,
+    otherObjectTypes: OtherObjectType[]
+  ) {
     this.mutable.notes = data.notes.map((note) =>
       NoteRecord.new(note, this.chart!)
     );
@@ -84,7 +88,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
       LanePointRecord.new(lanePoint)
     );
     this.mutable.otherObjects = data.otherObjects.map((object) =>
-      OtherObjectRecord.new(object)
+      OtherObjectRecord.createInstance(object, otherObjectTypes)
     );
 
     this.updateNoteMap();
@@ -204,7 +208,8 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
   @action
   public undo() {
-    if (!this.chart!.canUndo) return;
+    if (!this.chart) return;
+    if (!this.chart.canUndo) return;
 
     this.historyIndex--;
 
@@ -214,10 +219,10 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     ).newDocument;
 
     this.prevData = data;
-    this.toMutable(data);
+    this.toMutable(data, this.chart.musicGameSystem.otherObjectTypes);
 
-    this.chart!.canRedo = true;
-    this.chart!.canUndo = this.historyIndex > 1;
+    this.chart.canRedo = true;
+    this.chart.canUndo = this.historyIndex > 1;
 
     this.previouslyCreatedNote = null;
 
@@ -226,7 +231,8 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
   @action
   public redo() {
-    if (!this.chart!.canRedo) return;
+    if (!this.chart) return;
+    if (!this.chart.canRedo) return;
     this.historyIndex++;
 
     const data = jsonpatch.applyPatch(
@@ -235,10 +241,10 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     ).newDocument;
 
     this.prevData = data;
-    this.toMutable(data);
+    this.toMutable(data, this.chart.musicGameSystem.otherObjectTypes);
 
-    this.chart!.canUndo = true;
-    this.chart!.canRedo = this.historyIndex < this.histories.length;
+    this.chart.canUndo = true;
+    this.chart.canRedo = this.historyIndex < this.histories.length;
 
     this.previouslyCreatedNote = null;
 
