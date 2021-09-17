@@ -22,6 +22,7 @@ import CustomRendererUtility from "../utils/CustomRendererUtility";
 import { guid } from "../utils/guid";
 import * as pool from "../utils/pool";
 import { OtherObjectRenderer } from "../objects/OtherObjectRenderer";
+import { Howl } from "howler";
 
 @inject
 @observer

@@ -5,11 +5,11 @@ import {
   TableCell,
   TableHead,
   TableRow,
-} from "@material-ui/core";
-import Popover from "@material-ui/core/Popover";
-import FileCopyIcon from "@material-ui/icons/FileCopy";
-import TextRotateVerticalIcon from "@material-ui/icons/TextRotateVertical";
-import TextRotationNoneIcon from "@material-ui/icons/TextRotationNone";
+} from "@mui/material";
+import Popover from "@mui/material/Popover";
+import FileCopyIcon from "@mui/icons-material/FileCopy";
+import TextRotateVerticalIcon from "@mui/icons-material/TextRotateVertical";
+import TextRotationNoneIcon from "@mui/icons-material/TextRotationNone";
 import { clipboard } from "electron";
 import * as _ from "lodash";
 import { observer } from "mobx-react";
@@ -82,7 +82,7 @@ export default observer(function ChartInformation(props: IProps) {
                   setSmallMode(!smallMode);
                 }}
                 style={{ margin: 0 }}
-              >
+                size="large">
                 {smallMode ? (
                   <TextRotationNoneIcon fontSize="small" />
                 ) : (
@@ -105,7 +105,7 @@ export default observer(function ChartInformation(props: IProps) {
                 disabled={!noteInformation}
                 onClick={handleCopy}
                 style={{ margin: 0 }}
-              >
+                size="large">
                 <FileCopyIcon fontSize="small" />
               </IconButton>
             </TableCell>

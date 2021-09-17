@@ -2,10 +2,10 @@ import {
   Clear as ClearIcon,
   Create as CreateIcon,
   ShowChart as ShowChartIcon,
-} from "@material-ui/icons";
-import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward";
-import ToggleButton from "@material-ui/lab/ToggleButton";
-import ToggleButtonGroup from "@material-ui/lab/ToggleButtonGroup";
+} from "@mui/icons-material";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import * as React from "react";
 import { EditMode } from "../stores/EditorSetting";
 import useStyles from "../styles/ToolBar";

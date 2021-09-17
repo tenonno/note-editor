@@ -6,9 +6,10 @@ import Tweakpane from "tweakpane";
 import { FolderApi } from "tweakpane/dist/types/api/folder";
 import { isString } from "lodash";
 import { InputBindingApi } from "tweakpane/dist/types/api/input-binding";
-import { Color } from "tweakpane/dist/types/model/color";
-import { Point2d } from "tweakpane/dist/types/model/point-2d";
-import { InputtableOutType } from "tweakpane/dist/types/controller/binding-creators/input";
+import { Color } from "tweakpane/dist/types/plugin/input-bindings/color/model/color";
+import { Point2d } from "tweakpane/dist/types/plugin/input-bindings/point-2d/model/point-2d";
+
+class InputtableOutType {}
 
 export class TweakpaneSplitValueController {
   private splitValueKeys: Map<string, InspectorConfigSplitValue>;
@@ -74,7 +75,7 @@ export class TweakpaneSplitValueController {
       }
 
       const newController = gui.addInput(parent, label);
-      ret.push(newController);
+      ret.push(newController as any);
     }
 
     if (hasPoint) {
@@ -93,7 +94,7 @@ export class TweakpaneSplitValueController {
         splitValue.pointLabel,
         splitValue.pointParams
       );
-      ret.push(newController);
+      ret.push(newController as any);
     }
 
     return ret;

@@ -1,22 +1,16 @@
-import {
-  Badge,
-  createStyles,
-  FormGroup,
-  IconButton,
-  makeStyles,
-  Menu,
-  MenuItem,
-} from "@material-ui/core";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import { Theme } from "@material-ui/core/styles/createMuiTheme";
-import Switch from "@material-ui/core/Switch";
+import { Badge, FormGroup, IconButton, Menu, MenuItem } from "@mui/material";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { Theme } from '@mui/material/styles';
+import Switch from "@mui/material/Switch";
 import {
   Menu as MenuIcon,
   Visibility as VisibilityIcon,
-} from "@material-ui/icons";
-import AddIcon from "@material-ui/icons/Add";
-import ArrowBackIcon from "@material-ui/icons/ArrowBack";
-import ArrowForwardIcon from "@material-ui/icons/ArrowForward";
+} from "@mui/icons-material";
+import AddIcon from "@mui/icons-material/Add";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { observer } from "mobx-react";
 import * as React from "react";
 import { SketchPicker } from "react-color";
@@ -34,7 +28,7 @@ const useStyles = makeStyles((theme: Theme) =>
       marginTop: ".8rem",
       marginRight: ".5rem",
       boxShadow: `0 0 0 2px ${
-        theme.palette.type === "light"
+        theme.palette.mode === "light"
           ? theme.palette.grey[200]
           : theme.palette.grey[900]
       }`,
@@ -111,7 +105,7 @@ export default observer(function Toolbar() {
         flexDirection: "row",
       }}
     >
-      <IconButton onClick={handleDrawerToggle}>
+      <IconButton onClick={handleDrawerToggle} size="large">
         <MenuIcon />
       </IconButton>
 
@@ -121,14 +115,14 @@ export default observer(function Toolbar() {
       <IconButton
         disabled={!chart.canUndo}
         onClick={() => chart!.timeline.undo()}
-      >
+        size="large">
         <ArrowBackIcon />
       </IconButton>
       {/* Redo */}
       <IconButton
         disabled={!chart.canRedo}
         onClick={() => chart!.timeline.redo()}
-      >
+        size="large">
         <ArrowForwardIcon />
       </IconButton>
 
@@ -140,7 +134,7 @@ export default observer(function Toolbar() {
         classes={{ badge: classes.badge }}
         max={999}
       >
-        <IconButton aria-label="Delete" onClick={handleClick}>
+        <IconButton aria-label="Delete" onClick={handleClick} size="large">
           <MenuIcon />
         </IconButton>
       </Badge>
@@ -156,7 +150,7 @@ export default observer(function Toolbar() {
           onClick={(e) =>
             setState({ ...state, objectSizeAnchorEl: e.currentTarget })
           }
-        >
+          size="large">
           <MenuIcon />
         </IconButton>
       </Badge>
@@ -297,7 +291,7 @@ export default observer(function Toolbar() {
         })()}
       </Menu>
       {Array.from({ length: 0 }).map((_, index) => (
-        <IconButton key={index} aria-label="Delete">
+        <IconButton key={index} aria-label="Delete" size="large">
           <AddIcon />
         </IconButton>
       ))}
@@ -309,7 +303,7 @@ export default observer(function Toolbar() {
         onClick={(event) => {
           setState({ ...state, displaySettingAnchorEl: event.currentTarget });
         }}
-      >
+        size="large">
         <VisibilityIcon />
       </IconButton>
       <Menu

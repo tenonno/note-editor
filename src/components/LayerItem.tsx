@@ -1,5 +1,5 @@
-import { IconButton, ListItem, TextField } from "@material-ui/core";
-import { Lock, LockOpen, Visibility, VisibilityOff } from "@material-ui/icons";
+import { IconButton, ListItem, TextField } from "@mui/material";
+import { Lock, LockOpen, Visibility, VisibilityOff } from "@mui/icons-material";
 import * as React from "react";
 import { Layer } from "src/objects/Layer";
 
@@ -28,7 +28,7 @@ export default (props: IProps) => {
       <IconButton
         style={{ padding: ".5rem" }}
         onClick={() => props.onToggleVisible(index)}
-      >
+        size="large">
         {layer.visible ? (
           <Visibility fontSize="small" />
         ) : (
@@ -38,14 +38,20 @@ export default (props: IProps) => {
       <IconButton
         style={{ padding: ".5rem", marginLeft: "-.5rem" }}
         onClick={() => props.onToggleLock(index)}
-      >
+        size="large">
         {layer.lock ? <Lock fontSize="small" /> : <LockOpen fontSize="small" />}
       </IconButton>
       <TextField
         value={layer.name}
         margin="dense"
         onChange={({ target: { value } }) => props.onRename(value)}
-      />
+      />{" "}
+      <IconButton
+        style={{ padding: ".5rem", marginLeft: "-.5rem" }}
+        onClick={() => props.onToggleLock(index)}
+        size="large">
+        {layer.lock ? <Lock fontSize="small" /> : <LockOpen fontSize="small" />}
+      </IconButton>
     </ListItem>
   );
 };

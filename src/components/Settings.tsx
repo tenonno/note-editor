@@ -1,13 +1,8 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  createStyles,
-  Divider,
-  makeStyles,
-} from "@material-ui/core";
-import { Theme } from "@material-ui/core/styles/createMuiTheme";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import { Accordion, AccordionDetails, AccordionSummary, Divider } from "@mui/material";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import { Theme } from '@mui/material/styles';
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import * as React from "react";
 import AssetSetting from "../containers/AssetSetting";
 import ChartSetting from "../containers/ChartSetting";
