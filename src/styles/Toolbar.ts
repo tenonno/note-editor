@@ -1,4 +1,7 @@
-import { createStyles, makeStyles, Theme } from "@material-ui/core";
+import { Theme } from "@mui/material";
+
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -6,7 +9,7 @@ const useStyles = makeStyles((theme: Theme) =>
       height: 32,
     },
     toggleContainer: {
-      padding: `${theme.spacing()}px ${theme.spacing(2)}px`,
+      padding: `${theme.spacing()} ${theme.spacing(2)}`,
       display: "flex",
       alignItems: "center",
       justifyContent: "flex-start",

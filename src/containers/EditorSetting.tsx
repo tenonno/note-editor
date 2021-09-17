@@ -6,7 +6,7 @@ import {
   Select,
   Switch,
   TextField,
-} from "@material-ui/core";
+} from "@mui/material";
 import { observer } from "mobx-react";
 import * as React from "react";
 import { ChartTabLabelType } from "../stores/EditorSetting";

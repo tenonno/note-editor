@@ -1,5 +1,5 @@
-import { IconButton, Tab, Tabs } from "@material-ui/core";
-import CloseIcon from "@material-ui/icons/Close";
+import { IconButton, Tab, Tabs } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { observer } from "mobx-react";
 import * as React from "react";
 import { useEffect } from "react";
@@ -45,6 +45,7 @@ export default observer(function ChartTab() {
     <div ref={(el) => (container = el)}>
       <div id={closeButtonContainerId}>
         {editor.charts.map((chart, index) => (
+          /*
           <IconButton
             style={{ marginLeft: "-1.5rem" }}
             key={index}
@@ -62,9 +63,12 @@ export default observer(function ChartTab() {
               }
               editor.removeChart(index);
             }}
-          >
+            size="large">
             <CloseIcon style={{ fontSize: 16 }} />
           </IconButton>
+
+           */
+          <div>Tab</div>
         ))}
       </div>
 
@@ -77,6 +81,8 @@ export default observer(function ChartTab() {
         scrollButtons="auto"
       >
         {editor.charts.map((chart, index) => (
+          <div>Tab!</div>
+          /*
           <Tab
             key={index}
             label={getTabLabel(chart)}
@@ -85,6 +91,8 @@ export default observer(function ChartTab() {
               tabElements.push(el);
             }}
           />
+          
+           */
         ))}
       </Tabs>
     </div>

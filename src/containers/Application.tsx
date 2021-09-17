@@ -1,13 +1,14 @@
 import {
   AppBar,
-  createStyles,
   Divider,
   Drawer,
-  makeStyles,
-  MuiThemeProvider,
-} from "@material-ui/core";
-import { createMuiTheme } from "@material-ui/core/styles";
-import { Theme } from "@material-ui/core/styles/createMuiTheme";
+  ThemeProvider,
+  StyledEngineProvider,
+  adaptV4Theme,
+} from "@mui/material";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import { createTheme, Theme } from "@mui/material/styles";
 import classNames from "classnames";
 import { observer, Provider } from "mobx-react";
 import { SnackbarProvider } from "notistack";
@@ -24,7 +25,7 @@ import Player from "./Player";
 import Toolbar from "./Toolbar";
 
 const drawerWidth: number = config.sidebarWidth;
-const rightDrawerWidth = 180;
+const rightDrawerWidth = 200;
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -122,16 +123,16 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 );
 
-const lightTheme = createMuiTheme({
+const lightTheme = createTheme(adaptV4Theme({
   palette: {
-    type: "light",
+    mode: "light",
   },
-});
-const darkTheme = createMuiTheme({
+}));
+const darkTheme = createTheme(adaptV4Theme({
   palette: {
-    type: "dark",
+    mode: "dark",
   },
-});
+}));
 
 const Application = observer(function Application() {
   const classes = useStyles();
@@ -207,21 +208,23 @@ const Application = observer(function Application() {
   );
 });
 
-const ThemeProvider = observer(function ThemeProvider() {
+const ThemeProvider2 = observer(function ThemeProvider2() {
   const { editor } = useStores();
   return (
-    <MuiThemeProvider
-      theme={editor.setting.muiThemeType === "light" ? lightTheme : darkTheme}
-    >
-      <Application />
-    </MuiThemeProvider>
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider
+        theme={editor.setting.muiThemeType === "light" ? lightTheme : darkTheme}
+      >
+        <Application />
+      </ThemeProvider>
+    </StyledEngineProvider>
   );
 });
 
 export default function ApplicationProvider() {
   return (
     <Provider {...stores}>
-      <ThemeProvider />
+      <ThemeProvider2 />
     </Provider>
   );
 }

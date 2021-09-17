@@ -1,4 +1,5 @@
 import IMusicGameSystemEventListener from "./musicGameSystem/eventListener";
+import { Howl } from "howler";
 
 export interface LaneTemplate {
   name: string;

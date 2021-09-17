@@ -1,4 +1,4 @@
-import { FormControl, InputLabel, MenuItem, Select } from "@material-ui/core";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { remote } from "electron";
 import * as React from "react";
 import { useStyles } from "../styles/styles";

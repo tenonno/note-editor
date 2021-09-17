@@ -2,7 +2,7 @@
   "compilerOptions": {
     "strict": true,
     "target": "ES2019",
-    "jsx": "react",
+    "jsx": "react-jsx",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "downlevelIteration": true,

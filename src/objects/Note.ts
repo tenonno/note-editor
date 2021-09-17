@@ -254,6 +254,6 @@ export class NoteRecord extends Record<NoteData>(defaultNoteData) {
    * クローンする
    */
   public clone() {
-    return NoteRecord.new(_.cloneDeep(this.toJS()), this.chart);
+    return NoteRecord.new(_.cloneDeep(this.toJS() as NoteData), this.chart);
   }
 }
