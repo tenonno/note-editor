@@ -25,6 +25,7 @@ export default observer(function EditorSetting() {
     return (
       <TextField
         type={type}
+        variant="standard"
         label={label}
         fullWidth
         style={{ margin: "6px 0" }}
@@ -83,7 +84,10 @@ export default observer(function EditorSetting() {
           "number"
         )}
 
-        <FormControl style={{ width: "100%", margin: "6px 0" }}>
+        <FormControl
+          style={{ width: "100%", margin: "6px 0" }}
+          variant="standard"
+        >
           <InputLabel htmlFor="measureLayout" className={classes.label}>
             小節レイアウト
           </InputLabel>
@@ -106,7 +110,10 @@ export default observer(function EditorSetting() {
           </Select>
         </FormControl>
 
-        <FormControl style={{ width: "100%", margin: "6px 0" }}>
+        <FormControl
+          style={{ width: "100%", margin: "6px 0" }}
+          variant="standard"
+        >
           <InputLabel htmlFor="inspectorIndex" className={classes.label}>
             インスペクタ
           </InputLabel>

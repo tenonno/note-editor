@@ -45,12 +45,10 @@ export default observer(function ChartTab() {
     <div ref={(el) => (container = el)}>
       <div id={closeButtonContainerId}>
         {editor.charts.map((chart, index) => (
-          /*
           <IconButton
-            style={{ marginLeft: "-1.5rem" }}
             key={index}
             aria-label="Delete"
-            buttonRef={(el: HTMLElement) => {
+            ref={(el: any) => {
               if (!el) return;
               closeButtons.push({ chart, el });
             }}
@@ -63,12 +61,10 @@ export default observer(function ChartTab() {
               }
               editor.removeChart(index);
             }}
-            size="large">
+            size="large"
+          >
             <CloseIcon style={{ fontSize: 16 }} />
           </IconButton>
-
-           */
-          <div>Tab</div>
         ))}
       </div>
 
@@ -81,18 +77,17 @@ export default observer(function ChartTab() {
         scrollButtons="auto"
       >
         {editor.charts.map((chart, index) => (
-          <div>Tab!</div>
-          /*
           <Tab
             key={index}
             label={getTabLabel(chart)}
-            buttonRef={(el: HTMLElement) => {
+            ref={(el: any) => {
               if (!el) return;
               tabElements.push(el);
             }}
+            style={{
+              display: "inline-block",
+            }}
           />
-          
-           */
         ))}
       </Tabs>
     </div>

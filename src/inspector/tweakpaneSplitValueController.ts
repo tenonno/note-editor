@@ -56,13 +56,19 @@ export class TweakpaneSplitValueController {
     const hasPoint =
       splitValue.labels.includes("x") && splitValue.labels.includes("y");
 
+    console.log(hasPoint, parent);
+
     for (let i = 0; i < splitValue.labels.length; i++) {
       let label = splitValue.labels[i];
 
       if (!parent.hasOwnProperty(label)) {
+        console.log("define", label);
+
         Object.defineProperty(parent, label, {
           get: () => parent[key].split(",")[i],
           set(value: any) {
+            console.log(value);
+
             const values = parent[key].split(",");
             values[i] = value;
             parent[key] = values.join(",");
@@ -80,9 +86,12 @@ export class TweakpaneSplitValueController {
 
     if (hasPoint) {
       if (!parent.hasOwnProperty(splitValue.pointLabel)) {
+        console.log(splitValue.pointLabel);
+
         Object.defineProperty(parent, splitValue.pointLabel, {
           get: () => ({ x: parent.x * 1, y: parent.y * 1 }),
           set(value: Point2d) {
+            console.log(value);
             parent.x = value.x;
             parent.y = value.y;
           },
@@ -94,6 +103,11 @@ export class TweakpaneSplitValueController {
         splitValue.pointLabel,
         splitValue.pointParams
       );
+
+      newController.on("change", (e) => {
+        console.log(e);
+      });
+
       ret.push(newController as any);
     }
 

@@ -17,7 +17,7 @@ export default observer(function MusicGameSystemSelect({
   const classes = useStyles();
 
   return (
-    <FormControl style={{ width: "100%", margin: "6px 0" }}>
+    <FormControl style={{ width: "100%", margin: "6px 0" }} variant="standard">
       <InputLabel htmlFor="musicGameSystem" className={classes.label}>
         システム
       </InputLabel>

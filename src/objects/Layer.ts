@@ -7,6 +7,7 @@ export type LayerData = {
   name: string;
   visible: boolean;
   lock: boolean;
+  group: number;
 };
 
 const defaultLayerData: LayerData = {
@@ -14,6 +15,7 @@ const defaultLayerData: LayerData = {
   name: "",
   visible: true,
   lock: false,
+  group: 1,
 };
 
 export type Layer = Mutable<LayerRecord>;

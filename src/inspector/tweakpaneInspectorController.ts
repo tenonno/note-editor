@@ -30,8 +30,6 @@ export default class TweakpaneInspectorController
       }
 
       const config = obj.inspectorConfig || {};
-      console.log(obj);
-      console.log(Object.keys(obj));
 
       const splitValueController = new TweakpaneSplitValueController(config);
 

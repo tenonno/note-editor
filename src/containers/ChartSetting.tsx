@@ -44,12 +44,14 @@ export default observer(function ChartSetting() {
     return (
       <TextField
         type={type}
+        variant="standard"
         label={label}
         fullWidth
         style={{ margin: "6px 0" }}
         value={value}
         onChange={(e: any) => onChange(e.target.value)}
         InputLabelProps={{
+          shrink: true,
           className: classes.label,
         }}
         InputProps={{
@@ -76,8 +78,8 @@ export default observer(function ChartSetting() {
         onChange={handleAudioChange}
         audioAssetPath={editor.asset.audioAssetPath}
       />
-      {renderTextField("製作者", chart.name, (value: any) =>
-        chart.setName(value)
+      {renderTextField("制作者", chart.creator, (value: any) =>
+        chart?.setCreator(value)
       )}
       {renderTextField(
         "開始時間",
@@ -85,7 +87,10 @@ export default observer(function ChartSetting() {
         (value: any) => chart.setStartTime(parseFloat(value)),
         "number"
       )}
-      <FormControl style={{ width: "100%", margin: "6px 0" }}>
+      <FormControl
+        style={{ width: "100%", margin: "6px 0" }}
+        variant="standard"
+      >
         <InputLabel htmlFor="difficulty" className={classes.label}>
           難易度
         </InputLabel>

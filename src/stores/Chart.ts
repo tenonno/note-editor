@@ -48,7 +48,7 @@ export default class Chart {
   timeline: Timeline;
 
   @observable.shallow
-  layers: Layer[] = [];
+  public layers: Layer[] = [];
 
   @observable
   currentLayerIndex = 0;
@@ -85,6 +85,7 @@ export default class Chart {
         name: name ?? `レイヤー${this.layers.length + 1}`,
         visible: visible ?? true,
         lock: lock ?? false,
+        group: 1,
       })
     );
 
@@ -125,6 +126,12 @@ export default class Chart {
   @action
   selectLayer(index: number) {
     this.currentLayerIndex = index;
+  }
+
+  @action
+  public setLayerGroup(index: number, group: number) {
+    this.layers[index].group = group;
+    this.layers = [...this.layers];
   }
 
   @action
@@ -307,6 +314,7 @@ export default class Chart {
         name: "レイヤー1",
         visible: true,
         lock: false,
+        group: 1,
       });
       // 全ノートを初期レイヤーに割り当てる
       for (const note of this.timeline.notes) {
@@ -338,6 +346,14 @@ export default class Chart {
 
   @action
   setName = (name: string) => (this.name = name);
+
+  @observable
+  public creator: string = "";
+
+  @action
+  public setCreator(creator: string) {
+    this.creator = creator;
+  }
 
   @observable
   difficulty: number = 0;
