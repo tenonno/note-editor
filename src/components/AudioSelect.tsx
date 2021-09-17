@@ -15,7 +15,7 @@ export default function ({
   const classes = useStyles();
 
   return (
-    <FormControl style={{ width: "100%", margin: "6px 0" }}>
+    <FormControl style={{ width: "100%", margin: "6px 0" }} variant="standard">
       <InputLabel htmlFor="audio" className={classes.label}>
         音源
       </InputLabel>

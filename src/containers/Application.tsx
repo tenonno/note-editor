@@ -6,8 +6,8 @@ import {
   StyledEngineProvider,
   adaptV4Theme,
 } from "@mui/material";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import { createTheme, Theme } from "@mui/material/styles";
 import classNames from "classnames";
 import { observer, Provider } from "mobx-react";
@@ -123,16 +123,30 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 );
 
-const lightTheme = createTheme(adaptV4Theme({
-  palette: {
-    mode: "light",
-  },
-}));
-const darkTheme = createTheme(adaptV4Theme({
-  palette: {
-    mode: "dark",
-  },
-}));
+const lightTheme = createTheme(
+  adaptV4Theme({
+    palette: {
+      mode: "light",
+    },
+    typography: {
+      button: {
+        textTransform: "none",
+      },
+    },
+  })
+);
+const darkTheme = createTheme(
+  adaptV4Theme({
+    palette: {
+      mode: "dark",
+    },
+    typography: {
+      button: {
+        textTransform: "none",
+      },
+    },
+  })
+);
 
 const Application = observer(function Application() {
   const classes = useStyles();
@@ -201,7 +215,7 @@ const Application = observer(function Application() {
         />
         <Layer />
       </Drawer>
-      <SnackbarProvider maxSnack={4}>
+      <SnackbarProvider>
         <Notification />
       </SnackbarProvider>
     </div>

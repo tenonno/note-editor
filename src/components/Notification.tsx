@@ -8,26 +8,8 @@ import { useStores } from "../stores/stores";
  */
 const Notification = observer((props: WithSnackbarProps) => {
   const { editor } = useStores();
-
-  /**
-   * 通知する
-   */
-  function notify(notification: any) {
-    if (!notification) return;
-    if (!notification.guid) return;
-
-    props.enqueueSnackbar(notification.text, {
-      variant: notification.type,
-      anchorOrigin: {
-        vertical: "bottom",
-        horizontal: "right",
-      },
-    });
-  }
-
-  notify(editor.notification);
-
-  return <div style={{ display: "none" }}>{editor.notification.guid}</div>;
+  editor.setEnqueueSnackbar(props.enqueueSnackbar);
+  return <></>;
 });
 
 export default withSnackbar(Notification);

@@ -4,7 +4,12 @@ import http from "http";
 import * as _ from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
-import { VariantType } from "notistack";
+import {
+  OptionsObject,
+  SnackbarKey,
+  SnackbarMessage,
+  VariantType,
+} from "notistack";
 import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureRecord } from "../objects/Measure";
@@ -32,20 +37,20 @@ export default class Editor {
 
   copiedNotes: Note[] = [];
 
-  @observable.ref
-  notification: any = {};
-
   /**
    * 通知
    * @param text 通知内容
+   * @param type
    */
   @action
-  notify(text: string, type: VariantType = "info") {
-    this.notification = {
-      text,
-      guid: guid(),
-      type,
-    };
+  public notify(text: string, type: VariantType = "info") {
+    this.enqueueSnackbar?.(text, {
+      variant: type,
+      anchorOrigin: {
+        vertical: "bottom",
+        horizontal: "right",
+      },
+    });
   }
 
   @action
@@ -188,15 +193,19 @@ export default class Editor {
     return exists;
   }
 
+  /**
+   * ノーツの重複をチェックする
+   * @private
+   */
   private checkNoteOverlap() {
-    const errorMessages: string[] = [];
+    const warningMessageSet = new Set<string>();
 
     const chart = this.currentChart;
     if (!chart || !chart.timeline) return;
 
     const { noteTypeMap } = chart.musicGameSystem;
 
-    var aa = new Map<string, Set<string>>(
+    const lanePositionMapSet = new Map<string, Set<string>>(
       chart.timeline.lanes.map((lane) => [lane.guid, new Set<string>()])
     );
 
@@ -205,9 +214,9 @@ export default class Editor {
       if (!noteType) continue;
       if (noteType.ignoreOverlap) continue;
 
-      const laneAa = aa.get(note.lane);
+      const lanePositionMap = lanePositionMapSet.get(note.lane);
 
-      if (!laneAa) continue;
+      if (!lanePositionMap) continue;
 
       const reducedMeasurePosition = Fraction.reduce(note.measurePosition);
 
@@ -216,16 +225,18 @@ export default class Editor {
 
         const key = `${note.measureIndex}:${reducedMeasurePosition.numerator}:${reducedMeasurePosition.denominator}:${laneIndex}`;
 
-        if (laneAa.has(key)) {
-          errorMessages.push("重複しています: " + key);
+        if (lanePositionMap.has(key)) {
+          warningMessageSet.add(
+            `ノーツが重複しています: ${note.measureIndex} - ${reducedMeasurePosition.numerator}/${reducedMeasurePosition.denominator}`
+          );
           continue;
         }
 
-        laneAa.add(key);
+        lanePositionMap.add(key);
       }
     }
 
-    return errorMessages;
+    return warningMessageSet.values();
   }
 
   /**
@@ -251,11 +262,10 @@ export default class Editor {
     chart.timeline.optimise();
 
     if (chart.musicGameSystem.checkNoteOverlap) {
-      const overlapErrorMessages = this.checkNoteOverlap();
-      if (overlapErrorMessages) {
-        for (const errorMessage of overlapErrorMessages) {
-          console.error(errorMessage);
-          this.notify(errorMessage, "error");
+      const overlapWarningMessages = this.checkNoteOverlap();
+      if (overlapWarningMessages) {
+        for (const warningMessage of overlapWarningMessages) {
+          this.notify(warningMessage, "warning");
         }
       }
     }
@@ -543,6 +553,21 @@ export default class Editor {
 
   private activeElementIsInput() {
     return document.activeElement?.tagName === "INPUT";
+  }
+
+  private enqueueSnackbar?: (
+    message: SnackbarMessage,
+    options?: OptionsObject
+  ) => SnackbarKey;
+
+  @action
+  public setEnqueueSnackbar(
+    enqueueSnackbar: (
+      message: SnackbarMessage,
+      options?: OptionsObject
+    ) => SnackbarKey
+  ) {
+    this.enqueueSnackbar = enqueueSnackbar;
   }
 
   public constructor() {

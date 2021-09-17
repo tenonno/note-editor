@@ -1,6 +1,6 @@
 import { IconButton, Slider } from "@mui/material";
-import makeStyles from '@mui/styles/makeStyles';
-import { Theme } from '@mui/material/styles';
+import makeStyles from "@mui/styles/makeStyles";
+import { Theme } from "@mui/material/styles";
 import NotesIcon from "@mui/icons-material/Notes";
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrow from "@mui/icons-material/PlayArrow";
@@ -12,13 +12,14 @@ import * as React from "react";
 import { useState } from "react";
 import ChartInformation from "../components/ChartInformation";
 import { useStores } from "../stores/stores";
-import Skeleton from '@mui/material/Skeleton';
+import Skeleton from "@mui/material/Skeleton";
 
 const useStyles = makeStyles((theme: Theme) => ({
   playerButton: {},
   timeSliderTrack: {
     height: "4px",
     background: "red",
+    border: "none",
   },
   timeSliderThumb: {
     width: "14px",
@@ -70,10 +71,13 @@ export default observer(function Player() {
     return <Skeleton variant="rectangular" height={48} />;
   }
 
-  const time = chart.time / chart.audio.duration();
+  const duration = chart.audio.duration();
+  const time = duration === 0 ? 0 : chart.time / duration;
+
   return (
     <div
       style={{
+        background: "black",
         marginTop: "calc((62px - 48px) * -1)",
       }}
     >
@@ -105,7 +109,8 @@ export default observer(function Player() {
             onClick={() => {
               editor.currentChart!.play();
             }}
-            size="large">
+            size="large"
+          >
             <PlayArrow />
           </IconButton>
         ) : (
@@ -116,7 +121,8 @@ export default observer(function Player() {
             onClick={() => {
               editor.currentChart!.pause();
             }}
-            size="large">
+            size="large"
+          >
             <PauseIcon />
           </IconButton>
         )}
@@ -131,7 +137,8 @@ export default observer(function Player() {
           style={{ color: "#fff" }}
           className={classes.playerButton}
           aria-label="Delete"
-          size="large">
+          size="large"
+        >
           <SpeakerIcon />
         </IconButton>
 
@@ -156,7 +163,11 @@ export default observer(function Player() {
           }}
         />
 
-        <IconButton style={{ color: "#fff" }} className={classes.playerButton} size="large">
+        <IconButton
+          style={{ color: "#fff" }}
+          className={classes.playerButton}
+          size="large"
+        >
           <SpeedIcon />
         </IconButton>
 
@@ -180,7 +191,11 @@ export default observer(function Player() {
           }}
         />
 
-        <IconButton style={{ color: "#fff" }} className={classes.playerButton} size="large">
+        <IconButton
+          style={{ color: "#fff" }}
+          className={classes.playerButton}
+          size="large"
+        >
           <SeVolumeIcon />
         </IconButton>
 
@@ -209,7 +224,8 @@ export default observer(function Player() {
           style={{ color: "#fff", float: "right" }}
           className={classes.playerButton}
           onClick={() => setState({ openInformation: true })}
-          size="large">
+          size="large"
+        >
           <NotesIcon />
         </IconButton>
 
