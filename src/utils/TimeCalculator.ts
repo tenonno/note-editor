@@ -98,6 +98,7 @@ export class TimeCalculator {
             measurePosition: new Fraction(0, 1),
             value: prevBpm,
             beat: measures[i].beat,
+            layer: guid(),
           };
 
       // 前の小節と比較して BPM か拍子が変わっているなら命令を追加する

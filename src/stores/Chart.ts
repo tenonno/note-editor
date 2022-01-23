@@ -43,7 +43,7 @@ export default class Chart {
   // TODO: Record にする
   // data = new ChartRecord();
 
-  version: number = 2;
+  version: number = 3;
 
   timeline: Timeline;
 
@@ -284,6 +284,26 @@ export default class Chart {
       );
     }
 
+    // レイヤーに所属していないノーツを削除する
+    {
+      const layerGuids = chartData.layers.map((layer) => layer.guid);
+      const beforeNoteCount = chartData.timeline.notes.length;
+      chartData.timeline.notes = chartData.timeline.notes.filter((note) =>
+        layerGuids.includes(note.layer)
+      );
+      console.log(
+        "ノーツを整理しました: " +
+          beforeNoteCount +
+          " - " +
+          chartData.timeline.notes.length
+      );
+      const noteGuids = chartData.timeline.notes.map((note) => note.guid);
+      chartData.timeline.noteLines = chartData.timeline.noteLines.filter(
+        (noteLine) =>
+          noteGuids.includes(noteLine.head) && noteGuids.includes(noteLine.tail)
+      );
+    }
+
     const timelineData: TimelineJsonData = chartData.timeline;
 
     // 1000 小節まで生成する
@@ -306,22 +326,6 @@ export default class Chart {
     this.timeline = TimelineRecord.new(this, timelineData as TimelineData);
 
     const layers = (chartData.layers || []) as LayerData[];
-
-    // 譜面にレイヤー情報がなければ初期レイヤーを生成する
-    if (layers.length === 0) {
-      layers.push({
-        guid: guid(),
-        name: "レイヤー1",
-        visible: true,
-        lock: false,
-        group: 1,
-      });
-      // 全ノートを初期レイヤーに割り当てる
-      for (const note of this.timeline.notes) {
-        note.layer = layers[0].guid;
-      }
-    }
-
     this.layers = layers.map((layer) => LayerRecord.new(layer));
 
     // ロックしていないレイヤーがあれば選択する

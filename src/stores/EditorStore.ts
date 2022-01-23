@@ -227,7 +227,7 @@ export default class Editor {
 
         if (lanePositionMap.has(key)) {
           warningMessageSet.add(
-            `ノーツが重複しています: ${note.measureIndex} - ${reducedMeasurePosition.numerator}/${reducedMeasurePosition.denominator}`
+            `ノーツが重複しています: ${note.type} - ${note.measureIndex} - ${reducedMeasurePosition.numerator}/${reducedMeasurePosition.denominator}`
           );
           continue;
         }

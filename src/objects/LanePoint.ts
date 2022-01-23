@@ -37,4 +37,12 @@ export class LanePointRecord extends Record<LanePointData>(
   private constructor(data: LanePointData) {
     super(data);
   }
+
+  public clone() {
+    return {
+      ...this,
+      horizontalPosition: Fraction.clone(this.horizontalPosition),
+      measurePosition: Fraction.clone(this.measurePosition),
+    };
+  }
 }

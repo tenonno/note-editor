@@ -62,10 +62,25 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
 
   isVisible = false;
 
-  x = 0;
-  y = 0;
-  width = 0;
-  height = 0;
+  public x = 0;
+  public y = 0;
+  public width = 0;
+
+  private _height = 0;
+  private _totalHeight = 0;
+
+  public get totalHeight() {
+    return this._totalHeight;
+  }
+
+  public get height() {
+    return this._height;
+  }
+
+  public setHeight(height: number, totalHeight: number) {
+    this._height = height;
+    this._totalHeight = totalHeight;
+  }
 
   containsPoint(point: { x: number; y: number }) {
     return (
@@ -77,7 +92,6 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
   getBounds() {
     return new PIXI.Rectangle(
       this.x + Pixi.debugGraphics!.x,
-
       this.y,
       this.width,
       this.height
@@ -106,6 +120,7 @@ interface MeasureObject {
   measureIndex: number;
   measurePosition: IFraction;
 }
+
 interface MeasureDataObject {
   measureIndex: number;
   measurePosition: IFraction;

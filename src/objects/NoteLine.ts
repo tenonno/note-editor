@@ -6,12 +6,22 @@ export type NoteLineData = {
   guid: GUID;
   head: GUID;
   tail: GUID;
+  bezier: {
+    enabled: boolean;
+    x: number;
+    y: number;
+  };
 };
 
 const defaultNoteLineData: NoteLineData = {
   guid: "GUID",
   head: "GUID",
   tail: "GUID",
+  bezier: {
+    enabled: false,
+    x: 1,
+    y: 0.5,
+  },
 };
 
 export type NoteLine = Mutable<NoteLineRecord>;
@@ -25,6 +35,19 @@ export class NoteLineRecord extends Record<NoteLineData>(defaultNoteLineData) {
     super(
       (() => {
         if (data.guid === "") data.guid = guid();
+        if (data.bezier.x === undefined) {
+          data.bezier.x = 1;
+        }
+        if (data.bezier.y === undefined) {
+          data.bezier.y = 0.5;
+        }
+        if (!data.bezier === null) {
+          data.bezier = {
+            enabled: false,
+            x: 1,
+            y: 0.5,
+          };
+        }
         return data;
       })()
     );

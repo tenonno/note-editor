@@ -231,10 +231,10 @@ export default class Pixi extends InjectedComponent {
    */
   previousTime = 0.0;
 
-  private inspectTarget: any = null;
+  private inspectTarget: any[] = [];
 
   private inspect(target: any) {
-    this.inspectTarget = target;
+    this.inspectTarget.push(target);
   }
 
   private seMap = new Map<string, Howl>();
@@ -244,7 +244,7 @@ export default class Pixi extends InjectedComponent {
    */
   private renderCanvas() {
     pool.resetAll();
-    this.inspectTarget = null;
+    this.inspectTarget = [];
 
     if (!this.app) return;
     if (!this.injected.editor.currentChart) return;
@@ -323,6 +323,7 @@ export default class Pixi extends InjectedComponent {
             measureIndex: 0,
             measurePosition: new Fraction(0, 1),
             value: 120,
+            layer: chart.layers[0].guid,
           },
           chart.musicGameSystem.otherObjectTypes
         )
@@ -523,6 +524,11 @@ export default class Pixi extends InjectedComponent {
     for (const object of chart.timeline.otherObjects) {
       const measure = chart.timeline.measures[object.measureIndex];
 
+      /*
+      const isVisible = measure.isVisible && visibleLayers.has(object.layer);
+      if (!isVisible) return;
+      */
+
       OtherObjectRenderer.render(
         chart.musicGameSystem.otherObjectTypes,
         object,
@@ -561,6 +567,7 @@ export default class Pixi extends InjectedComponent {
           ),
           guid: guid(),
           value: setting.otherValue,
+          layer: chart.currentLayer.guid,
         },
         chart.musicGameSystem.otherObjectTypes
       );
@@ -663,7 +670,19 @@ export default class Pixi extends InjectedComponent {
             chart.save();
           }
           if (setting.editMode === EditMode.Select) {
+            // 既に別のオブジェクトを選択していたら解除
+            if (this.inspectTarget.length > 0) {
+              this.inspectTarget = [];
+            }
+
             this.inspect(note);
+
+            var noteLine = chart.timeline.noteLines.find(
+              (noteLine) => noteLine.head == note.guid
+            );
+            if (noteLine) {
+              this.inspect(noteLine);
+            }
           }
         }
 
@@ -692,6 +711,11 @@ export default class Pixi extends InjectedComponent {
             guid: guid(),
             head: head.guid,
             tail: tail.guid,
+            bezier: {
+              enabled: false,
+              x: 1,
+              y: 0.5,
+            },
           });
 
           // ノートラインプレビュー
@@ -780,6 +804,16 @@ export default class Pixi extends InjectedComponent {
           NoteLineRendererResolver.resolveByNoteType(head.type).renderByNote(
             head,
             tail,
+            NoteLineRecord.new({
+              guid: guid(),
+              head: head.guid,
+              tail: tail.guid,
+              bezier: {
+                enabled: false,
+                x: 1,
+                y: 0.5,
+              },
+            }),
             this.graphics!
           );
         }
@@ -814,6 +848,11 @@ export default class Pixi extends InjectedComponent {
             guid: guid(),
             head: head.guid,
             tail: tail.guid,
+            bezier: {
+              enabled: false,
+              x: 0,
+              y: 0,
+            },
           });
 
           chart.timeline.addNoteLine(newNoteLine);
@@ -1046,8 +1085,13 @@ export default class Pixi extends InjectedComponent {
 
     if (isClick) {
       this.isRangeSelection = false;
-      if (this.inspectTarget && this.rangeSelectedObjects.length === 0) {
-        editor.addInspectorTarget(this.inspectTarget);
+      if (
+        this.inspectTarget.length > 0 &&
+        this.rangeSelectedObjects.length === 0
+      ) {
+        for (const inspectTarget of this.inspectTarget) {
+          editor.addInspectorTarget(inspectTarget);
+        }
       }
       this.rangeSelectedObjects = [];
     }

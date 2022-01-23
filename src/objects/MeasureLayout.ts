@@ -21,6 +21,7 @@ export interface IMeasureLayout {
 
 export class DefaultMeasureLayout implements IMeasureLayout {
   name = "default";
+
   layout(
     editorSetting: EditorSetting,
     renderer: PIXI.Renderer,
@@ -38,9 +39,12 @@ export class DefaultMeasureLayout implements IMeasureLayout {
     let y = renderer.height - verticalPadding;
 
     // レーンを描画
+    let totalHeight = 0;
     for (const measure of measures) {
       measure.width = laneWidth;
-      measure.height = baseHeight * Fraction.to01(measure.beat);
+      const height = baseHeight * Fraction.to01(measure.beat);
+      measure.setHeight(height, totalHeight);
+      totalHeight += height;
       y -= measure.height;
       // 収まりきらないなら次の列へ
       if (y < 0) {
@@ -65,6 +69,7 @@ export class DefaultMeasureLayout implements IMeasureLayout {
 
 export class GameMeasureLayout implements IMeasureLayout {
   name = "game";
+
   layout(
     editorSetting: EditorSetting,
     renderer: PIXI.Renderer,
@@ -77,8 +82,11 @@ export class GameMeasureLayout implements IMeasureLayout {
     const h = renderer.height;
 
     // 小節の高さを計算する
+    let totalHeight = 0;
     for (const measure of measures) {
-      measure.height = measureHeight * Fraction.to01(measure.beat);
+      const height = measureHeight * Fraction.to01(measure.beat);
+      measure.setHeight(height, totalHeight);
+      totalHeight += height;
     }
 
     let y = h;

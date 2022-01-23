@@ -19,6 +19,8 @@ export type OtherObjectData = {
    */
   measurePosition: Fraction;
 
+  layer: GUID;
+
   inspectorConfig?: InspectorConfig;
 };
 
@@ -28,6 +30,7 @@ const defaultOtherObjectData: OtherObjectData = {
   measureIndex: 0,
   measurePosition: Fraction.none,
   value: 1,
+  layer: "",
   inspectorConfig: undefined,
 };
 
@@ -40,8 +43,6 @@ export class OtherObjectRecord extends Record<OtherObjectData>(
     data: OtherObjectData,
     otherObjectTypes: OtherObjectType[]
   ): OtherObject {
-    // console.warn(data);
-
     data.inspectorConfig = {
       splitValues: [],
     };
@@ -62,25 +63,10 @@ export class OtherObjectRecord extends Record<OtherObjectData>(
 
     const otherObjectRecord = new OtherObjectRecord(data);
 
-    console.log(otherObjectRecord);
-
-    /*
-    if (data.type === 3) {
-      console.warn(otherObjectTypes[data.type]);
-    }
-    */
-
     const instance = Object.assign(
       otherObjectRecord,
       otherObjectRecord.asMutable()
     );
-
-    /*
-    (instance as any).values =
-      otherObjectTypes[data.type].valueCount > 1 ? 1 : undefined;
- */
-    console.log(instance);
-    console.log(instance.toJS());
 
     return instance as any;
   }

@@ -5,7 +5,7 @@ import Vector2 from "../math/Vector2";
 import { drawQuad } from "../utils/drawQuad";
 import { LineInfo } from "./Lane";
 import { LanePoint } from "./LanePoint";
-import { getLines } from "./LaneRenderer";
+import { getLines, getQuadraticBezierLines } from "./LaneRenderer";
 import { sortMeasure, sortMeasureData } from "./Measure";
 import { Note } from "./Note";
 import { NoteLine } from "./NoteLine";
@@ -18,7 +18,13 @@ export interface INoteLineRenderer {
     tail: Note
   ): void;
 
-  renderByNote(head: Note, tail: Note, graphics: PIXI.Graphics): void;
+  renderByNote(
+    head: Note,
+    tail: Note,
+    noteLine: NoteLine,
+    graphics: PIXI.Graphics
+  ): void;
+
   render(noteLine: NoteLine, graphics: PIXI.Graphics, notes: Note[]): void;
 }
 
@@ -32,15 +38,14 @@ class NoteLineRenderer implements INoteLineRenderer {
     for (const line of lines) {
       drawQuad(
         graphics,
-
         line.start.point,
         Vector2.add(line.start.point, new Vector2(line.start.width, 0)),
         Vector2.add(line.end.point, new Vector2(line.end.width, 0)),
         line.end.point,
-
         head.color
       );
 
+      // 左右の線
       graphics
         .lineStyle(1, head.color, 1)
         .moveTo(line.start.point.x, line.start.point.y)
@@ -52,7 +57,12 @@ class NoteLineRenderer implements INoteLineRenderer {
     }
   }
 
-  public renderByNote(head: Note, tail: Note, graphics: PIXI.Graphics) {
+  public renderByNote(
+    head: Note,
+    tail: Note,
+    noteLine: NoteLine,
+    graphics: PIXI.Graphics
+  ) {
     if (!head.isVisible && !tail.isVisible) return;
 
     const {
@@ -74,12 +84,6 @@ class NoteLineRenderer implements INoteLineRenderer {
 
     const length = tailPos - headPos;
 
-    const cloneLanePoint = (lanePoint: LanePoint) => ({
-      ...lanePoint,
-      horizontalPosition: Fraction.clone(lanePoint.horizontalPosition),
-      measurePosition: Fraction.clone(lanePoint.measurePosition),
-    });
-
     if (!head.updateBounds()) return;
     if (!tail.updateBounds()) return;
 
@@ -87,17 +91,16 @@ class NoteLineRenderer implements INoteLineRenderer {
     const tailBounds = tail.getBounds();
 
     // 先頭ノートと末尾ノートの間にあるレーン中間ポイントを取得する
+    // レーンの変形を行わない場合は使用しない
     let lps = lane.points
       .map((guid) => lanePointMap.get(guid)!)
       .filter((lp) => {
         const n = lp.measureIndex + Fraction.to01(lp.measurePosition);
-
         return n > headPos && n < tailPos;
       })
       .sort(sortMeasure)
-
       .map((lp) => {
-        lp = cloneLanePoint(lp);
+        lp = lp.clone();
 
         const pos = lp.measureIndex + Fraction.to01(lp.measurePosition);
         const s = pos - headPos;
@@ -172,7 +175,9 @@ class NoteLineRenderer implements INoteLineRenderer {
       noteToLanePoint(tail, tailBounds),
     ];
 
-    const lines = getLines(lps, measures);
+    const lines = noteLine.bezier.enabled
+      ? getQuadraticBezierLines(lps, noteLine, measures)
+      : getLines(lps, measures);
 
     this.customRender(graphics, lines, head, tail);
   }
@@ -183,7 +188,7 @@ class NoteLineRenderer implements INoteLineRenderer {
     const head = noteMap.get(noteLine.head)!;
     const tail = noteMap.get(noteLine.tail)!;
 
-    return this.renderByNote(head, tail, graphics);
+    return this.renderByNote(head, tail, noteLine, graphics);
   }
 }
 
