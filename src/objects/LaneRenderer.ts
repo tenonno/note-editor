@@ -91,6 +91,10 @@ export function getLines(points: LinePoint[], measures: Measure[]): LineInfo[] {
   return lines;
 }
 
+export type QuadraticBezierLines = {
+  lineInfos: LineInfo[];
+};
+
 export function getQuadraticBezierLines(
   points: LinePoint[],
   noteLine: NoteLine,

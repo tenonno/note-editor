@@ -35,19 +35,6 @@ export class NoteLineRecord extends Record<NoteLineData>(defaultNoteLineData) {
     super(
       (() => {
         if (data.guid === "") data.guid = guid();
-        if (data.bezier.x === undefined) {
-          data.bezier.x = 1;
-        }
-        if (data.bezier.y === undefined) {
-          data.bezier.y = 0.5;
-        }
-        if (!data.bezier === null) {
-          data.bezier = {
-            enabled: false,
-            x: 1,
-            y: 0.5,
-          };
-        }
         return data;
       })()
     );

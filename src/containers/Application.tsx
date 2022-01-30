@@ -23,6 +23,7 @@ import Inspector from "./Inspector";
 import Layer from "./Layer";
 import Player from "./Player";
 import Toolbar from "./Toolbar";
+import RightMenu from "./RightDrawer";
 
 const drawerWidth: number = config.sidebarWidth;
 const rightDrawerWidth = 200;
@@ -200,21 +201,7 @@ const Application = observer(function Application() {
         </div>
         <Player />
       </main>
-      <Drawer
-        className={classes.rightDrawer}
-        variant="permanent"
-        classes={{
-          paper: classes.rightDrawerPaper,
-        }}
-        anchor="right"
-      >
-        <div
-          style={{
-            marginTop: appBarHeight,
-          }}
-        />
-        <Layer />
-      </Drawer>
+      <RightMenu />
       <SnackbarProvider>
         <Notification />
       </SnackbarProvider>

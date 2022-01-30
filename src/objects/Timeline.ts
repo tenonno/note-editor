@@ -269,9 +269,15 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
   private chart: Chart | null = null;
 
-  public addNote(note: Note, updateNoteMap = true) {
+  public addNote(note: Note, updateNoteMap = true, checkNoteOverlap = false) {
     this.notes.push(note);
     if (updateNoteMap) this.updateNoteMap();
+
+    /*
+    if (checkNoteOverlap && this.chart?.musicGameSystem?.checkNoteOverlap) {
+      Editor.instance?.checkNoteOverlap();
+    }
+    */
   }
 
   /**

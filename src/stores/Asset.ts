@@ -9,8 +9,8 @@ import {
   CustomNoteLineRenderer,
   HowlPool,
   LaneTemplate,
-  normalizeMusicGameSystem,
   MusicGameSystemNoteType,
+  normalizeMusicGameSystem,
 } from "../stores/MusicGameSystem";
 import { guid } from "../utils/guid";
 import { replaceAsync } from "../utils/string";
@@ -27,11 +27,15 @@ function parseJSON(text: string) {
 }
 
 interface IAssetPath {
+  assetsPath: string;
   aap: string;
   mgsp: string;
 }
 
 export default class AssetStore {
+  @observable
+  public assetsPath = "";
+
   @observable
   audioAssetPath: string = "";
 
@@ -44,6 +48,8 @@ export default class AssetStore {
 
   private loadAssets = flow(function* (this: AssetStore) {
     const urlParams = yield this.getAssetPath;
+
+    this.assetsPath = urlParams.assetsPath;
 
     // 音源のパスを設定する
     this.audioAssetPath = decodeURIComponent(urlParams.aap);

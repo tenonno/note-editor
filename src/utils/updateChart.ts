@@ -17,6 +17,23 @@ function updateToV3(chart: ChartJsonData) {
       otherObject.layer = last(chart.layers)!.guid;
     }
   }
+
+  // ベジェ対応
+  for (const noteLine of chart.timeline.noteLines) {
+    if (!noteLine.bezier) {
+      noteLine.bezier = {
+        enabled: false,
+        x: 1,
+        y: 0.5,
+      };
+    }
+    if (noteLine.bezier.x === undefined) {
+      noteLine.bezier.x = 1;
+    }
+    if (noteLine.bezier.y === undefined) {
+      noteLine.bezier.y = 0.5;
+    }
+  }
 }
 
 /**

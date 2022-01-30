@@ -10,6 +10,7 @@ if (dirname.includes(".app")) {
   dirname = path.resolve(dirname, "../../");
 }
 
+const assetsPath = path.resolve(dirname, "assets");
 const audioAssetPath = path.resolve(dirname, "assets/audio");
 const musicGameSystemsPath = path.resolve(dirname, "assets/musicGameSystems");
 const keyConfigPath = path.resolve(dirname, "assets/keyconfig.json");
@@ -55,6 +56,7 @@ function createWindow() {
   // ページが読み込まれたら assets フォルダのパスを渡す
   mainWindow!.webContents.on("did-finish-load", () => {
     mainWindow!.webContents.send("assets", {
+      assetsPath,
       aap: audioAssetPath,
       mgsp: musicGameSystemsPath,
     });

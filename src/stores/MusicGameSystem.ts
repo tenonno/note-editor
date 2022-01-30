@@ -157,6 +157,7 @@ export function normalizeMusicGameSystem(
   const system: MusicGameSystem = Object.assign(
     {
       difficulties: ["unknown"],
+      checkNoteOverlap: true,
       initialLanes: [],
       laneTemplates: [],
       customNoteLineRenderers: [],

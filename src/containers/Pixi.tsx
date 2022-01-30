@@ -2,6 +2,7 @@ import * as _ from "lodash";
 import { observer } from "mobx-react";
 import * as PIXI from "pixi.js";
 import * as React from "react";
+import { CSSProperties } from "react";
 import { Fraction } from "../math";
 import Vector2 from "../math/Vector2";
 import { Lane } from "../objects/Lane";
@@ -44,6 +45,7 @@ export default class Pixi extends InjectedComponent {
       width: window.innerWidth,
       height: window.innerHeight,
       antialias: true,
+      transparent: true,
     });
 
     this.app.view.style.width = "100%";
@@ -837,7 +839,7 @@ export default class Pixi extends InjectedComponent {
           chart.timeline.removeNote(note);
         }
 
-        chart.timeline.addNote(newNote);
+        chart.timeline.addNote(newNote, true, true);
 
         // 接続
         const head = previouslyCreatedNote;
@@ -1125,6 +1127,17 @@ export default class Pixi extends InjectedComponent {
 
     this.update3D();
 
+    const style2d: CSSProperties = {
+      height: "100%",
+      overflow: "hidden",
+      backgroundColor: "black",
+      backgroundSize: "cover",
+    };
+
+    if (setting.backgroundImageUrl) {
+      style2d.backgroundImage = `url(${setting.backgroundImageUrl})`;
+    }
+
     return (
       <div
         id="3d-container"
@@ -1136,10 +1149,7 @@ export default class Pixi extends InjectedComponent {
                 height: "100%",
                 overflow: "hidden",
               }
-            : {
-                height: "100%",
-                overflow: "hidden",
-              }
+            : style2d
         }
         ref={(thisDiv) => {
           component.container = thisDiv!;
