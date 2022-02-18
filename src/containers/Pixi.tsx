@@ -12,7 +12,7 @@ import { NotePointInfo } from "../objects/LaneRenderer";
 import LaneRendererResolver from "../objects/LaneRendererResolver";
 import { Measure, sortMeasureData } from "../objects/Measure";
 import MeasureController from "../objects/MeasureController";
-import { Note, NoteRecord } from "../objects/Note";
+import { Note, NoteRecord, NoteResizeInfo } from "../objects/Note";
 import { NoteLineRecord } from "../objects/NoteLine";
 import NoteLineRendererResolver from "../objects/NoteLineRendererResolver";
 import NoteRendererResolver from "../objects/NoteRendererResolver";
@@ -76,6 +76,7 @@ export default class Pixi extends InjectedComponent {
         ) {
           return;
         }
+
         this.isRangeSelection = true;
         this.rangeSelectStartPoint = this.getMousePosition();
         this.rangeSelectEndPoint = this.getMousePosition();
@@ -88,6 +89,24 @@ export default class Pixi extends InjectedComponent {
       () => {
         if (!this.isRangeSelection) return;
         this.rangeSelectEndPoint = this.getMousePosition();
+      },
+      false
+    );
+
+    this.container!.addEventListener(
+      "mouseup",
+      () => {
+        if (
+          this.dragTargetNote ||
+          this.wResizeNoteInfo ||
+          this.eResizeNoteInfo
+        ) {
+          this.injected.editor.currentChart?.save();
+        }
+
+        this.dragTargetNote = null;
+        this.wResizeNoteInfo = null;
+        this.eResizeNoteInfo = null;
       },
       false
     );
@@ -223,10 +242,16 @@ export default class Pixi extends InjectedComponent {
     this.tempTextIndex++;
   }
 
-  prev: number = 0;
+  previousMouseButtons: number = 0;
 
   connectTargetNote: Note | null = null;
   connectTargetLanePoint: LanePoint | null = null;
+
+  private dragTargetNote: Note | null = null;
+  private dragTargetNotePressPositionDiff: Vector2 | null = null;
+
+  private wResizeNoteInfo: NoteResizeInfo | null = null;
+  private eResizeNoteInfo: NoteResizeInfo | null = null;
 
   /**
    * 前フレームの再生時間
@@ -275,8 +300,10 @@ export default class Pixi extends InjectedComponent {
 
     const buttons = this.app!.renderer.plugins.interaction.mouse.buttons;
 
-    let isClick = this.prev === 1 && buttons === 0;
-    let isRight = buttons === 2;
+    let isClick = this.previousMouseButtons === 1 && buttons === 0;
+    let isMouseRightPressed = buttons === 2;
+    let isMouseLeftPressed = buttons === 1;
+    let isMouseLeftPressing = this.previousMouseButtons === 0 && buttons === 1;
 
     const viewRect = this.app!.view.getBoundingClientRect();
 
@@ -311,7 +338,7 @@ export default class Pixi extends InjectedComponent {
     }
     mousePosition.x -= graphics.x;
 
-    this.prev = buttons;
+    this.previousMouseButtons = buttons;
 
     graphics.clear();
 
@@ -463,6 +490,43 @@ export default class Pixi extends InjectedComponent {
 
     const newNoteType =
       chart.musicGameSystem.noteTypes[setting.editNoteTypeIndex];
+
+    const getNotePointInfo = (
+      noteTypeText: string,
+      additionalPosition: Vector2
+    ): NotePointInfo | null => {
+      for (const lane of chart.timeline.lanes) {
+        const laneRenderer = LaneRendererResolver.resolve(lane);
+
+        // ノート配置モードなら選択中のレーンを計算する
+        if (!canEdit || !targetMeasure) {
+          continue;
+        }
+
+        const noteType = chart.musicGameSystem.noteTypeMap.get(noteTypeText)!;
+
+        // 配置できないレーンならやめる
+        if ((noteType.excludeLanes || []).includes(lane.templateName)) {
+          continue;
+        }
+
+        const targetNotePoint = laneRenderer.getNotePointInfoFromMousePosition(
+          lane,
+          targetMeasure!,
+          targetMeasureDivision,
+          Vector2.add(
+            new Vector2(mousePosition.x, mousePosition.y),
+            additionalPosition
+          )
+        );
+
+        if (targetNotePoint) {
+          return targetNotePoint;
+        }
+      }
+
+      return null;
+    };
 
     // レーン描画
     for (const lane of chart.timeline.lanes) {
@@ -658,13 +722,59 @@ export default class Pixi extends InjectedComponent {
       if (!bounds.contains(mousePosition.x, mousePosition.y)) continue;
       isMouseOnNote = true;
 
-      // ノート選択 or 削除
+      let canDrag = false;
+      let canWResize = false;
+      let canEResize = false;
+
+      if (canEdit && setting.editMode === EditMode.Select) {
+        canDrag = true;
+        this.app.view.style.cursor = "move";
+
+        if (Math.abs(bounds.x - mousePosition.x) < 8) {
+          canWResize = true;
+          this.app.view.style.cursor = "w-resize";
+        }
+        if (Math.abs(bounds.x + bounds.width - mousePosition.x) < 8) {
+          canEResize = true;
+          this.app.view.style.cursor = "e-resize";
+        }
+      }
+
       if (
         canEdit &&
         (setting.editMode === EditMode.Select ||
           setting.editMode === EditMode.Delete)
       ) {
+        // ノート選択 or 削除
         if (!note.isSelected) note.drawBounds(graphics, theme.hover);
+
+        // ドラッグ判定
+        if (isMouseLeftPressing && canDrag) {
+          if (canWResize) {
+            this.wResizeNoteInfo = new NoteResizeInfo(
+              note,
+              new Vector2(
+                bounds.x - mousePosition.x,
+                bounds.y - mousePosition.y
+              )
+            );
+          } else if (canEResize) {
+            this.eResizeNoteInfo = new NoteResizeInfo(
+              note,
+              new Vector2(
+                bounds.x - mousePosition.x,
+                bounds.y - mousePosition.y
+              )
+            );
+          } else {
+            this.dragTargetNote = note;
+            this.dragTargetNotePressPositionDiff = new Vector2(
+              bounds.x - mousePosition.x,
+              bounds.y - mousePosition.y
+            );
+          }
+          this.isRangeSelection = false;
+        }
 
         if (isClick) {
           if (setting.editMode === EditMode.Delete) {
@@ -679,7 +789,7 @@ export default class Pixi extends InjectedComponent {
 
             this.inspect(note);
 
-            var noteLine = chart.timeline.noteLines.find(
+            const noteLine = chart.timeline.noteLines.find(
               (noteLine) => noteLine.head == note.guid
             );
             if (noteLine) {
@@ -688,7 +798,7 @@ export default class Pixi extends InjectedComponent {
           }
         }
 
-        if (isRight) {
+        if (isMouseRightPressed) {
           this.isRangeSelection = false;
           chart.timeline.removeNote(note);
           chart.save();
@@ -754,6 +864,80 @@ export default class Pixi extends InjectedComponent {
     // 接続モードじゃないかノート外をタップしたら接続対象ノートを解除
     if (setting.editMode !== EditMode.Connect || (isClick && !isMouseOnNote)) {
       this.connectTargetNote = null;
+    }
+
+    // ノートのリサイズ
+    if (
+      this.wResizeNoteInfo &&
+      canEdit &&
+      targetMeasure &&
+      setting.editMode === EditMode.Select &&
+      setting.editObjectCategory === ObjectCategory.Note
+    ) {
+      const targetNotePoint = getNotePointInfo(
+        this.wResizeNoteInfo.targetNote.type,
+        this.wResizeNoteInfo.mousePosition
+      );
+
+      if (targetNotePoint) {
+        this.wResizeNoteInfo.targetNote.horizontalPosition = new Fraction(
+          targetNotePoint!.horizontalIndex,
+          targetNotePoint!.lane.division
+        );
+
+        this.wResizeNoteInfo.targetNote.horizontalSize =
+          this.wResizeNoteInfo.targetNoteClone.horizontalSize +
+          this.wResizeNoteInfo.targetNoteClone.horizontalPosition.numerator -
+          targetNotePoint!.horizontalIndex;
+      }
+    }
+
+    // ノートのリサイズ
+    if (
+      this.eResizeNoteInfo &&
+      canEdit &&
+      targetMeasure &&
+      setting.editMode === EditMode.Select &&
+      setting.editObjectCategory === ObjectCategory.Note
+    ) {
+      const targetNotePoint = getNotePointInfo(
+        this.eResizeNoteInfo.targetNote.type,
+        this.eResizeNoteInfo.mousePosition
+      );
+
+      if (targetNotePoint) {
+        this.eResizeNoteInfo.targetNote.horizontalSize =
+          this.eResizeNoteInfo.targetNoteClone.horizontalSize +
+          targetNotePoint!.horizontalIndex -
+          this.eResizeNoteInfo.targetNoteClone.horizontalPosition.numerator;
+      }
+    }
+
+    // ノートのドラッグ
+    if (
+      this.dragTargetNote &&
+      canEdit &&
+      targetMeasure &&
+      setting.editMode === EditMode.Select &&
+      setting.editObjectCategory === ObjectCategory.Note
+    ) {
+      const targetNotePoint = getNotePointInfo(
+        this.dragTargetNote.type,
+        this.dragTargetNotePressPositionDiff!
+      );
+
+      if (targetNotePoint) {
+        this.dragTargetNote.horizontalPosition = new Fraction(
+          targetNotePoint!.horizontalIndex,
+          targetNotePoint!.lane.division
+        );
+
+        this.dragTargetNote.measureIndex = targetMeasure.index;
+        this.dragTargetNote.measurePosition = new Fraction(
+          targetMeasureDivision - 1 - targetNotePoint!.verticalIndex!,
+          targetMeasureDivision
+        );
+      }
     }
 
     // レーン選択中ならノートを配置する

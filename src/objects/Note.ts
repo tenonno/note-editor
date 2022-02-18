@@ -10,6 +10,7 @@ import { Mutable } from "../utils/mutable";
 import { Lane, LinePointInfo } from "./Lane";
 import LaneRendererResolver from "./LaneRendererResolver";
 import { Measure } from "./Measure";
+import Vector2 from "../math/Vector2";
 
 interface INoteEditorProps {
   time: number;
@@ -86,6 +87,7 @@ export class NoteRecord extends Record<NoteData>(defaultNoteData) {
   getLane(): Lane {
     return this.chart.timeline.laneMap.get(this.lane)!;
   }
+
   getMeasure(): Measure {
     return this.chart.timeline.measures[this.measureIndex];
   }
@@ -250,10 +252,32 @@ export class NoteRecord extends Record<NoteData>(defaultNoteData) {
     }
   }
 
+  public normalize() {
+    if (this.horizontalSize < 0) {
+      const diff = this.horizontalPosition.numerator - this.horizontalSize;
+      (this as any).horizontalPosition = Fraction.withNumerator(
+        this.horizontalPosition,
+        this.horizontalPosition.numerator + this.horizontalSize
+      );
+      (this as any).horizontalSize = Math.abs(this.horizontalSize);
+    }
+  }
+
   /**
    * クローンする
    */
   public clone() {
     return NoteRecord.new(_.cloneDeep(this.toJS() as NoteData), this.chart);
+  }
+}
+
+export class NoteResizeInfo {
+  public readonly targetNoteClone: Note;
+
+  public constructor(
+    public readonly targetNote: Note,
+    public readonly mousePosition: Vector2
+  ) {
+    this.targetNoteClone = targetNote.clone();
   }
 }

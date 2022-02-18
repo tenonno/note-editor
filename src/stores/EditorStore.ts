@@ -10,6 +10,7 @@ import {
   SnackbarMessage,
   VariantType,
 } from "notistack";
+import box from "../utils/mobx-box";
 import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureRecord } from "../objects/Measure";
@@ -592,6 +593,9 @@ export default class Editor {
     this.enqueueSnackbar = enqueueSnackbar;
   }
 
+  @box
+  public openReloadDialog = false;
+
   public constructor() {
     // ファイル
     ipcRenderer.on("open", () => this.open());
@@ -700,11 +704,7 @@ export default class Editor {
     });
 
     ipcRenderer.on("reload", () => {
-      localStorage.setItem(
-        "filePaths",
-        JSON.stringify(this.charts.map((c) => c.filePath).filter((p) => p))
-      );
-      location.reload();
+      this.openReloadDialog = true;
     });
 
     ipcRenderer.on("close", () => {

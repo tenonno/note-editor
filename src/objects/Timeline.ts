@@ -180,6 +180,10 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
    * 譜面情報をセーブする
    */
   public save() {
+    for (const note of this.notes) {
+      note.normalize();
+    }
+
     // 初回
     if (this.histories.length === 0) {
       this.initialSave();
