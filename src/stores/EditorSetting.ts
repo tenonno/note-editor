@@ -7,6 +7,8 @@ import {
   IMeasureLayout,
 } from "../objects/MeasureLayout";
 import box from "../utils/mobx-box";
+import fs from "fs";
+import path from "path";
 
 /**
  * 編集モード
@@ -45,13 +47,17 @@ export interface ObjectVisibility {
 export default class EditorSetting {
   constructor() {
     this.load();
-    observe(this, () => {
-      const setting = _.clone(this);
-      // 保存してはいけないプロパティを削除する
-      // @ts-ignore
-      delete setting.measureLayouts;
-      localStorage.setItem("editorSetting", JSON.stringify(setting));
-    });
+    observe(this, () => this.save());
+  }
+
+  @action
+  private save() {
+    const setting = _.clone(this);
+
+    // 保存してはいけないプロパティを削除する
+    // @ts-ignore
+    delete setting.measureLayouts;
+    localStorage.setItem("editorSetting", JSON.stringify(setting));
   }
 
   /**
@@ -87,6 +93,28 @@ export default class EditorSetting {
   @action
   public toggleMuiTheme() {
     this.muiThemeType = this.muiThemeType === "light" ? "dark" : "light";
+  }
+
+  @observable
+  public backgroundImagePath: string | null = null;
+
+  @observable
+  public backgroundImageUrl: string | null = null;
+
+  @action
+  public setBackgroundImagePath(imagePath: string | null, assetsPath: string) {
+    this.backgroundImagePath = imagePath;
+    this.backgroundImageUrl = null;
+
+    if (imagePath === null) {
+      return;
+    }
+
+    const buffer = fs.readFileSync(path.join(assetsPath, imagePath));
+    const mime = `image/${path.extname(imagePath).substr(1)}`;
+    const encoding: BufferEncoding = "base64";
+    const data = buffer.toString(encoding);
+    this.backgroundImageUrl = "data:" + mime + ";" + encoding + "," + data;
   }
 
   @observable

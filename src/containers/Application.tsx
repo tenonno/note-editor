@@ -1,10 +1,10 @@
 import {
+  adaptV4Theme,
   AppBar,
   Divider,
   Drawer,
-  ThemeProvider,
   StyledEngineProvider,
-  adaptV4Theme,
+  ThemeProvider,
 } from "@mui/material";
 import createStyles from "@mui/styles/createStyles";
 import makeStyles from "@mui/styles/makeStyles";
@@ -20,9 +20,10 @@ import stores, { useStores } from "../stores/stores";
 import ChartEditor from "./ChartEditor";
 import ChartTab from "./ChartTab";
 import Inspector from "./Inspector";
-import Layer from "./Layer";
 import Player from "./Player";
 import Toolbar from "./Toolbar";
+import RightMenu from "./RightDrawer";
+import AlertDialog from "./AlertDialog";
 
 const drawerWidth: number = config.sidebarWidth;
 const rightDrawerWidth = 200;
@@ -200,24 +201,11 @@ const Application = observer(function Application() {
         </div>
         <Player />
       </main>
-      <Drawer
-        className={classes.rightDrawer}
-        variant="permanent"
-        classes={{
-          paper: classes.rightDrawerPaper,
-        }}
-        anchor="right"
-      >
-        <div
-          style={{
-            marginTop: appBarHeight,
-          }}
-        />
-        <Layer />
-      </Drawer>
+      <RightMenu />
       <SnackbarProvider>
         <Notification />
       </SnackbarProvider>
+      <AlertDialog />
     </div>
   );
 });

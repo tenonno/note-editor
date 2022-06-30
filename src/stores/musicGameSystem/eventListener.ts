@@ -15,4 +15,5 @@ export default interface IMusicGameSystemEventListener {
   getNoteInformation?: (
     groups: [string, Note[]][]
   ) => IMusicGameSystemEventListenerNoteInformation;
+  onMirror?: (notes: Note[]) => void;
 }

@@ -180,6 +180,10 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
    * 譜面情報をセーブする
    */
   public save() {
+    for (const note of this.notes) {
+      note.normalize();
+    }
+
     // 初回
     if (this.histories.length === 0) {
       this.initialSave();
@@ -269,9 +273,15 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
   private chart: Chart | null = null;
 
-  public addNote(note: Note, updateNoteMap = true) {
+  public addNote(note: Note, updateNoteMap = true, checkNoteOverlap = false) {
     this.notes.push(note);
     if (updateNoteMap) this.updateNoteMap();
+
+    /*
+    if (checkNoteOverlap && this.chart?.musicGameSystem?.checkNoteOverlap) {
+      Editor.instance?.checkNoteOverlap();
+    }
+    */
   }
 
   /**

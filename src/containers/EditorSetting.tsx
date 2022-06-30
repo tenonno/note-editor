@@ -12,6 +12,7 @@ import * as React from "react";
 import { ChartTabLabelType } from "../stores/EditorSetting";
 import { useStores } from "../stores/stores";
 import { useStyles } from "../styles/styles";
+import BackgroundSelect from "../components/BackgroundSelect";
 
 export default observer(function EditorSetting() {
   const classes = useStyles();
@@ -45,6 +46,10 @@ export default observer(function EditorSetting() {
 
   const { editor } = useStores();
   const { setting } = editor;
+
+  function handleAudioChange(newValue: string | null) {
+    setting.setBackgroundImagePath(newValue, editor.asset.assetsPath);
+  }
 
   return (
     <div style={{ width: "100%" }}>
@@ -135,6 +140,12 @@ export default observer(function EditorSetting() {
             ))}
           </Select>
         </FormControl>
+
+        <BackgroundSelect
+          value={setting.backgroundImagePath}
+          onChange={handleAudioChange}
+          assetsPath={editor.asset.assetsPath}
+        />
 
         <FormControlLabel
           control={

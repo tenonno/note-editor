@@ -10,6 +10,7 @@ import {
   SnackbarMessage,
   VariantType,
 } from "notistack";
+import box from "../utils/mobx-box";
 import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureRecord } from "../objects/Measure";
@@ -18,13 +19,20 @@ import { OtherObjectRecord } from "../objects/OtherObject";
 import { TimelineData } from "../objects/Timeline";
 import BMSImporter from "../plugins/BMSImporter";
 import extensionUtility from "../utils/ExtensionUtility";
-import { guid } from "../utils/guid";
+import { GUID, guid } from "../utils/guid";
 import AssetStore from "./Asset";
 import Chart from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
 
 const { dialog } = remote;
+
+export type Notification = {
+  guid: GUID;
+  text: string;
+  date: Date;
+  type: VariantType;
+};
 
 export default class Editor {
   /**
@@ -37,6 +45,9 @@ export default class Editor {
 
   copiedNotes: Note[] = [];
 
+  @observable.shallow
+  public notifications: Notification[] = [];
+
   /**
    * 通知
    * @param text 通知内容
@@ -44,6 +55,7 @@ export default class Editor {
    */
   @action
   public notify(text: string, type: VariantType = "info") {
+    this.notifications.push({ guid: guid(), text, date: new Date(), type });
     this.enqueueSnackbar?.(text, {
       variant: type,
       anchorOrigin: {
@@ -197,11 +209,29 @@ export default class Editor {
    * ノーツの重複をチェックする
    * @private
    */
-  private checkNoteOverlap() {
+  @action
+  public checkNoteOverlap() {
+    const chart = this.currentChart;
+
+    if (!chart) {
+      return;
+    }
+
+    if (chart.musicGameSystem.checkNoteOverlap) {
+      const overlapWarningMessages = this.getNoteOverlapWarningMessages();
+      chart.overlapWarningMessages = overlapWarningMessages;
+
+      if (overlapWarningMessages.length > 0) {
+        this.notify(`${overlapWarningMessages.length} 件の警告`, "warning");
+      }
+    }
+  }
+
+  private getNoteOverlapWarningMessages(): string[] {
     const warningMessageSet = new Set<string>();
 
     const chart = this.currentChart;
-    if (!chart || !chart.timeline) return;
+    if (!chart || !chart.timeline) return [];
 
     const { noteTypeMap } = chart.musicGameSystem;
 
@@ -227,7 +257,7 @@ export default class Editor {
 
         if (lanePositionMap.has(key)) {
           warningMessageSet.add(
-            `ノーツが重複しています: ${note.type} - ${note.measureIndex} - ${reducedMeasurePosition.numerator}/${reducedMeasurePosition.denominator}`
+            `ノーツが重複しています\n${note.type} - ${note.measureIndex} - ${reducedMeasurePosition.numerator}/${reducedMeasurePosition.denominator}`
           );
           continue;
         }
@@ -236,7 +266,7 @@ export default class Editor {
       }
     }
 
-    return warningMessageSet.values();
+    return [...warningMessageSet.values()];
   }
 
   /**
@@ -261,14 +291,7 @@ export default class Editor {
     // 譜面を最適化する
     chart.timeline.optimise();
 
-    if (chart.musicGameSystem.checkNoteOverlap) {
-      const overlapWarningMessages = this.checkNoteOverlap();
-      if (overlapWarningMessages) {
-        for (const warningMessage of overlapWarningMessages) {
-          this.notify(warningMessage, "warning");
-        }
-      }
-    }
+    this.checkNoteOverlap();
 
     chart.musicGameSystem.eventListeners.onSerialize?.(chart);
 
@@ -516,9 +539,9 @@ export default class Editor {
       if (mirrorType) {
         note.updateType(mirrorType);
       }
-
-      note.type;
     }
+
+    this.currentChart.musicGameSystem.eventListeners.onMirror?.(notes);
   }
 
   @action
@@ -569,6 +592,9 @@ export default class Editor {
   ) {
     this.enqueueSnackbar = enqueueSnackbar;
   }
+
+  @box
+  public openReloadDialog = false;
 
   public constructor() {
     // ファイル
@@ -678,11 +704,7 @@ export default class Editor {
     });
 
     ipcRenderer.on("reload", () => {
-      localStorage.setItem(
-        "filePaths",
-        JSON.stringify(this.charts.map((c) => c.filePath).filter((p) => p))
-      );
-      location.reload();
+      this.openReloadDialog = true;
     });
 
     ipcRenderer.on("close", () => {

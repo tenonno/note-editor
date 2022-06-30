@@ -183,6 +183,9 @@ export default class Chart {
   @observable
   canRedo = false;
 
+  @observable.ref
+  public overlapWarningMessages: string[] = [];
+
   @action
   save() {
     this.timeline.save();
