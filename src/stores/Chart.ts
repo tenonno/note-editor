@@ -20,6 +20,7 @@ import MusicGameSystem from "./MusicGameSystem";
 
 export type ChartJsonData = {
   name: string;
+  creator: string;
   version: number;
   editorVersion: number;
   difficulty: number;
@@ -338,6 +339,7 @@ export default class Chart {
     this.setName(chartData.name);
     this.setStartTime(chartData.startTime);
     this.setDifficulty(chartData.difficulty || 0);
+    this.setCreator(chartData.creator);
     this.level = chartData.level;
     this.developmentStartTime = chartData.developmentStartTime || 0;
   }
