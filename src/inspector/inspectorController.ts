@@ -5,6 +5,7 @@ export default interface InspectorController {
   setActive(value: boolean): void;
   addCustomButton(name: string, onClick: any): void;
   resetCustomButton(): void;
+  getWarnings(): string[];
 }
 
 export type InspectorConfigSplitValue = {
@@ -20,4 +21,5 @@ export type InspectorConfigSplitValue = {
 
 export type InspectorConfig = {
   splitValues: InspectorConfigSplitValue[];
+  ignoreKeys?: string[];
 };

@@ -3,6 +3,10 @@ import { lerp } from "../math";
 class Vector2 {
   constructor(public x: number, public y: number) {}
 
+  public static from({ x, y }: { x: number; y: number }) {
+    return new Vector2(x, y);
+  }
+
   length() {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }

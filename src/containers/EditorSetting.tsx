@@ -5,7 +5,6 @@ import {
   MenuItem,
   Select,
   Switch,
-  TextField,
 } from "@mui/material";
 import { observer } from "mobx-react";
 import * as React from "react";
@@ -13,37 +12,10 @@ import { ChartTabLabelType } from "../stores/EditorSetting";
 import { useStores } from "../stores/stores";
 import { useStyles } from "../styles/styles";
 import BackgroundSelect from "../components/BackgroundSelect";
+import NETextField from "../components/NETextField";
 
 export default observer(function EditorSetting() {
   const classes = useStyles();
-
-  function renderTextField(
-    label: string,
-    value: string,
-    onChange: any,
-    type = "text"
-  ) {
-    return (
-      <TextField
-        type={type}
-        variant="standard"
-        label={label}
-        fullWidth
-        style={{ margin: "6px 0" }}
-        value={value}
-        onChange={(e: any) => onChange(e.target.value)}
-        InputLabelProps={{
-          className: classes.label,
-        }}
-        InputProps={{
-          classes: {
-            input: classes.input,
-          },
-        }}
-      />
-    );
-  }
-
   const { editor } = useStores();
   const { setting } = editor;
 
@@ -54,40 +26,48 @@ export default observer(function EditorSetting() {
   return (
     <div style={{ width: "100%" }}>
       <FormControl>
-        {renderTextField(
-          "小節の幅",
-          setting.measureWidth.toString(),
-          (value: any) => setting.setMeasureWidth(value | 0),
-          "number"
-        )}
+        <div style={{ display: "flex" }}>
+          <NETextField
+            label="小節の幅"
+            value={setting.measureWidth.toString()}
+            onChange={(value: any) => setting.setMeasureWidth(value | 0)}
+            type="number"
+            fullWidth={false}
+          />
 
-        {renderTextField(
-          "小節の高さ",
-          setting.measureHeight.toString(),
-          (value: any) => setting.setMeasureHeight(value | 0),
-          "number"
-        )}
+          <NETextField
+            label={"小節の高さ"}
+            value={setting.measureHeight.toString()}
+            onChange={(value: any) => setting.setMeasureHeight(value | 0)}
+            type={"number"}
+            fullWidth={false}
+          />
+        </div>
 
-        {renderTextField(
-          "Vertical Lane Count",
-          setting.verticalLaneCount.toString(),
-          (value: any) => setting.setVerticalLaneCount(value | 0),
-          "number"
-        )}
+        <NETextField
+          label="Vertical Lane Count"
+          value={setting.verticalLaneCount.toString()}
+          onChange={(value: any) => setting.setVerticalLaneCount(value | 0)}
+          type={"number"}
+        />
 
-        {renderTextField(
-          "水平余白",
-          setting.horizontalPadding.toString(),
-          (value: any) => (setting.horizontalPadding = value | 0),
-          "number"
-        )}
+        <div style={{ display: "flex" }}>
+          <NETextField
+            label={"水平余白"}
+            value={setting.horizontalPadding.toString()}
+            onChange={(value: any) => (setting.horizontalPadding = value | 0)}
+            type={"number"}
+            fullWidth={false}
+          />
 
-        {renderTextField(
-          "垂直余白",
-          setting.verticalPadding.toString(),
-          (value: any) => (setting.verticalPadding = value | 0),
-          "number"
-        )}
+          <NETextField
+            label={"垂直余白"}
+            value={setting.verticalPadding.toString()}
+            onChange={(value: any) => (setting.verticalPadding = value | 0)}
+            type={"number"}
+            fullWidth={false}
+          />
+        </div>
 
         <FormControl
           style={{ width: "100%", margin: "6px 0" }}
@@ -161,6 +141,21 @@ export default observer(function EditorSetting() {
         <FormControlLabel
           control={
             <Switch
+              checked={setting.tabLabelType == ChartTabLabelType.FilePath}
+              onChange={(_, value) =>
+                (setting.tabLabelType = value
+                  ? ChartTabLabelType.FilePath
+                  : ChartTabLabelType.Name)
+              }
+              color="primary"
+            />
+          }
+          label="タブにファイル名を表示"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
               checked={setting.preserve3D}
               onChange={(_, value) =>
                 setting.set3D(
@@ -176,58 +171,50 @@ export default observer(function EditorSetting() {
           label="3D モード"
         />
 
-        <FormControlLabel
-          control={
-            <Switch
-              checked={setting.tabLabelType == ChartTabLabelType.FilePath}
-              onChange={(_, value) =>
-                (setting.tabLabelType = value
-                  ? ChartTabLabelType.FilePath
-                  : ChartTabLabelType.Name)
+        {setting.preserve3D && (
+          <>
+            <NETextField
+              label="3D 回転"
+              value={setting.rotateX.toString()}
+              onChange={(value: any) =>
+                setting.set3D(
+                  setting.preserve3D,
+                  parseFloat(value),
+                  setting.scale3D,
+                  setting.perspective
+                )
               }
-              color="primary"
+              type="number"
             />
-          }
-          label="タブにファイル名を表示"
-        />
 
-        {renderTextField(
-          "3D 回転",
-          setting.rotateX.toString(),
-          (value: any) =>
-            setting.set3D(
-              setting.preserve3D,
-              parseFloat(value),
-              setting.scale3D,
-              setting.perspective
-            ),
-          "number"
-        )}
+            <NETextField
+              label="3D 拡大率"
+              value={setting.scale3D.toString()}
+              onChange={(value: any) =>
+                setting.set3D(
+                  setting.preserve3D,
+                  setting.rotateX,
+                  parseFloat(value),
+                  setting.perspective
+                )
+              }
+              type="number"
+            />
 
-        {renderTextField(
-          "3D 拡大率",
-          setting.scale3D.toString(),
-          (value: any) =>
-            setting.set3D(
-              setting.preserve3D,
-              setting.rotateX,
-              parseFloat(value),
-              setting.perspective
-            ),
-          "number"
-        )}
-
-        {renderTextField(
-          "3D 遠近",
-          setting.perspective.toString(),
-          (value: any) =>
-            setting.set3D(
-              setting.preserve3D,
-              setting.rotateX,
-              setting.scale3D,
-              parseFloat(value)
-            ),
-          "number"
+            <NETextField
+              label="3D 遠近"
+              value={setting.perspective.toString()}
+              onChange={(value: any) =>
+                setting.set3D(
+                  setting.preserve3D,
+                  setting.rotateX,
+                  setting.scale3D,
+                  parseFloat(value)
+                )
+              }
+              type="number"
+            />
+          </>
         )}
       </FormControl>
     </div>

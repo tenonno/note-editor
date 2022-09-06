@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -99,6 +99,41 @@ app.on("activate", () => {
 });
 
 function initWindowMenu() {
+  ipcMain.on("showNoteLineContextMenu", (event, bezierEnabled) => {
+    const template: Electron.MenuItemConstructorOptions[] = [
+      {
+        label: "bezier",
+        submenu: [
+          {
+            label: "enabled",
+            type: "checkbox",
+            checked: bezierEnabled,
+            click() {
+              mainWindow!.webContents.send("setBezier", true);
+            },
+          },
+          {
+            label: "disabled",
+            type: "checkbox",
+            checked: !bezierEnabled,
+            click() {
+              mainWindow!.webContents.send("setBezier", false);
+            },
+          },
+        ],
+      },
+      { type: "separator" },
+      {
+        label: "delete",
+        click() {
+          mainWindow!.webContents.send("deleteNoteLine");
+        },
+      },
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    menu.popup();
+  });
+
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: "ファイル",

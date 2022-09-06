@@ -1,8 +1,8 @@
 import { Badge, FormGroup, IconButton, Menu, MenuItem } from "@mui/material";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import { Theme } from '@mui/material/styles';
+import { Theme } from "@mui/material/styles";
 import Switch from "@mui/material/Switch";
 import {
   Menu as MenuIcon,
@@ -115,14 +115,16 @@ export default observer(function Toolbar() {
       <IconButton
         disabled={!chart.canUndo}
         onClick={() => chart!.timeline.undo()}
-        size="large">
+        size="large"
+      >
         <ArrowBackIcon />
       </IconButton>
       {/* Redo */}
       <IconButton
         disabled={!chart.canRedo}
         onClick={() => chart!.timeline.redo()}
-        size="large">
+        size="large"
+      >
         <ArrowForwardIcon />
       </IconButton>
 
@@ -150,7 +152,8 @@ export default observer(function Toolbar() {
           onClick={(e) =>
             setState({ ...state, objectSizeAnchorEl: e.currentTarget })
           }
-          size="large">
+          size="large"
+        >
           <MenuIcon />
         </IconButton>
       </Badge>
@@ -213,8 +216,14 @@ export default observer(function Toolbar() {
         editNoteTypeIndex={setting.editNoteTypeIndex}
         editLaneTypeIndex={setting.editLaneTypeIndex}
         editOtherTypeIndex={setting.editOtherTypeIndex}
-        otherValue={setting.otherValue}
-        onOtherValueChange={(otherValue) => (setting.otherValue = otherValue)}
+        otherValues={setting.otherValues}
+        onOtherValueChange={(otherValue) =>
+          setting.otherValues.set(
+            chart.musicGameSystem.otherObjectTypes[setting.editOtherTypeIndex]
+              .name,
+            otherValue
+          )
+        }
         onNote={(noteAnchorEl) => setState({ ...state, noteAnchorEl })}
         onLane={(laneAnchorEl) => setState({ ...state, laneAnchorEl })}
         onOther={(otherAnchorEl) => setState({ ...state, otherAnchorEl })}
@@ -303,7 +312,8 @@ export default observer(function Toolbar() {
         onClick={(event) => {
           setState({ ...state, displaySettingAnchorEl: event.currentTarget });
         }}
-        size="large">
+        size="large"
+      >
         <VisibilityIcon />
       </IconButton>
       <Menu

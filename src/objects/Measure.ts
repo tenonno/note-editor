@@ -69,6 +69,9 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
   private _height = 0;
   private _totalHeight = 0;
 
+  /**
+   * 全ての小節を一直線に並べた場合の高さ
+   */
   public get totalHeight() {
     return this._totalHeight;
   }

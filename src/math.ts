@@ -86,3 +86,7 @@ export const inverseLerp = (from: number, to: number, value: number) =>
 export function verifyNumber(value: number, min = -Infinity, max = Infinity) {
   return _.clamp(Number.isFinite(value) ? value : 0, min, max);
 }
+
+export function approximately(v1: number, v2: number, epsilon = 0.001) {
+  return Math.abs(v1 - v2) < epsilon;
+}

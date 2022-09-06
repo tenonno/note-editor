@@ -4,8 +4,67 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import * as React from "react";
 import { ObjectCategory } from "../stores/EditorSetting";
-import MusicGameSystem from "../stores/MusicGameSystem";
+import MusicGameSystem, { OtherObjectType } from "../stores/MusicGameSystem";
 import useStyles from "../styles/ToolBar";
+
+function OtherObjectToggleButton({
+  otherObjectType,
+  values,
+  disabled,
+  valueChange,
+  onOther,
+}: {
+  otherObjectType: OtherObjectType;
+  values: Map<string, string | number>;
+  disabled: boolean;
+  valueChange: (value: number | string) => void;
+  onOther: (el: Element) => void;
+}) {
+  if (disabled) {
+    return null;
+  }
+
+  if (!values.has(otherObjectType.name)) {
+    values.set(otherObjectType.name, otherObjectType.defaultValue ?? "");
+  }
+
+  const value = values.get(otherObjectType.name);
+
+  return (
+    <>
+      <span>
+        {otherObjectType.name}
+        {otherObjectType.valueType === "none" ? null : (
+          <TextField
+            required
+            variant="standard"
+            defaultValue={value}
+            margin="none"
+            type={otherObjectType.valueType}
+            InputProps={{
+              inputProps: {
+                style: {
+                  width: "4rem",
+                  marginRight: "-.8rem",
+                  textAlign: "center",
+                  marginTop: "-.25rem",
+                },
+              },
+            }}
+            style={{ height: 24 }}
+            onChange={({ target: { value } }) => {
+              if (otherObjectType.valueType === "number") {
+                valueChange(Number(value));
+              }
+              valueChange(value);
+            }}
+          />
+        )}
+      </span>
+      <ArrowDropDownIcon onClick={(e) => onOther(e.currentTarget)} />
+    </>
+  );
+}
 
 export default function EditTargetSelect({
   value,
@@ -14,7 +73,7 @@ export default function EditTargetSelect({
   editNoteTypeIndex,
   editLaneTypeIndex,
   editOtherTypeIndex,
-  otherValue,
+  otherValues,
   onOtherValueChange,
   onNote,
   onLane,
@@ -26,7 +85,7 @@ export default function EditTargetSelect({
   editNoteTypeIndex: number;
   editLaneTypeIndex: number;
   editOtherTypeIndex: number;
-  otherValue: number | string;
+  otherValues: Map<string, number | string>;
   onOtherValueChange: (value: number | string) => void;
   onNote: (el: Element) => void;
   onLane: (el: Element) => void;
@@ -74,38 +133,13 @@ export default function EditTargetSelect({
           value={ObjectCategory.Other}
           disabled={otherDisabled}
         >
-          {otherDisabled ? null : (
-            <span>
-              {otherObjectType.name}
-              {otherObjectType.valueType === "none" ? null : (
-                <TextField
-                  required
-                  variant="standard"
-                  defaultValue={otherValue}
-                  margin="none"
-                  type={otherObjectType.valueType}
-                  InputProps={{
-                    inputProps: {
-                      style: {
-                        width: "4rem",
-                        marginRight: "-.8rem",
-                        textAlign: "center",
-                        marginTop: "-.25rem",
-                      },
-                    },
-                  }}
-                  style={{ height: 24 }}
-                  onChange={({ target: { value } }) => {
-                    if (otherObjectType.valueType === "number") {
-                      onOtherValueChange(Number(value));
-                    }
-                    onOtherValueChange(value);
-                  }}
-                />
-              )}
-            </span>
-          )}
-          <ArrowDropDownIcon onClick={(e) => onOther(e.currentTarget)} />
+          <OtherObjectToggleButton
+            otherObjectType={otherObjectType}
+            values={otherValues}
+            disabled={otherDisabled}
+            valueChange={onOtherValueChange}
+            onOther={onOther}
+          />
         </ToggleButton>
       </ToggleButtonGroup>
     </div>

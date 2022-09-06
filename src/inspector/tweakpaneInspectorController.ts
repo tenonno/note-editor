@@ -5,6 +5,7 @@ import { FolderApi } from "tweakpane/dist/types/api/folder";
 import Editor from "../stores/EditorStore";
 import InspectorController from "./inspectorController";
 import { TweakpaneSplitValueController } from "./tweakpaneSplitValueController";
+import { InspectorPointValue } from "../objects/OtherObject";
 
 export default class TweakpaneInspectorController
   implements InspectorController {
@@ -15,6 +16,10 @@ export default class TweakpaneInspectorController
 
   public constructor(private editor: Editor) {}
 
+  public getWarnings(): string[] {
+    return [];
+  }
+
   public mount(element: HTMLElement): void {
     this.pane = new Tweakpane({
       container: element,
@@ -23,18 +28,53 @@ export default class TweakpaneInspectorController
   }
 
   public bind(targets: any) {
+    const isPoint = (object: any) => {
+      const keys = Object.keys(object);
+      return keys.includes("x") && keys.includes("y");
+    };
+
     // プロパティを追加する
-    const add = (gui: Tweakpane | FolderApi, obj: any, parent: any) => {
-      if (obj.toJS) {
-        obj = obj.toJS();
-      }
+    const add = (gui: Tweakpane | FolderApi, _obj: any, parent: any) => {
+      const obj = _obj.toJS ? _obj.toJS() : _obj;
 
       const config = obj.inspectorConfig || {};
+      const ignoreKeys = config.ignoreKeys || [];
+
+      if (_obj.inspectorTargetKeys) {
+        for (const key of _obj.inspectorTargetKeys) {
+          obj[key] = _obj[key];
+        }
+      }
+
+      /*
+      config["guid"] = Object.assign(config["guid"], {
+        disabled: true,
+      });
+      */
 
       const splitValueController = new TweakpaneSplitValueController(config);
 
       for (const key of Object.keys(obj)) {
         if (key === "inspectorConfig") continue;
+        if (ignoreKeys.includes(key)) continue;
+
+        if (obj[key] instanceof InspectorPointValue) {
+          const point = obj[key] as InspectorPointValue;
+
+          console.log(obj[key]);
+          const newController = gui.addInput(
+            {
+              value: { x: point.x, y: point.y },
+            },
+            "value",
+            { ...config[key], ...point.option }
+          );
+          newController.on("change", ({ x, y }) => {
+            point.set(x, y);
+          });
+          this.components.push(newController);
+          continue;
+        }
 
         // オブジェクトなら再帰
         if (obj[key] instanceof Object) {

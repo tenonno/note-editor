@@ -57,10 +57,18 @@ export interface MusicGameSystemNoteType {
   };
 }
 
+export type OtherObjectPointOption = {
+  x: { min: number; max: number };
+  y: { min: number; max: number };
+};
+
 export interface OtherObjectType {
   name: string;
   color: string;
-  valueType: "number" | "text" | "none";
+  valueType: "number" | "text" | "point" | "splitText" | "none";
+  defaultValue?: number | string;
+
+  pointOption?: OtherObjectPointOption;
 
   /**
    * value を , 区切りで分割する場合のラベル
@@ -93,14 +101,16 @@ export type MusicGameSystemMeasure = {
 export class HowlPool {
   index = 0;
   howls?: Howl[];
+
   constructor(factory: any, count: number) {
     this.howls = Array(count);
     (async () => {
-      for (var i = 0; i < count; i++) {
+      for (let i = 0; i < count; i++) {
         this.howls![i] = (await factory()) as Howl;
       }
     })();
   }
+
   next() {
     return this.howls![this.index++ % this.howls!.length];
   }
@@ -147,6 +157,7 @@ export default interface MusicGameSystem {
   eventListener: string | string[] | null;
   eventListeners: IMusicGameSystemEventListener;
 }
+
 /**
  * 音ゲーシステムを正規化して不正な値を修正する
  * @param musicGameSystem システム

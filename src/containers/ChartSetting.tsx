@@ -4,7 +4,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  TextField,
 } from "@mui/material";
 import { observer } from "mobx-react";
 import * as React from "react";
@@ -12,6 +11,7 @@ import AudioSelect from "../components/AudioSelect";
 import MusicGameSystemSelect from "../components/MusicGameSystemSelect";
 import { useStores } from "../stores/stores";
 import { useStyles } from "../styles/styles";
+import NETextField from "../components/NETextField";
 
 /**
  * 譜面設定コンポーネント
@@ -35,34 +35,6 @@ export default observer(function ChartSetting() {
     console.log("handleMusicGameSystemsChange", newValue);
   }
 
-  function renderTextField(
-    label: string,
-    value: string,
-    onChange: any,
-    type = "text"
-  ) {
-    return (
-      <TextField
-        type={type}
-        variant="standard"
-        label={label}
-        fullWidth
-        style={{ margin: "6px 0" }}
-        value={value}
-        onChange={(e: any) => onChange(e.target.value)}
-        InputLabelProps={{
-          shrink: true,
-          className: classes.label,
-        }}
-        InputProps={{
-          classes: {
-            input: classes.input,
-          },
-        }}
-      />
-    );
-  }
-
   const chart = editor.currentChart;
 
   // 譜面が存在しない
@@ -70,52 +42,73 @@ export default observer(function ChartSetting() {
 
   return (
     <div style={{ width: "100%" }}>
-      {renderTextField("タイトル", chart.name, (value: any) =>
-        chart.setName(value)
-      )}
+      <NETextField
+        label="タイトル"
+        value={chart.name}
+        onChange={(value: any) => chart.setName(value)}
+        type={"text"}
+      />
       <AudioSelect
         value={chart.audioSource || ""}
         onChange={handleAudioChange}
         audioAssetPath={editor.asset.audioAssetPath}
       />
-      {renderTextField("制作者", chart.creator, (value: any) =>
-        chart?.setCreator(value)
-      )}
-      {renderTextField(
-        "開始時間",
-        chart.startTime.toString(),
-        (value: any) => chart.setStartTime(parseFloat(value)),
-        "number"
-      )}
-      <FormControl
-        style={{ width: "100%", margin: "6px 0" }}
-        variant="standard"
-      >
-        <InputLabel htmlFor="difficulty" className={classes.label}>
-          難易度
-        </InputLabel>
-        <Select
-          value={chart.difficulty}
-          onChange={({ target: { value } }) => {
-            chart.setDifficulty(parseInt(value as string));
-          }}
-          inputProps={{
-            className: classes.input,
-            id: "difficulty",
-          }}
+      <NETextField
+        label="制作者"
+        value={chart.creator}
+        onChange={(value: any) => chart?.setCreator(value)}
+      />
+      <div style={{ display: "flex" }}>
+        <NETextField
+          label="開始時間"
+          value={chart.startTime.toString()}
+          onChange={(value: any) => chart.setStartTime(parseFloat(value))}
+          type="number"
+        ></NETextField>
+
+        <NETextField
+          label="開発用開始時間"
+          value={chart.developmentStartTime.toString()}
+          onChange={(value: any) =>
+            (chart.developmentStartTime = parseFloat(value))
+          }
+          type="number"
+        />
+      </div>
+
+      <div style={{ display: "flex" }}>
+        <FormControl
+          style={{ width: "100%", margin: "6px 0" }}
+          variant="standard"
         >
-          {chart.musicGameSystem.difficulties.map((difficulty, index) => (
-            <MenuItem value={index} key={difficulty}>
-              {difficulty}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      {renderTextField(
-        "レベル",
-        chart.level,
-        (value: string) => (chart.level = value)
-      )}
+          <InputLabel htmlFor="difficulty" className={classes.label}>
+            難易度
+          </InputLabel>
+          <Select
+            value={chart.difficulty}
+            onChange={({ target: { value } }) => {
+              chart.setDifficulty(parseInt(value as string));
+            }}
+            inputProps={{
+              className: classes.input,
+              id: "difficulty",
+            }}
+          >
+            {chart.musicGameSystem.difficulties.map((difficulty, index) => (
+              <MenuItem value={index} key={difficulty}>
+                {difficulty}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <NETextField
+          label="レベル"
+          value={chart.level}
+          onChange={(value: string) => (chart.level = value)}
+        ></NETextField>
+      </div>
+
       <MusicGameSystemSelect
         value={editor.asset.musicGameSystems.findIndex(
           (path) => path === chart.musicGameSystem
@@ -130,12 +123,6 @@ export default observer(function ChartSetting() {
           background: "#eee",
         }}
       />
-      {renderTextField(
-        "開発用開始時間",
-        chart.developmentStartTime.toString(),
-        (value: any) => (chart.developmentStartTime = parseFloat(value)),
-        "number"
-      )}
       <Button
         variant="outlined"
         onClick={() => editor.setInspectorTarget(chart.customProps)}

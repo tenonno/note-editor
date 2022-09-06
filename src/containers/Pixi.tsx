@@ -1,47 +1,57 @@
-import * as _ from "lodash";
 import { observer } from "mobx-react";
-import * as PIXI from "pixi.js";
+import { Application, Graphics, Rectangle, Text } from "pixi.js";
 import * as React from "react";
 import { CSSProperties } from "react";
-import { Fraction } from "../math";
 import Vector2 from "../math/Vector2";
-import { Lane } from "../objects/Lane";
-import { LanePoint } from "../objects/LanePoint";
 import LanePointRenderer from "../objects/LanePointRenderer";
-import { NotePointInfo } from "../objects/LaneRenderer";
-import LaneRendererResolver from "../objects/LaneRendererResolver";
-import { Measure, sortMeasureData } from "../objects/Measure";
 import MeasureController from "../objects/MeasureController";
-import { Note, NoteRecord, NoteResizeInfo } from "../objects/Note";
-import { NoteLineRecord } from "../objects/NoteLine";
-import NoteLineRendererResolver from "../objects/NoteLineRendererResolver";
-import NoteRendererResolver from "../objects/NoteRendererResolver";
-import { OtherObject, OtherObjectRecord } from "../objects/OtherObject";
-import { EditMode, ObjectCategory } from "../stores/EditorSetting";
+import { EditMode } from "../stores/EditorSetting";
 import { inject, InjectedComponent } from "../stores/inject";
 import CustomRendererUtility from "../utils/CustomRendererUtility";
-import { guid } from "../utils/guid";
 import * as pool from "../utils/pool";
-import { OtherObjectRenderer } from "../objects/OtherObjectRenderer";
 import { Howl } from "howler";
+import NoteController from "../objects/NoteController";
+import OtherObjectController from "../objects/OtherObjectController";
+import LaneController from "../objects/LaneController";
+import Chart from "../stores/Chart";
+import { IRangeSelectableTimelineObject } from "../objects/TimelineObject";
+import PixiTextPool from "../utils/pixiTextPool";
+import NoteLineController from "../objects/NoteLineController";
+import MouseInfo from "../utils/mouseInfo";
 
 @inject
 @observer
 export default class Pixi extends InjectedComponent {
-  private app?: PIXI.Application;
+  private app?: Application;
   private container?: HTMLDivElement;
-  private graphics?: PIXI.Graphics;
+  private graphics?: Graphics;
   private currentFrame = 0;
 
+  private needRangeSelection = false;
   private isRangeSelection = false;
-  private rangeSelectStartPoint: PIXI.Point | null = null;
-  private rangeSelectEndPoint: PIXI.Point | null = null;
-  private rangeSelectedObjects: any[] = [];
+  private rangeSelectStartPoint: Vector2 | null = null;
+  private rangeSelectEndPoint: Vector2 | null = null;
+  private rangeSelectedObjects: IRangeSelectableTimelineObject[] = [];
 
-  private selectOtherObjectOrderIndex = 0;
+  static debugGraphics?: Graphics;
+
+  static instance?: Pixi;
+
+  private noteController: NoteController | null = null;
+  private noteLineController: NoteLineController | null = null;
+  private otherObjectController: OtherObjectController | null = null;
+  private laneController: LaneController | null = null;
+  private measureController: MeasureController | null = null;
+
+  /**
+   * 前フレームの再生時間
+   */
+  previousTime = 0.0;
+
+  private seMap = new Map<string, Howl>();
 
   public componentDidMount() {
-    this.app = new PIXI.Application({
+    this.app = new Application({
       width: window.innerWidth,
       height: window.innerHeight,
       antialias: true,
@@ -65,9 +75,9 @@ export default class Pixi extends InjectedComponent {
 
     this.container!.addEventListener(
       "mousedown",
-      () => {
-        if (!this.injected.editor.setting.isPressingModKey) {
-          this.injected.editor.clearInspectorTarget();
+      (e) => {
+        if (e.buttons !== 1) {
+          return;
         }
 
         if (
@@ -77,7 +87,7 @@ export default class Pixi extends InjectedComponent {
           return;
         }
 
-        this.isRangeSelection = true;
+        this.needRangeSelection = true;
         this.rangeSelectStartPoint = this.getMousePosition();
         this.rangeSelectEndPoint = this.getMousePosition();
       },
@@ -87,33 +97,52 @@ export default class Pixi extends InjectedComponent {
     this.container!.addEventListener(
       "mousemove",
       () => {
-        if (!this.isRangeSelection) return;
-        this.rangeSelectEndPoint = this.getMousePosition();
-      },
-      false
-    );
-
-    this.container!.addEventListener(
-      "mouseup",
-      () => {
-        if (
-          this.dragTargetNote ||
-          this.wResizeNoteInfo ||
-          this.eResizeNoteInfo
-        ) {
-          this.injected.editor.currentChart?.save();
+        if (this.isRangeSelection || this.needRangeSelection) {
+          this.rangeSelectEndPoint = this.getMousePosition();
         }
 
-        this.dragTargetNote = null;
-        this.wResizeNoteInfo = null;
-        this.eResizeNoteInfo = null;
+        // 範囲選択開始判定
+        if (
+          this.needRangeSelection &&
+          !this.isRangeSelection &&
+          this.rangeSelectStartPoint!.distanceTo(this.rangeSelectEndPoint!) >
+            4.0
+        ) {
+          this.isRangeSelection = true;
+          if (!this.injected.editor.setting.isPressingModKey) {
+            this.injected.editor.clearInspectorTarget();
+          }
+        }
       },
       false
     );
 
     const app = this.app;
 
-    const graphics = (this.graphics = new PIXI.Graphics());
+    const graphics = (this.graphics = new Graphics());
+
+    this.noteController = new NoteController(
+      graphics,
+      this.injected.editor,
+      this.container!
+    );
+
+    this.noteLineController = new NoteLineController(
+      graphics,
+      this.injected.editor
+    );
+
+    this.otherObjectController = new OtherObjectController(
+      graphics,
+      this.injected.editor,
+      this.container!
+    );
+
+    this.laneController = new LaneController(graphics, this.injected.editor);
+    this.measureController = new MeasureController(
+      graphics,
+      this.injected.editor
+    );
 
     app.stage.addChild(graphics);
 
@@ -146,23 +175,13 @@ export default class Pixi extends InjectedComponent {
     this.app!.stop();
   }
 
-  private temporaryTexts: PIXI.Text[] = [];
-
-  static debugGraphics?: PIXI.Graphics;
-
-  static instance?: Pixi;
-
-  private tempTextIndex = 0;
-
   /**
    * マウスの座標を取得する
    */
   private getMousePosition() {
-    const mousePosition = _.clone(
-      this.app!.renderer.plugins.interaction.mouse.global
-    );
-    mousePosition.x -= this.graphics!.x;
-    return mousePosition;
+    let { x, y } = this.app!.renderer.plugins.interaction.mouse.global;
+    x -= this.graphics!.x;
+    return new Vector2(x, y);
   }
 
   getRenderAreaSize() {
@@ -173,13 +192,15 @@ export default class Pixi extends InjectedComponent {
    * 描画範囲を取得する
    */
   getRenderArea() {
-    return new PIXI.Rectangle(
+    return new Rectangle(
       -this.graphics!.x,
       0,
       this.app!.renderer.width,
       this.app!.renderer.height
     );
   }
+
+  private readonly textPool = new PixiTextPool();
 
   public drawText(
     text: string,
@@ -188,90 +209,31 @@ export default class Pixi extends InjectedComponent {
     option?: any,
     maxWidth?: number,
     offset = [0.5, 0.5]
-  ) {
-    if (this.tempTextIndex >= this.temporaryTexts.length) {
-      const t = new PIXI.Text("");
-      this.graphics!.addChild(t);
-      this.temporaryTexts.push(t);
-    }
-
-    const t: PIXI.Text & {
-      // 前フレームのスタイル
-      previousStyleOptions?: any;
-      previousMaxWidth?: number;
-    } = this.temporaryTexts[this.tempTextIndex];
-
-    t.anchor.set(offset[0], offset[1]);
-
-    // .text か .style に値を代入すると再描画処理が入るので
-    // 前フレームと比較して更新を最小限にする
-    if (
-      t.text !== text ||
-      !_.isEqual(t.previousStyleOptions, option) ||
-      t.previousMaxWidth !== maxWidth
-    ) {
-      t.text = text;
-      t.style = Object.assign(
-        {
-          fontFamily: "'Noto Sans JP', sans-serif",
-          align: "center",
-          fontSize: 20,
-          fill: 0xffffff,
-          dropShadow: true,
-          dropShadowBlur: 8,
-          dropShadowColor: "#000000",
-          dropShadowDistance: 0,
-        },
-        option
-      ) as PIXI.TextStyle;
-
-      // 拡大率をリセットして文字の横幅を算出する
-      t.scale.x = 1;
-      if (maxWidth !== undefined) {
-        t.scale.x = Math.min(1, maxWidth / t.width);
-      }
-
-      t.previousStyleOptions = option;
-      t.previousMaxWidth = maxWidth;
-    }
-    t.x = x;
-    t.y = y;
-
-    t.visible = true;
-
-    this.tempTextIndex++;
+  ): Text {
+    return this.textPool.drawText(
+      this.graphics!,
+      text,
+      x,
+      y,
+      option,
+      maxWidth,
+      offset
+    );
   }
 
-  previousMouseButtons: number = 0;
-
-  connectTargetNote: Note | null = null;
-  connectTargetLanePoint: LanePoint | null = null;
-
-  private dragTargetNote: Note | null = null;
-  private dragTargetNotePressPositionDiff: Vector2 | null = null;
-
-  private wResizeNoteInfo: NoteResizeInfo | null = null;
-  private eResizeNoteInfo: NoteResizeInfo | null = null;
-
-  /**
-   * 前フレームの再生時間
-   */
-  previousTime = 0.0;
-
-  private inspectTarget: any[] = [];
-
-  private inspect(target: any) {
-    this.inspectTarget.push(target);
+  private cancelRangeSelection() {
+    this.isRangeSelection = false;
+    this.needRangeSelection = false;
+    this.rangeSelectedObjects = [];
   }
 
-  private seMap = new Map<string, Howl>();
+  private readonly mouseInfo = new MouseInfo();
 
   /**
    * canvas を再描画する
    */
   private renderCanvas() {
     pool.resetAll();
-    this.inspectTarget = [];
 
     if (!this.app) return;
     if (!this.injected.editor.currentChart) return;
@@ -282,117 +244,32 @@ export default class Pixi extends InjectedComponent {
     const graphics = this.graphics!;
     Pixi.debugGraphics = graphics;
 
-    // 一時テキストを削除
-    for (const temp of this.temporaryTexts) temp.visible = false;
-    this.tempTextIndex = 0;
+    this.textPool.update();
 
     const { editor } = this.injected;
     const { setting } = editor;
     const { theme, horizontalPadding, measureWidth } = setting;
 
     const chart = editor.currentChart!;
-    const musicGameSystem = chart.musicGameSystem;
-
-    const timeCalculator = chart.timeline.timeCalculator;
 
     const w = this.app!.renderer.width;
     const h = this.app!.renderer.height;
-
-    const buttons = this.app!.renderer.plugins.interaction.mouse.buttons;
-
-    let isClick = this.previousMouseButtons === 1 && buttons === 0;
-    let isMouseRightPressed = buttons === 2;
-    let isMouseLeftPressed = buttons === 1;
-    let isMouseLeftPressing = this.previousMouseButtons === 0 && buttons === 1;
-
-    const viewRect = this.app!.view.getBoundingClientRect();
 
     const isLock = chart.currentLayer.lock;
     const canEdit = !isLock;
 
     this.app.view.style.cursor = isLock ? "not-allowed" : "default";
 
-    const canConnect = (head: Note, tail: Note) => {
-      const { allowRightAngle } = musicGameSystem.noteTypeMap.get(tail.type)!;
-      return (
-        // 接続可能なノートタイプなら
-        musicGameSystem.noteTypeMap
-          .get(head.type)!
-          .connectableTypes.includes(tail.type) &&
-        // 直角配置チェック
-        (allowRightAngle || !tail.isSameMeasurePosition(head))
-      );
-    };
-
-    // 編集画面外ならクリックしていないことにする
-    const mousePosition = _.clone(
-      this.app!.renderer.plugins.interaction.mouse.global
-    );
-    if (
-      !new PIXI.Rectangle(0, 0, viewRect.width, viewRect.height).contains(
-        mousePosition.x,
-        mousePosition.y
-      )
-    ) {
-      isClick = false;
-    }
-    mousePosition.x -= graphics.x;
-
-    this.previousMouseButtons = buttons;
+    this.mouseInfo.update(this.app!, this.graphics!);
+    const { mouseInfo } = this;
+    const { isClick } = mouseInfo;
 
     graphics.clear();
-
-    // BPM が 1 つも存在しなかったら仮 BPM を先頭に配置する
-    if (!chart.timeline.otherObjects.some((object) => object.isBPM())) {
-      chart.timeline.addOtherObject(
-        OtherObjectRecord.createInstance(
-          {
-            type: 0,
-            guid: guid(),
-            measureIndex: 0,
-            measurePosition: new Fraction(0, 1),
-            value: 120,
-            layer: chart.layers[0].guid,
-          },
-          chart.musicGameSystem.otherObjectTypes
-        )
-      );
-      chart.save();
-    }
 
     chart.updateTime();
     const currentTime = chart.time - chart.startTime;
 
-    const measureTimes = Array.from(
-      { length: chart.timeline.measures.length + 1 },
-      (_, i) => timeCalculator.getTime(i)
-    );
-
-    for (const measure of chart.timeline.measures) {
-      // 小節の開始時刻、終了時刻
-      measure.beginTime = measureTimes[measure.index];
-      measure.endTime = measureTimes[measure.index + 1];
-      measure.containsCurrentTime = false;
-
-      // 小節の中に現在時刻があるなら
-      if (measure.beginTime <= currentTime && currentTime < measure.endTime) {
-        // 位置を二分探索
-        let min = 0,
-          max = 1,
-          pos = 0.5;
-        while ((max - min) * measure.height > 1) {
-          if (currentTime < timeCalculator.getTime(measure.index + pos)) {
-            max = pos;
-          } else {
-            min = pos;
-          }
-          pos = (min + max) / 2;
-        }
-
-        measure.containsCurrentTime = true;
-        measure.currentTimePosition = pos;
-      }
-    }
+    this.measureController!.updateTime(chart, currentTime);
 
     setting.measureLayout.layout(
       editor.setting,
@@ -401,10 +278,8 @@ export default class Pixi extends InjectedComponent {
       chart.timeline.measures
     );
 
-    const measureController = new MeasureController();
-    const { x: cx, y: cy } = measureController.render(
+    const { x: cx, y: cy } = this.measureController!.render(
       chart,
-      graphics,
       this,
       setting
     );
@@ -416,67 +291,6 @@ export default class Pixi extends InjectedComponent {
 
     if (graphics.x > 0) graphics.x = 0;
 
-    // カーソルを合わせている小節
-    const targetMeasure = chart.timeline.measures.find((measure) =>
-      measure.containsPoint(mousePosition)
-    );
-    const measureDivision = this.injected.editor.setting.measureDivision;
-    const targetMeasureDivision = !targetMeasure
-      ? 1
-      : measureDivision * Fraction.to01(targetMeasure.beat);
-
-    if (targetMeasure) {
-      // ターゲット小節の枠を描画
-      if (canEdit && !targetMeasure.isSelected) {
-        targetMeasure.drawBounds(graphics, theme.hover);
-      }
-
-      const s = targetMeasure;
-
-      // ターゲット小節の分割線を描画
-      if (canEdit) {
-        const div = targetMeasureDivision;
-        for (let i = 1; i < div; ++i) {
-          const y = s.y + (s.height / div) * (div - i);
-          graphics
-            .lineStyle(2, 0xffffff, (4 * i) % measureDivision === 0 ? 1 : 0.6)
-            .moveTo(s.x, y)
-            .lineTo(s.x + measureWidth, y);
-        }
-      }
-
-      // 小節選択
-      if (canEdit && setting.editMode === EditMode.Select && isClick) {
-        this.inspect(targetMeasure);
-      }
-
-      // レーン追加モードなら小節の横分割線を描画
-      if (
-        canEdit &&
-        setting.editMode === EditMode.Add &&
-        setting.editObjectCategory === ObjectCategory.Lane
-      ) {
-        for (
-          let i = 1;
-          i <
-          this.injected.editor.currentChart!.timeline.horizontalLaneDivision;
-          ++i
-        ) {
-          const x =
-            s.x +
-            (measureWidth /
-              this.injected.editor.currentChart!.timeline
-                .horizontalLaneDivision) *
-              i;
-
-          graphics
-            .lineStyle(2, 0xffffff, 0.8)
-            .moveTo(x, s.y)
-            .lineTo(x, s.y + s.height);
-        }
-      }
-    }
-
     // レーン中間点描画
     if (setting.objectVisibility.lanePoint) {
       for (const lanePoint of chart.timeline.lanePoints) {
@@ -486,373 +300,84 @@ export default class Pixi extends InjectedComponent {
       }
     }
 
-    let targetNotePoint: NotePointInfo | null = null;
+    const {
+      targetMeasure,
+      targetMeasureDivision,
+      selectTargets: selectMeasure,
+    } = this.measureController!.update(chart, canEdit, mouseInfo);
 
-    const newNoteType =
-      chart.musicGameSystem.noteTypes[setting.editNoteTypeIndex];
-
-    const getNotePointInfo = (
-      noteTypeText: string,
-      additionalPosition: Vector2
-    ): NotePointInfo | null => {
-      for (const lane of chart.timeline.lanes) {
-        const laneRenderer = LaneRendererResolver.resolve(lane);
-
-        // ノート配置モードなら選択中のレーンを計算する
-        if (!canEdit || !targetMeasure) {
-          continue;
-        }
-
-        const noteType = chart.musicGameSystem.noteTypeMap.get(noteTypeText)!;
-
-        // 配置できないレーンならやめる
-        if ((noteType.excludeLanes || []).includes(lane.templateName)) {
-          continue;
-        }
-
-        const targetNotePoint = laneRenderer.getNotePointInfoFromMousePosition(
-          lane,
-          targetMeasure!,
-          targetMeasureDivision,
-          Vector2.add(
-            new Vector2(mousePosition.x, mousePosition.y),
-            additionalPosition
-          )
-        );
-
-        if (targetNotePoint) {
-          return targetNotePoint;
-        }
-      }
-
-      return null;
-    };
-
-    // レーン描画
-    for (const lane of chart.timeline.lanes) {
-      const laneRenderer = LaneRendererResolver.resolve(lane);
-
-      laneRenderer.render(
-        lane,
-        graphics,
-        chart.timeline.lanePointMap,
-        chart.timeline.measures,
-        targetMeasure || null,
-        newNoteType
-      );
-
-      // ノート配置モードなら選択中のレーンを計算する
-      {
-        if (
-          !(
-            canEdit &&
-            setting.editMode === EditMode.Add &&
-            setting.editObjectCategory === ObjectCategory.Note
-          ) ||
-          !targetMeasure ||
-          targetNotePoint
-        ) {
-          continue;
-        }
-
-        const newNoteType =
-          chart.musicGameSystem.noteTypes[setting.editNoteTypeIndex];
-
-        // 配置できないレーンならやめる
-        if ((newNoteType.excludeLanes || []).includes(lane.templateName)) {
-          continue;
-        }
-
-        targetNotePoint = laneRenderer.getNotePointInfoFromMousePosition(
-          lane,
-          targetMeasure!,
-          targetMeasureDivision,
-          new Vector2(mousePosition.x, mousePosition.y)
-        );
-      }
-    }
-
-    // 可視レイヤーの GUID
-    const visibleLayers = new Set(
-      chart.layers.filter((layer) => layer.visible).map((layer) => layer.guid)
+    const { targetNotePoint } = this.laneController!.update(
+      chart,
+      canEdit,
+      mouseInfo,
+      targetMeasure,
+      targetMeasure ? chart.timeline.measures[targetMeasure.index + 1] : null,
+      targetMeasureDivision
     );
 
-    // ノート更新
-    for (const note of chart.timeline.notes) {
-      const measure = chart.timeline.measures[note.measureIndex];
+    const {
+      selectTargets: selectOtherObjects,
+    } = this.otherObjectController!.update(
+      chart,
+      canEdit,
+      mouseInfo,
+      targetMeasure,
+      targetMeasureDivision,
+      (value) => (this.app!.view.style.cursor = value),
+      () => this.cancelRangeSelection()
+    );
 
-      // 小節とレイヤーが表示されているなら描画する
-      note.isVisible = measure.isVisible && visibleLayers.has(note.layer);
-    }
+    const {
+      selectTargets: selectNoteLines,
+      noteLineInfos,
+    } = this.noteLineController!.update(
+      chart,
+      mouseInfo,
+      chart.timeline.measures,
+      targetMeasure
+    );
 
-    // その他オブジェクト描画
-    OtherObjectRenderer.updateFrame();
-    for (const object of chart.timeline.otherObjects) {
-      const measure = chart.timeline.measures[object.measureIndex];
+    const { selectTargets: selectNotes } = this.noteController!.update(
+      chart,
+      canEdit,
+      mouseInfo,
+      targetMeasure,
+      targetMeasure ? chart.timeline.measures[targetMeasure.index + 1] : null,
+      targetMeasureDivision,
+      targetNotePoint,
+      (value) => (this.app!.view.style.cursor = value),
+      () => this.cancelRangeSelection(),
+      noteLineInfos
+    );
 
-      /*
-      const isVisible = measure.isVisible && visibleLayers.has(object.layer);
-      if (!isVisible) return;
-      */
-
-      OtherObjectRenderer.render(
-        chart.musicGameSystem.otherObjectTypes,
-        object,
-        graphics,
-        measure
-      );
-
-      if (editor.inspectorTargets.includes(object)) {
-        OtherObjectRenderer.drawBounds(
-          object,
-          measure,
-          graphics,
-          theme.selected
-        );
-      }
-    }
-
-    // その他オブジェクト配置
-    if (
-      canEdit &&
-      targetMeasure &&
-      setting.editMode === EditMode.Add &&
-      setting.editObjectCategory === ObjectCategory.Other
-    ) {
-      const [, ny] = normalizeContainsPoint(targetMeasure, mousePosition);
-
-      const vlDiv = targetMeasureDivision;
-
-      const newObject = OtherObjectRecord.createInstance(
-        {
-          type: setting.editOtherTypeIndex,
-          measureIndex: targetMeasure.index,
-          measurePosition: new Fraction(
-            vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
-            vlDiv
-          ),
-          guid: guid(),
-          value: setting.otherValue,
-          layer: chart.currentLayer.guid,
-        },
-        chart.musicGameSystem.otherObjectTypes
-      );
-
-      if (isClick) {
-        chart.timeline.addOtherObject(newObject);
-        chart.save();
-      } else {
-        // プレビュー
-        OtherObjectRenderer.render(
-          chart.musicGameSystem.otherObjectTypes,
-          newObject,
-          graphics,
-          chart.timeline.measures[newObject.measureIndex]
-        );
-      }
-    }
-
-    // その他オブジェクト選択/削除
-    if (
-      canEdit &&
-      (setting.editMode === EditMode.Select ||
-        setting.editMode === EditMode.Delete)
-    ) {
-      const selectObjectOptions: {
-        object: OtherObject;
-        order: number;
-      }[] = [];
-
-      for (const object of chart.timeline.otherObjects) {
-        const bounds = OtherObjectRenderer.getBounds(
-          object,
-          chart.timeline.measures[object.measureIndex]
-        );
-
-        if (bounds.contains(mousePosition.x, mousePosition.y)) {
-          const measure = chart.timeline.measures[object.measureIndex];
-
-          const renderOrder = OtherObjectRenderer.drawBounds(
-            object,
-            measure,
-            graphics,
-            theme.hover
-          );
-
-          selectObjectOptions.push({ object, order: renderOrder });
+    // カーソルを合わせているオブジェクトを描画
+    const selectTargets =
+      selectNotes ?? selectNoteLines ?? selectOtherObjects ?? selectMeasure;
+    if (selectTargets && !this.isRangeSelection) {
+      if (setting.editMode === EditMode.Select && isClick) {
+        if (!editor.setting.isPressingModKey) {
+          editor.clearInspectorTarget();
         }
       }
 
-      if (isClick && selectObjectOptions.length > 0) {
-        const selectObject = _.orderBy(selectObjectOptions, "order")[
-          this.selectOtherObjectOrderIndex++ % selectObjectOptions.length
-        ].object;
-
-        if (setting.editMode === EditMode.Select) {
-          this.inspect(selectObject);
-        } else if (setting.editMode === EditMode.Delete) {
-          chart.timeline.removeOtherObject(selectObject);
-          chart.save();
+      for (const selectTarget of selectTargets) {
+        if (!selectTarget.isSelected) {
+          selectTarget.drawBounds(graphics, theme.hover);
         }
-      }
-    }
 
-    // ノートライン描画
-    for (const noteLine of chart.timeline.noteLines) {
-      NoteLineRendererResolver.resolve(noteLine).render(
-        noteLine,
-        graphics,
-        chart.timeline.notes
-      );
-    }
-
-    // マウスがノート上にあるか
-    let isMouseOnNote = false;
-
-    // ノート描画
-    for (const note of chart.timeline.notes) {
-      if (!note.isVisible) continue;
-
-      NoteRendererResolver.resolve(note).render(note, graphics);
-
-      // ノート関連の操作
-      if (setting.editObjectCategory !== ObjectCategory.Note) continue;
-
-      const bounds = note.getBounds();
-      if (!bounds.contains(mousePosition.x, mousePosition.y)) continue;
-      isMouseOnNote = true;
-
-      let canDrag = false;
-      let canWResize = false;
-      let canEResize = false;
-
-      if (canEdit && setting.editMode === EditMode.Select) {
-        canDrag = true;
-        this.app.view.style.cursor = "move";
-
-        if (Math.abs(bounds.x - mousePosition.x) < 8) {
-          canWResize = true;
-          this.app.view.style.cursor = "w-resize";
-        }
-        if (Math.abs(bounds.x + bounds.width - mousePosition.x) < 8) {
-          canEResize = true;
-          this.app.view.style.cursor = "e-resize";
-        }
-      }
-
-      if (
-        canEdit &&
-        (setting.editMode === EditMode.Select ||
-          setting.editMode === EditMode.Delete)
-      ) {
-        // ノート選択 or 削除
-        if (!note.isSelected) note.drawBounds(graphics, theme.hover);
-
-        // ドラッグ判定
-        if (isMouseLeftPressing && canDrag) {
-          if (canWResize) {
-            this.wResizeNoteInfo = new NoteResizeInfo(
-              note,
-              new Vector2(
-                bounds.x - mousePosition.x,
-                bounds.y - mousePosition.y
-              )
-            );
-          } else if (canEResize) {
-            this.eResizeNoteInfo = new NoteResizeInfo(
-              note,
-              new Vector2(
-                bounds.x - mousePosition.x,
-                bounds.y - mousePosition.y
-              )
-            );
-          } else {
-            this.dragTargetNote = note;
-            this.dragTargetNotePressPositionDiff = new Vector2(
-              bounds.x - mousePosition.x,
-              bounds.y - mousePosition.y
-            );
+        if (setting.editMode === EditMode.Select && isClick) {
+          /*
+          if (!editor.setting.isPressingModKey) {
+            editor.clearInspectorTarget();
           }
-          this.isRangeSelection = false;
-        }
+           */
 
-        if (isClick) {
-          if (setting.editMode === EditMode.Delete) {
-            chart.timeline.removeNote(note);
-            chart.save();
-          }
-          if (setting.editMode === EditMode.Select) {
-            // 既に別のオブジェクトを選択していたら解除
-            if (this.inspectTarget.length > 0) {
-              this.inspectTarget = [];
-            }
-
-            this.inspect(note);
-
-            const noteLine = chart.timeline.noteLines.find(
-              (noteLine) => noteLine.head == note.guid
-            );
-            if (noteLine) {
-              this.inspect(noteLine);
-            }
-          }
-        }
-
-        if (isMouseRightPressed) {
-          this.isRangeSelection = false;
-          chart.timeline.removeNote(note);
-          chart.save();
+          editor.addInspectorTarget(selectTarget);
         }
       }
-
-      // ノート接続
-      if (setting.editMode === EditMode.Connect) {
-        graphics
-          .lineStyle(2, 0xff9900)
-          .drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
-
-        if (
-          this.connectTargetNote &&
-          canConnect(this.connectTargetNote, note)
-        ) {
-          const [head, tail] = [this.connectTargetNote!, note!].sort(
-            sortMeasureData
-          );
-
-          const newNoteLine = NoteLineRecord.new({
-            guid: guid(),
-            head: head.guid,
-            tail: tail.guid,
-            bezier: {
-              enabled: false,
-              x: 1,
-              y: 0.5,
-            },
-          });
-
-          // ノートラインプレビュー
-          NoteLineRendererResolver.resolve(newNoteLine).render(
-            newNoteLine,
-            graphics,
-            chart.timeline.notes
-          );
-
-          if (isClick) {
-            // 同じノートを接続しようとしたら接続状態をリセットする
-            if (this.connectTargetNote === note) {
-              this.connectTargetNote = null;
-            } else {
-              chart.timeline.addNoteLine(newNoteLine);
-              chart.save();
-
-              this.connectTargetNote = note;
-            }
-          }
-        } else {
-          if (isClick) {
-            this.connectTargetNote = note;
-          }
-        }
+    } else {
+      if (!selectTargets && isClick && !this.isRangeSelection) {
+        editor.clearInspectorTarget();
       }
     }
 
@@ -861,377 +386,76 @@ export default class Pixi extends InjectedComponent {
       object.drawBounds?.(graphics, theme.selected);
     }
 
-    // 接続モードじゃないかノート外をタップしたら接続対象ノートを解除
-    if (setting.editMode !== EditMode.Connect || (isClick && !isMouseOnNote)) {
-      this.connectTargetNote = null;
-    }
-
-    // ノートのリサイズ
-    if (
-      this.wResizeNoteInfo &&
-      canEdit &&
-      targetMeasure &&
-      setting.editMode === EditMode.Select &&
-      setting.editObjectCategory === ObjectCategory.Note
-    ) {
-      const targetNotePoint = getNotePointInfo(
-        this.wResizeNoteInfo.targetNote.type,
-        this.wResizeNoteInfo.mousePosition
-      );
-
-      if (targetNotePoint) {
-        this.wResizeNoteInfo.targetNote.horizontalPosition = new Fraction(
-          targetNotePoint!.horizontalIndex,
-          targetNotePoint!.lane.division
-        );
-
-        this.wResizeNoteInfo.targetNote.horizontalSize =
-          this.wResizeNoteInfo.targetNoteClone.horizontalSize +
-          this.wResizeNoteInfo.targetNoteClone.horizontalPosition.numerator -
-          targetNotePoint!.horizontalIndex;
-      }
-    }
-
-    // ノートのリサイズ
-    if (
-      this.eResizeNoteInfo &&
-      canEdit &&
-      targetMeasure &&
-      setting.editMode === EditMode.Select &&
-      setting.editObjectCategory === ObjectCategory.Note
-    ) {
-      const targetNotePoint = getNotePointInfo(
-        this.eResizeNoteInfo.targetNote.type,
-        this.eResizeNoteInfo.mousePosition
-      );
-
-      if (targetNotePoint) {
-        this.eResizeNoteInfo.targetNote.horizontalSize =
-          this.eResizeNoteInfo.targetNoteClone.horizontalSize +
-          targetNotePoint!.horizontalIndex -
-          this.eResizeNoteInfo.targetNoteClone.horizontalPosition.numerator;
-      }
-    }
-
-    // ノートのドラッグ
-    if (
-      this.dragTargetNote &&
-      canEdit &&
-      targetMeasure &&
-      setting.editMode === EditMode.Select &&
-      setting.editObjectCategory === ObjectCategory.Note
-    ) {
-      const targetNotePoint = getNotePointInfo(
-        this.dragTargetNote.type,
-        this.dragTargetNotePressPositionDiff!
-      );
-
-      if (targetNotePoint) {
-        this.dragTargetNote.horizontalPosition = new Fraction(
-          targetNotePoint!.horizontalIndex,
-          targetNotePoint!.lane.division
-        );
-
-        this.dragTargetNote.measureIndex = targetMeasure.index;
-        this.dragTargetNote.measurePosition = new Fraction(
-          targetMeasureDivision - 1 - targetNotePoint!.verticalIndex!,
-          targetMeasureDivision
-        );
-      }
-    }
-
-    // レーン選択中ならノートを配置する
-    if (
-      canEdit &&
-      targetMeasure &&
-      targetNotePoint &&
-      setting.editMode === EditMode.Add &&
-      setting.editObjectCategory === ObjectCategory.Note
-    ) {
-      const newNoteType =
-        chart.musicGameSystem.noteTypes[setting.editNoteTypeIndex];
-
-      // 新規ノート
-      const newNote = NoteRecord.new(
-        {
-          guid: guid(),
-          horizontalSize: setting.objectSize,
-          horizontalPosition: new Fraction(
-            targetNotePoint!.horizontalIndex,
-            targetNotePoint!.lane.division
-          ),
-          measureIndex: targetMeasure.index,
-          measurePosition: new Fraction(
-            targetMeasureDivision - 1 - targetNotePoint!.verticalIndex!,
-            targetMeasureDivision
-          ),
-          type: newNoteType.name,
-          speed: 1,
-          lane: targetNotePoint!.lane.guid,
-          layer: chart.currentLayer.guid,
-          editorProps: {
-            time: 0,
-          },
-          customProps: {
-            customColor: setting.customPropColor,
-          },
-        },
-        chart
-      );
-
-      const { previouslyCreatedNote } = chart.timeline;
-
-      if (setting.isPressingModKey && previouslyCreatedNote) {
-        const head = previouslyCreatedNote;
-        const tail = newNote;
-
-        if (canConnect(head, tail)) {
-          // ノートラインプレビュー
-          NoteLineRendererResolver.resolveByNoteType(head.type).renderByNote(
-            head,
-            tail,
-            NoteLineRecord.new({
-              guid: guid(),
-              head: head.guid,
-              tail: tail.guid,
-              bezier: {
-                enabled: false,
-                x: 1,
-                y: 0.5,
-              },
-            }),
-            this.graphics!
-          );
-        }
-      }
-
-      if (isClick) {
-        // 同じレーンの重なっているノートを取得する
-        const overlapNotes = chart.timeline.notes.filter(
-          (note) =>
-            note.lane === newNote.lane &&
-            note.layer === newNote.layer &&
-            note.isSameMeasurePosition(newNote) &&
-            newNote.horizontalPosition.numerator <=
-              note.horizontalPosition.numerator + note.horizontalSize - 1 &&
-            note.horizontalPosition.numerator <=
-              newNote.horizontalPosition.numerator + newNote.horizontalSize - 1
-        );
-
-        // 重なっているノートを削除する
-        for (const note of overlapNotes) {
-          chart.timeline.removeNote(note);
-        }
-
-        chart.timeline.addNote(newNote, true, true);
-
-        // 接続
-        const head = previouslyCreatedNote;
-        const tail = newNote;
-
-        if (setting.isPressingModKey && head && canConnect(head, tail)) {
-          const newNoteLine = NoteLineRecord.new({
-            guid: guid(),
-            head: head.guid,
-            tail: tail.guid,
-            bezier: {
-              enabled: false,
-              x: 0,
-              y: 0,
-            },
-          });
-
-          chart.timeline.addNoteLine(newNoteLine);
-          chart.save();
-        }
-
-        chart.timeline.previouslyCreatedNote = newNote;
-
-        chart.save();
-      } else {
-        NoteRendererResolver.resolve(newNote).render(newNote, graphics);
-      }
-    }
-
-    function normalizeContainsPoint(measure: Measure, point: PIXI.Point) {
-      return [
-        (point.x - measure.x) / measure.width,
-        (point.y - measure.y) / measure.height,
-      ];
-    }
-
-    // 接続モード && レーン編集
-    if (
-      canEdit &&
-      targetMeasure &&
-      setting.editMode === EditMode.Connect &&
-      setting.editObjectCategory === ObjectCategory.Lane
-    ) {
-      for (const lanePoint of this.injected.editor.currentChart!.timeline
-        .lanePoints) {
-        if (
-          LanePointRenderer.getBounds(
-            lanePoint,
-            chart.timeline.measures[lanePoint.measureIndex]
-          ).contains(mousePosition.x, mousePosition.y)
-        ) {
-          const laneTemplate = chart.musicGameSystem.laneTemplateMap.get(
-            lanePoint.templateName
-          )!;
-
-          // レーン接続プレビュー
-          if (
-            this.connectTargetLanePoint &&
-            // 同じレーンポイントではない
-            this.connectTargetLanePoint !== lanePoint &&
-            this.connectTargetLanePoint.templateName === lanePoint.templateName
-          ) {
-            const newLane = {
-              guid: guid(),
-              templateName: laneTemplate.name,
-              division: laneTemplate.division,
-              points: [this.connectTargetLanePoint.guid, lanePoint.guid],
-            } as Lane;
-
-            LaneRendererResolver.resolve(newLane).render(
-              newLane,
-              graphics,
-              chart.timeline.lanePointMap,
-              chart.timeline.measures,
-              null,
-              newNoteType
-            );
-
-            if (isClick) {
-              chart.timeline.addLane(newLane);
-              chart.timeline.optimiseLane();
-            }
-          }
-
-          if (isClick) {
-            this.connectTargetLanePoint = lanePoint;
-          }
-        }
-      }
-    }
-
-    // 接続中のノートが削除されたら後始末
-    if (
-      this.connectTargetNote &&
-      !chart.timeline.notes.includes(this.connectTargetNote)
-    ) {
-      this.connectTargetNote = null;
-    }
-
-    // 接続しようとしてるノートの枠を描画
-    if (this.connectTargetNote) {
-      const bounds = this.connectTargetNote.getBounds();
-
-      graphics
-        .lineStyle(2, 0xff9900)
-        .drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
-    }
-
-    // レーン配置
-    if (
-      canEdit &&
-      targetMeasure &&
-      setting.editMode === EditMode.Add &&
-      setting.editObjectCategory === ObjectCategory.Lane
-    ) {
-      // レーンテンプレ
-      const laneTemplate = editor.currentChart!.musicGameSystem.laneTemplates[
-        setting.editLaneTypeIndex
-      ];
-
-      const [nx, ny] = normalizeContainsPoint(targetMeasure, mousePosition);
-
-      const hlDiv = this.injected.editor.currentChart!.timeline
-        .horizontalLaneDivision;
-
-      const vlDiv = targetMeasureDivision;
-
-      const maxObjectSize = 16;
-
-      const p = (setting.objectSize - 1) / maxObjectSize / 2;
-
-      const newLanePoint = {
-        measureIndex: targetMeasure.index,
-        measurePosition: new Fraction(
-          vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
-          vlDiv
-        ),
-        guid: guid(),
-        color: Number(laneTemplate.color),
-        horizontalSize: setting.objectSize,
-        templateName: laneTemplate.name,
-        horizontalPosition: new Fraction(
-          _.clamp(Math.floor((nx - p) * hlDiv), 0, hlDiv - setting.objectSize),
-          hlDiv
-        ),
-      } as LanePoint;
-
-      if (isClick) {
-        this.injected.editor.currentChart!.timeline.addLanePoint(newLanePoint);
-        chart.save();
-      } else {
-        // プレビュー
-        LanePointRenderer.render(
-          newLanePoint,
-          graphics,
-          chart.timeline.measures[newLanePoint.measureIndex]
-        );
-      }
-    }
-
     // 範囲選択
     if (this.isRangeSelection) {
-      graphics
-        .lineStyle(2, 0x0099ff)
-        .beginFill(0x0099ff, 0.2)
-        .drawRect(
-          this.rangeSelectStartPoint!.x,
-          this.rangeSelectStartPoint!.y,
-          this.rangeSelectEndPoint!.x - this.rangeSelectStartPoint!.x,
-          this.rangeSelectEndPoint!.y - this.rangeSelectStartPoint!.y
-        )
-        .endFill();
+      this.selectRange(chart);
+    }
 
-      // start, end を左上から近い順にソートする
-      const x = [
+    this.playSe(chart, currentTime);
+
+    this.previousTime = currentTime;
+
+    if (isClick) {
+      this.cancelRangeSelection();
+    }
+  }
+
+  private selectRange(chart: Chart) {
+    const graphics = this.graphics!;
+    const { editor } = this.injected;
+
+    graphics
+      .lineStyle(2, 0x0099ff)
+      .beginFill(0x0099ff, 0.2)
+      .drawRect(
         this.rangeSelectStartPoint!.x,
-        this.rangeSelectEndPoint!.x,
-      ].sort((a, b) => a - b);
-      const y = [
         this.rangeSelectStartPoint!.y,
-        this.rangeSelectEndPoint!.y,
-      ].sort((a, b) => a - b);
+        this.rangeSelectEndPoint!.x - this.rangeSelectStartPoint!.x,
+        this.rangeSelectEndPoint!.y - this.rangeSelectStartPoint!.y
+      )
+      .endFill();
 
-      const rect = new PIXI.Rectangle(x[0], y[0], x[1] - x[0], y[1] - y[0]);
+    // start, end を左上から近い順にソートする
+    const x = [this.rangeSelectStartPoint!.x, this.rangeSelectEndPoint!.x].sort(
+      (a, b) => a - b
+    );
+    const y = [this.rangeSelectStartPoint!.y, this.rangeSelectEndPoint!.y].sort(
+      (a, b) => a - b
+    );
 
-      // 選択範囲内に配置されているノートを選択する
-      for (const note of chart.timeline.notes) {
-        if (!note.isVisible) continue;
+    const rect = new Rectangle(x[0], y[0], x[1] - x[0], y[1] - y[0]);
 
-        const inRange =
-          rect.contains(note.x, note.y) &&
-          rect.contains(note.x + note.width, note.y + note.height);
-        const isSelected = this.rangeSelectedObjects.includes(note);
+    // 選択範囲内に配置されているノートを選択する
+    for (const object of [
+      ...chart.timeline.notes,
+      ...chart.timeline.otherObjects,
+    ]) {
+      if (!object.isVisible) continue;
 
-        // 範囲内のものが未選択なら選択
-        if (inRange && !isSelected) {
-          this.rangeSelectedObjects.push(note);
-          editor.addInspectorTarget(note);
-        }
-        // 選択済みのものが範囲外になっていたら選択を外す
-        if (!inRange && isSelected) {
-          this.rangeSelectedObjects = this.rangeSelectedObjects.filter(
-            (x) => x !== note
-          );
-          editor.removeInspectorTarget(note);
-        }
+      const { x, y, width, height } = object.getBounds();
+
+      const inRange =
+        rect.contains(x, y) && rect.contains(x + width, y + height);
+      const isSelected = this.rangeSelectedObjects.includes(object);
+
+      // 範囲内のものが未選択なら選択
+      if (inRange && !isSelected) {
+        this.rangeSelectedObjects.push(object);
+        editor.addInspectorTarget(object);
+      }
+
+      // 選択済みのものが範囲外になっていたら選択を外す
+      if (!inRange && isSelected) {
+        this.rangeSelectedObjects = this.rangeSelectedObjects.filter(
+          (x) => x !== object
+        );
+        editor.removeInspectorTarget(object);
       }
     }
+  }
+
+  private playSe(chart: Chart, currentTime: number) {
+    const musicGameSystem = chart.musicGameSystem;
 
     this.seMap.clear();
 
@@ -1265,21 +489,6 @@ export default class Pixi extends InjectedComponent {
     for (const se of this.seMap.values()) {
       se.volume(chart.seVolume);
       se.play();
-    }
-
-    this.previousTime = currentTime;
-
-    if (isClick) {
-      this.isRangeSelection = false;
-      if (
-        this.inspectTarget.length > 0 &&
-        this.rangeSelectedObjects.length === 0
-      ) {
-        for (const inspectTarget of this.inspectTarget) {
-          editor.addInspectorTarget(inspectTarget);
-        }
-      }
-      this.rangeSelectedObjects = [];
     }
   }
 

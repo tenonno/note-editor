@@ -11,6 +11,7 @@ import { Lane, LinePointInfo } from "./Lane";
 import LaneRendererResolver from "./LaneRendererResolver";
 import { Measure } from "./Measure";
 import Vector2 from "../math/Vector2";
+import TimelineObject from "./TimelineObject";
 
 interface INoteEditorProps {
   time: number;
@@ -73,7 +74,9 @@ const defaultNoteData: NoteData = {
 
 export type Note = Mutable<NoteRecord>;
 
-export class NoteRecord extends Record<NoteData>(defaultNoteData) {
+export class NoteRecord
+  extends Record<NoteData>(defaultNoteData)
+  implements TimelineObject {
   static new(data: NoteData, chart: Chart): Note {
     const note = new NoteRecord(data, chart);
     return Object.assign(note, note.asMutable());
