@@ -1,6 +1,5 @@
-import * as PIXI from "pixi.js";
 import Pixi from "../containers/Pixi";
-import { approximately, Fraction } from "../math";
+import { approximately, Fraction, isInSquare } from "../math";
 import Vector2 from "../math/Vector2";
 import { drawQuad } from "../utils/drawQuad";
 import { LineInfo, NoteLineInfo } from "./Lane";
@@ -9,8 +8,8 @@ import { getLines } from "./LaneRenderer";
 import { sortMeasure, sortMeasureData } from "./Measure";
 import { Note } from "./Note";
 import { NoteLine } from "./NoteLine";
-import { IsInSquare } from "./NoteLineController";
 import { getQuadraticBezierLines } from "../utils/noteLineUtility";
+import { Graphics, Rectangle } from "pixi.js";
 
 type NoteLineRenderResult = {
   isSuccess: boolean;
@@ -20,7 +19,7 @@ type NoteLineRenderResult = {
 
 export interface INoteLineRenderer {
   customRender(
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     lines: LineInfo[],
     head: Note,
     tail: Note
@@ -30,23 +29,18 @@ export interface INoteLineRenderer {
     head: Note,
     tail: Note,
     noteLine: NoteLine,
-    graphics: PIXI.Graphics
+    graphics: Graphics
   ): NoteLineRenderResult;
 
   render(
     noteLine: NoteLine,
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     notes: Note[]
   ): NoteLineRenderResult;
 }
 
 class NoteLineRenderer implements INoteLineRenderer {
-  customRender(
-    graphics: PIXI.Graphics,
-    lines: LineInfo[],
-    head: Note,
-    tail: Note
-  ) {
+  customRender(graphics: Graphics, lines: LineInfo[], head: Note, tail: Note) {
     for (const line of lines) {
       drawQuad(
         graphics,
@@ -73,7 +67,7 @@ class NoteLineRenderer implements INoteLineRenderer {
     head: Note,
     tail: Note,
     noteLine: NoteLine,
-    graphics: PIXI.Graphics
+    graphics: Graphics
   ): NoteLineRenderResult {
     const result: NoteLineRenderResult = {
       isSuccess: false,
@@ -87,7 +81,6 @@ class NoteLineRenderer implements INoteLineRenderer {
 
     const {
       lanePointMap,
-      noteMap,
       laneMap,
       measures,
     } = Pixi.instance!.injected.editor!.currentChart!.timeline;
@@ -177,7 +170,7 @@ class NoteLineRenderer implements INoteLineRenderer {
         return lp;
       });
 
-    const noteToLanePoint = (note: Note, noteBounds: PIXI.Rectangle) => {
+    const noteToLanePoint = (note: Note, noteBounds: Rectangle) => {
       return {
         horizontalSize: noteBounds.width,
         horizontalPosition: new Fraction(
@@ -208,7 +201,7 @@ class NoteLineRenderer implements INoteLineRenderer {
 
   public render(
     noteLine: NoteLine,
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     notes: Note[]
   ): NoteLineRenderResult {
     const { noteMap } = Pixi.instance!.injected.editor!.currentChart!.timeline;
@@ -244,7 +237,7 @@ export class NoteLineRenderInfo {
 
       if (
         isOverlapStartPoint ||
-        IsInSquare(
+        isInSquare(
           line.start.point,
           line.end.point,
           Vector2.add(line.end.point, new Vector2(line.end.width, 0)),

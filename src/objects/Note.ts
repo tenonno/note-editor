@@ -1,6 +1,6 @@
 import { Record } from "immutable";
-import * as _ from "lodash";
-import * as PIXI from "pixi.js";
+import { cloneDeep, inRange } from "lodash";
+import { Graphics, Rectangle } from "pixi.js";
 import { Fraction, IFraction } from "../math";
 import Chart from "../stores/Chart";
 import Editor from "../stores/EditorStore";
@@ -157,13 +157,13 @@ export class NoteRecord
 
   containsPoint(point: { x: number; y: number }) {
     return (
-      _.inRange(point.x, this.x, this.x + this.width) &&
-      _.inRange(point.y, this.y, this.y + this.height)
+      inRange(point.x, this.x, this.x + this.width) &&
+      inRange(point.y, this.y, this.y + this.height)
     );
   }
 
   getBounds() {
-    return new PIXI.Rectangle(this.x, this.y, this.width, this.height);
+    return new Rectangle(this.x, this.y, this.width, this.height);
   }
 
   /**
@@ -171,7 +171,7 @@ export class NoteRecord
    * @param graphics 対象グラフィック
    * @param rgba 枠の色
    */
-  public drawBounds(graphics: PIXI.Graphics, rgba: number) {
+  public drawBounds(graphics: Graphics, rgba: number) {
     const { color, alpha } = parseRgba(rgba);
     const bounds = this.getBounds();
     graphics
@@ -264,13 +264,33 @@ export class NoteRecord
       );
       (this as any).horizontalSize = Math.abs(this.horizontalSize);
     }
+
+    // 小節より左に配置されている
+    if (this.horizontalPosition.numerator < 0) {
+      const diff = Math.abs(this.horizontalPosition.numerator);
+      this.horizontalPosition.numerator = 0;
+      (this as any).horizontalSize -= diff;
+    }
+
+    // 小節より右に配置されている
+    if (
+      this.horizontalPosition.numerator + this.horizontalSize >
+      this.horizontalPosition.denominator
+    ) {
+      const diff = Math.abs(
+        this.horizontalPosition.numerator +
+          this.horizontalSize -
+          this.horizontalPosition.denominator
+      );
+      (this as any).horizontalSize -= diff;
+    }
   }
 
   /**
    * クローンする
    */
   public clone() {
-    return NoteRecord.new(_.cloneDeep(this.toJS() as NoteData), this.chart);
+    return NoteRecord.new(cloneDeep(this.toJS() as NoteData), this.chart);
   }
 }
 

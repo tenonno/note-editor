@@ -1,21 +1,20 @@
 import { ipcRenderer } from "electron";
 import * as fs from "fs";
 import { Howl } from "howler";
-import * as _ from "lodash";
 import { action, flow, observable } from "mobx";
 import * as path from "path";
-import * as util from "util";
-import {
+import { promisify } from "util";
+import MusicGameSystem, {
   CustomNoteLineRenderer,
   HowlPool,
   LaneTemplate,
   MusicGameSystemNoteType,
   normalizeMusicGameSystem,
-} from "../stores/MusicGameSystem";
+} from "./MusicGameSystem";
 import { guid } from "../utils/guid";
 import { replaceAsync } from "../utils/string";
-import MusicGameSystem from "./MusicGameSystem";
 import IMusicGameSystemEventListener from "./musicGameSystem/eventListener";
+import { isString } from "lodash";
 
 function parseJSON(text: string) {
   try {
@@ -56,20 +55,18 @@ export default class AssetStore {
 
     // MusicGameSystem を読み込む
     {
-      const directories: any[] = yield util.promisify(fs.readdir)(
-        urlParams.mgsp
-      );
+      const directories: any[] = yield promisify(fs.readdir)(urlParams.mgsp);
 
       for (const directory of directories) {
         const dirPath = path.join(urlParams.mgsp, directory);
         if (!fs.statSync(dirPath).isDirectory()) continue;
 
-        const files = (yield util.promisify(fs.readdir)(dirPath)) as any[];
+        const files = (yield promisify(fs.readdir)(dirPath)) as any[];
 
-        var fileList = files.filter((file) => file.endsWith(".json"));
+        const fileList = files.filter((file) => file.endsWith(".json"));
         console.log("MusicGameSystem を読み込みます", fileList);
         for (const file of fileList) {
-          const buffer: Buffer = yield util.promisify(fs.readFile)(
+          const buffer: Buffer = yield promisify(fs.readFile)(
             path.join(urlParams.mgsp, directory, file)
           );
 
@@ -87,7 +84,7 @@ export default class AssetStore {
   async loadAudio(path: string) {
     const extension = path.split(".").pop()!;
 
-    const buffer = await util.promisify(fs.readFile)(path);
+    const buffer = await promisify(fs.readFile)(path);
 
     const blob = new Blob([buffer], { type: `audio/${extension}` });
     const src = URL.createObjectURL(blob);
@@ -100,7 +97,7 @@ export default class AssetStore {
    * @param scriptPath *.js ファイルのパス
    */
   private async readScript(scriptPath: string): Promise<string> {
-    const source = (await util.promisify(fs.readFile)(scriptPath)).toString();
+    const source = (await promisify(fs.readFile)(scriptPath)).toString();
 
     // include コメントを処理する
     return await replaceAsync(source, /\/\/ *include.+/g, async (match) => {
@@ -140,7 +137,11 @@ export default class AssetStore {
    * @param rootPath 音ゲーシステムのパス
    * @param directory 音ゲーシステムの階層
    */
-  async loadMusicGameSystem(json: any, rootPath: string, directory: string) {
+  private async loadMusicGameSystem(
+    json: any,
+    rootPath: string,
+    directory: string
+  ) {
     const musicGameSystems = normalizeMusicGameSystem(json);
 
     // その他オブジェクトのデフォルト値を追加
@@ -155,6 +156,7 @@ export default class AssetStore {
       name: "Speed",
       color: "0x00ff00",
       valueType: "number",
+      defaultValue: 1,
       splitValueLabels: [],
       splitValuePointLabel: "",
     });
@@ -162,6 +164,7 @@ export default class AssetStore {
       name: "BPM",
       color: "0xff0000",
       valueType: "number",
+      defaultValue: 120,
       splitValueLabels: [],
       splitValuePointLabel: "",
     });
@@ -169,7 +172,7 @@ export default class AssetStore {
     // イベントリスナーを読み込む
     if (musicGameSystems.eventListener) {
       // 1 ファイルだけなら配列にする
-      if (_.isString(musicGameSystems.eventListener)) {
+      if (isString(musicGameSystems.eventListener)) {
         musicGameSystems.eventListener = [musicGameSystems.eventListener];
       }
 
@@ -323,8 +326,6 @@ export default class AssetStore {
       return;
     }
 
-    const buffer: Buffer = fs.readFileSync(foundPath);
-
-    return buffer;
+    return fs.readFileSync(foundPath);
   }
 }

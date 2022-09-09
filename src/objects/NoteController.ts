@@ -1,4 +1,3 @@
-import * as PIXI from "pixi.js";
 import { Note, NoteRecord, NoteResizeInfo } from "./Note";
 import NoteRendererResolver from "./NoteRendererResolver";
 import { EditMode, ObjectCategory } from "../stores/EditorSetting";
@@ -17,6 +16,7 @@ import TimelineObject from "./TimelineObject";
 import { NoteLineInfo } from "./Lane";
 import { NoteLineRenderInfo } from "./NoteLineRenderer";
 import MouseInfo from "../utils/mouseInfo";
+import { Graphics } from "pixi.js";
 
 type UpdateResult = {
   selectTargets: TimelineObject[] | null;
@@ -32,18 +32,20 @@ export default class NoteController {
   private connectTargetNote: Note | null = null;
 
   public constructor(
-    private graphics: PIXI.Graphics,
+    private graphics: Graphics,
     private editor: Editor,
     container: HTMLDivElement
   ) {
     container.addEventListener(
       "mouseup",
       () => {
-        if (
-          this.dragTargetNote ||
-          this.wResizeNoteInfo ||
-          this.eResizeNoteInfo
-        ) {
+        const dragOrResizeNote =
+          this.dragTargetNote ??
+          this.wResizeNoteInfo?.targetNote ??
+          this.eResizeNoteInfo?.targetNote;
+
+        if (dragOrResizeNote) {
+          dragOrResizeNote.normalize();
           editor.currentChart?.save();
         }
 
@@ -60,12 +62,23 @@ export default class NoteController {
     targetMeasure: Measure,
     targetNextMeasure: Measure,
     mousePosition: { x: number; y: number },
-    targetMeasureDivision: number
+    targetMeasureDivision: number,
+    setCursor: (value: string) => void
   ) {
     const { setting } = this.editor;
 
     if (setting.editMode !== EditMode.Select) {
       return;
+    }
+
+    if (this.dragTargetNote) {
+      setCursor("move");
+    }
+    if (this.wResizeNoteInfo) {
+      setCursor("w-resize");
+    }
+    if (this.eResizeNoteInfo) {
+      setCursor("e-resize");
     }
 
     const getNotePointInfo = (
@@ -90,7 +103,8 @@ export default class NoteController {
           Vector2.add(
             new Vector2(mousePosition.x, mousePosition.y),
             additionalPosition
-          )
+          ),
+          true
         );
         if (targetNotePoint) {
           return targetNotePoint;
@@ -153,6 +167,8 @@ export default class NoteController {
           targetMeasureDivision - 1 - targetNotePoint!.verticalIndex!,
           targetMeasureDivision
         );
+      } else {
+        console.warn("ドラッグ失敗");
       }
     }
   }
@@ -307,7 +323,7 @@ export default class NoteController {
             centerNotes: [],
             bezier: {
               enabled: false,
-              x: 1,
+              x: 0.5,
               y: 0.5,
             },
           });
@@ -349,7 +365,8 @@ export default class NoteController {
         targetMeasure,
         targetNextMeasure,
         mousePosition,
-        targetMeasureDivision
+        targetMeasureDivision,
+        setCursor
       );
     }
 

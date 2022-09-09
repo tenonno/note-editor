@@ -18,39 +18,6 @@ type UpdateResult = {
   noteLineInfos: NoteLineInfo[];
 };
 
-// 衝突判定系の汎用処理クラス
-// 指定した4点の中にpがあるかどうかを判定する
-// 但し、4つそれぞれの内角のいずれかが180度以上の場合、正しく判定できない。
-export function IsInSquare(
-  pa: Vector2,
-  pb: Vector2,
-  pc: Vector2,
-  pd: Vector2,
-  p: Vector2
-) {
-  const a = CalcExteriorProduct(pa, pb, p);
-
-  // if (a <= 0) return false;
-
-  const b = CalcExteriorProduct(pb, pc, p);
-  const c = CalcExteriorProduct(pc, pd, p);
-  const d = CalcExteriorProduct(pd, pa, p);
-
-  return a > 0 && b > 0 && c > 0 && d > 0;
-}
-
-// 指定した2点間と1点の外積を計算する
-function CalcExteriorProduct(a: Vector2, b: Vector2, p: Vector2) {
-  // 点 a,b のベクトル
-  var vecab = new Vector2(a.x - b.x, a.y - b.y); // ここは固定なら最初から計算しておくのもアリかも
-  // 点a と 点のベクトル
-  var vecpa = new Vector2(a.x - p.x, a.y - p.y);
-  // 外積を計算する
-  var ext = vecab.x * vecpa.y - vecpa.x * vecab.y;
-
-  return ext;
-}
-
 export default class NoteLineController {
   private isBezierPointDragging = false;
 
@@ -68,7 +35,8 @@ export default class NoteLineController {
     noteLine: NoteLine,
     lanePoints: LanePoint[],
     measures: Measure[],
-    mouseInfo: MouseInfo
+    mouseInfo: MouseInfo,
+    cancelRangeSelection: () => void
   ) {
     const { currentPoint, points } = getQuadraticBezierLines2(
       lanePoints,
@@ -94,6 +62,8 @@ export default class NoteLineController {
     }
 
     if (this.bezierDrag.isDragging && this.bezierDrag.noteLine === noteLine) {
+      cancelRangeSelection();
+
       this.graphics
         .beginFill(0xffffff)
         .drawCircle(currentPoint.x, currentPoint.y, 12)
@@ -122,7 +92,8 @@ export default class NoteLineController {
     chart: Chart,
     mouseInfo: MouseInfo,
     measures: Measure[],
-    targetMeasure: Measure | null
+    targetMeasure: Measure | null,
+    cancelRangeSelection: () => void
   ): UpdateResult {
     const ret: NoteLineInfo[] = [];
     let selectTargets = null;
@@ -150,7 +121,8 @@ export default class NoteLineController {
           noteLine,
           lanePoints,
           measures,
-          mouseInfo
+          mouseInfo,
+          cancelRangeSelection
         );
         if (isHover) {
           isHoverBezier = true;

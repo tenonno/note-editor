@@ -1,7 +1,6 @@
-import * as PIXI from "pixi.js";
 import Pixi from "../containers/Pixi";
 import { Fraction, IFraction, inverseLerp, lerp, Vector2 } from "../math";
-import { sortMeasure } from "../objects/Measure";
+import { Measure, sortMeasure } from "./Measure";
 import {
   LaneTemplate,
   MusicGameSystemNoteType,
@@ -10,7 +9,7 @@ import { drawQuad } from "../utils/drawQuad";
 import { GetLineInfoFromPool, GetLinePointInfoFromPool } from "../utils/pool";
 import { Lane, LineInfo, LinePointInfo } from "./Lane";
 import { LanePoint } from "./LanePoint";
-import { Measure } from "./Measure";
+import { Graphics } from "pixi.js";
 
 export interface LinePoint {
   measureIndex: number;
@@ -76,10 +75,6 @@ export function getLines(points: LinePoint[], measures: Measure[]): LineInfo[] {
   return lines;
 }
 
-export type QuadraticBezierLines = {
-  lineInfos: LineInfo[];
-};
-
 const linesCache = new WeakMap<Lane, LineInfo[]>();
 
 export interface ILaneRenderer {
@@ -95,12 +90,13 @@ export interface ILaneRenderer {
     measure: Measure,
     nextMeasure: Measure,
     measureDivision: number,
-    mousePosition: Vector2
+    mousePosition: Vector2,
+    isResizeOrDragMode?: boolean
   ): NotePointInfo | null;
 
   render(
     lane: Lane,
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     lanePointMap: Map<string, LanePoint>,
     measures: Measure[],
     drawHorizontalLineTargetMeasure: Measure | null,
@@ -108,7 +104,7 @@ export interface ILaneRenderer {
   ): void;
 
   defaultRender(
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     lines: LineInfo[],
     laneTemplate: LaneTemplate
   ): void;
@@ -116,7 +112,7 @@ export interface ILaneRenderer {
 
 class LaneRenderer implements ILaneRenderer {
   defaultRender(
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     lines: LineInfo[],
     laneTemplate: LaneTemplate
   ) {
@@ -140,7 +136,7 @@ class LaneRenderer implements ILaneRenderer {
         Number(laneTemplate.color)
       );
 
-      for (var i = 0; i < laneTemplate.division + 1; ++i) {
+      for (let i = 0; i < laneTemplate.division + 1; ++i) {
         graphics
           .lineStyle(1, 0xffffff)
           .moveTo(
@@ -205,13 +201,18 @@ class LaneRenderer implements ILaneRenderer {
     measure: Measure,
     nextMeasure: Measure,
     measureDivision: number,
-    mousePosition: Vector2
+    mousePosition: Vector2,
+    isResizeOrDragMode = false
   ): NotePointInfo | null {
     const height = measure.height / measureDivision / 2;
     const horizontal = new Fraction(0, lane.division);
     const vertical = new Fraction(0, measureDivision);
 
-    for (let i = 0; i < lane.division; i++) {
+    // リサイズやドラッグ中は小節の範囲外も判定する
+    const left = isResizeOrDragMode ? -lane.division : 0;
+    const right = lane.division + (isResizeOrDragMode ? 1 : 0);
+
+    for (let i = left; i < right; i++) {
       horizontal.numerator = i;
       for (let j = 0; j < measureDivision + 1; j++) {
         vertical.numerator = j;
@@ -220,9 +221,9 @@ class LaneRenderer implements ILaneRenderer {
 
         if (
           data &&
-          mousePosition.x > data!.point.x &&
+          mousePosition.x >= data!.point.x &&
           mousePosition.x < data!.point.x + data!.width &&
-          mousePosition.y > data!.point.y - height &&
+          mousePosition.y >= data!.point.y - height &&
           mousePosition.y < data!.point.y + height
         ) {
           // 次の小節の最初に配置するべき
@@ -261,7 +262,7 @@ class LaneRenderer implements ILaneRenderer {
 
   render(
     lane: Lane,
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     lanePointMap: Map<string, LanePoint>,
     measures: Measure[],
     drawHorizontalLineTargetMeasure: Measure | null,

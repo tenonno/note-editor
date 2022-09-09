@@ -38,7 +38,7 @@ function OtherObjectToggleButton({
           <TextField
             required
             variant="standard"
-            defaultValue={value}
+            value={value}
             margin="none"
             type={otherObjectType.valueType}
             InputProps={{

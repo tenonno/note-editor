@@ -334,7 +334,8 @@ export default class Pixi extends InjectedComponent {
       chart,
       mouseInfo,
       chart.timeline.measures,
-      targetMeasure
+      targetMeasure,
+      () => this.cancelRangeSelection()
     );
 
     const { selectTargets: selectNotes } = this.noteController!.update(
