@@ -1,5 +1,6 @@
-import * as math from "mathjs";
-import * as _ from "lodash";
+import { clamp } from "lodash";
+import { gcd } from "mathjs";
+import Vector2 from "./math/Vector2";
 
 export interface IFraction {
   numerator: number;
@@ -44,7 +45,7 @@ export class Fraction {
 
   // 約分
   public static reduceDestructive(fraction: IFraction): void {
-    const div = math.gcd(fraction.numerator, fraction.denominator);
+    const div = gcd(fraction.numerator, fraction.denominator);
     fraction.numerator /= div;
     fraction.denominator /= div;
   }
@@ -84,5 +85,39 @@ export const inverseLerp = (from: number, to: number, value: number) =>
  * @param max 最大値
  */
 export function verifyNumber(value: number, min = -Infinity, max = Infinity) {
-  return _.clamp(Number.isFinite(value) ? value : 0, min, max);
+  return clamp(Number.isFinite(value) ? value : 0, min, max);
+}
+
+export function approximately(v1: number, v2: number, epsilon = 0.001) {
+  return Math.abs(v1 - v2) < epsilon;
+}
+
+export function isInSquare(
+  pa: Vector2,
+  pb: Vector2,
+  pc: Vector2,
+  pd: Vector2,
+  p: Vector2
+) {
+  const a = calcExteriorProduct(pa, pb, p);
+
+  if (a <= 0) return false;
+
+  const b = calcExteriorProduct(pb, pc, p);
+
+  if (b <= 0) return false;
+
+  const c = calcExteriorProduct(pc, pd, p);
+
+  if (c <= 0) return false;
+
+  const d = calcExteriorProduct(pd, pa, p);
+
+  return d > 0;
+}
+
+function calcExteriorProduct(a: Vector2, b: Vector2, p: Vector2) {
+  const ab = new Vector2(a.x - b.x, a.y - b.y);
+  const pa = new Vector2(a.x - p.x, a.y - p.y);
+  return ab.x * pa.y - pa.x * ab.y;
 }

@@ -1,18 +1,28 @@
-import * as PIXI from "pixi.js";
 import Pixi from "../containers/Pixi";
-import { Fraction } from "../math";
+import { approximately, Fraction, isInSquare } from "../math";
 import Vector2 from "../math/Vector2";
 import { drawQuad } from "../utils/drawQuad";
-import { LineInfo } from "./Lane";
+import { LineInfo, NoteLineInfo } from "./Lane";
 import { LanePoint } from "./LanePoint";
-import { getLines, getQuadraticBezierLines } from "./LaneRenderer";
+import { getLines } from "./LaneRenderer";
 import { sortMeasure, sortMeasureData } from "./Measure";
 import { Note } from "./Note";
 import { NoteLine } from "./NoteLine";
+import {
+  getQuadraticBezierLines,
+  noteToLanePoint,
+} from "../utils/noteLineUtility";
+import { Graphics } from "pixi.js";
+
+type NoteLineRenderResult = {
+  isSuccess: boolean;
+  noteLineInfos: NoteLineInfo[];
+  lanePoints: LanePoint[];
+};
 
 export interface INoteLineRenderer {
   customRender(
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     lines: LineInfo[],
     head: Note,
     tail: Note
@@ -22,19 +32,18 @@ export interface INoteLineRenderer {
     head: Note,
     tail: Note,
     noteLine: NoteLine,
-    graphics: PIXI.Graphics
-  ): void;
+    graphics: Graphics
+  ): NoteLineRenderResult;
 
-  render(noteLine: NoteLine, graphics: PIXI.Graphics, notes: Note[]): void;
+  render(
+    noteLine: NoteLine,
+    graphics: Graphics,
+    notes: Note[]
+  ): NoteLineRenderResult;
 }
 
 class NoteLineRenderer implements INoteLineRenderer {
-  customRender(
-    graphics: PIXI.Graphics,
-    lines: LineInfo[],
-    head: Note,
-    tail: Note
-  ) {
+  customRender(graphics: Graphics, lines: LineInfo[], head: Note, tail: Note) {
     for (const line of lines) {
       drawQuad(
         graphics,
@@ -61,13 +70,20 @@ class NoteLineRenderer implements INoteLineRenderer {
     head: Note,
     tail: Note,
     noteLine: NoteLine,
-    graphics: PIXI.Graphics
-  ) {
-    if (!head.isVisible && !tail.isVisible) return;
+    graphics: Graphics
+  ): NoteLineRenderResult {
+    const result: NoteLineRenderResult = {
+      isSuccess: false,
+      noteLineInfos: [],
+      lanePoints: [],
+    };
+
+    if (!head.isVisible && !tail.isVisible) {
+      return result;
+    }
 
     const {
       lanePointMap,
-      noteMap,
       laneMap,
       measures,
     } = Pixi.instance!.injected.editor!.currentChart!.timeline;
@@ -84,8 +100,8 @@ class NoteLineRenderer implements INoteLineRenderer {
 
     const length = tailPos - headPos;
 
-    if (!head.updateBounds()) return;
-    if (!tail.updateBounds()) return;
+    if (!head.updateBounds()) return result;
+    if (!tail.updateBounds()) return result;
 
     const headBounds = head.getBounds();
     const tailBounds = tail.getBounds();
@@ -157,38 +173,77 @@ class NoteLineRenderer implements INoteLineRenderer {
         return lp;
       });
 
-    const noteToLanePoint = (note: Note, noteBounds: PIXI.Rectangle) => {
-      return {
-        horizontalSize: noteBounds.width,
-        horizontalPosition: new Fraction(
-          noteBounds.x - measures[note.measureIndex].x,
-          measures[note.measureIndex].width
-        ),
-        measureIndex: note.measureIndex,
-        measurePosition: Fraction.clone(note.measurePosition),
-      } as LanePoint;
-    };
-
     lps = [
-      noteToLanePoint(head, headBounds),
+      noteToLanePoint(head, headBounds, measures),
       ...lps,
-      noteToLanePoint(tail, tailBounds),
+      noteToLanePoint(tail, tailBounds, measures),
     ];
 
-    const lines = noteLine.bezier.enabled
+    result.lanePoints = lps;
+    result.noteLineInfos = noteLine.bezier.enabled
       ? getQuadraticBezierLines(lps, noteLine, measures)
-      : getLines(lps, measures);
+      : getLines(lps, measures).map((lineInfo) => ({ ...lineInfo, noteLine }));
 
-    this.customRender(graphics, lines, head, tail);
+    this.customRender(graphics, result.noteLineInfos, head, tail);
+
+    result.isSuccess = true;
+    return result;
   }
 
-  public render(noteLine: NoteLine, graphics: PIXI.Graphics, notes: Note[]) {
+  public render(
+    noteLine: NoteLine,
+    graphics: Graphics,
+    notes: Note[]
+  ): NoteLineRenderResult {
     const { noteMap } = Pixi.instance!.injected.editor!.currentChart!.timeline;
 
     const head = noteMap.get(noteLine.head)!;
     const tail = noteMap.get(noteLine.tail)!;
 
     return this.renderByNote(head, tail, noteLine, graphics);
+  }
+}
+
+export class NoteLineRenderInfo {
+  public constructor(private infos: NoteLineInfo[]) {}
+
+  public overlap(
+    pos: Vector2,
+    targetMeasureIndex: number
+  ): {
+    isOverlap: boolean;
+    targetNoteLine?: NoteLine;
+    targetNoteLineInfo?: NoteLineInfo;
+  } {
+    for (const line of this.infos) {
+      if (line.measure.index !== targetMeasureIndex) {
+        continue;
+      }
+
+      // 始点と重なっている
+      const isOverlapStartPoint =
+        approximately(line.start.point.y, pos.y) &&
+        line.start.point.x <= pos.x &&
+        line.start.point.x + line.start.width >= pos.x;
+
+      if (
+        isOverlapStartPoint ||
+        isInSquare(
+          line.start.point,
+          line.end.point,
+          Vector2.add(line.end.point, new Vector2(line.end.width, 0)),
+          Vector2.add(line.start.point, new Vector2(line.start.width, 0)),
+          pos
+        )
+      ) {
+        return {
+          isOverlap: true,
+          targetNoteLine: line.noteLine,
+          targetNoteLineInfo: line,
+        };
+      }
+    }
+    return { isOverlap: false };
   }
 }
 

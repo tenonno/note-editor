@@ -1,14 +1,11 @@
 import { Record } from "immutable";
-import * as _ from "lodash";
-import * as PIXI from "pixi.js";
-import Pixi from "../containers/Pixi";
 import { Fraction, IFraction } from "../math";
-import {
-  MusicGameSystemMeasure,
-  MusicGameSystemMeasureCustomProps,
-} from "../stores/MusicGameSystem";
+import { MusicGameSystemMeasure, MusicGameSystemMeasureCustomProps } from "../stores/MusicGameSystem";
 import { parseRgba } from "../utils/color";
 import { Mutable } from "../utils/mutable";
+import { Graphics, Rectangle } from "pixi.js";
+import Pixi from "../containers/Pixi";
+import { inRange } from "lodash";
 
 export interface IMeasureCustomProps {
   [key: string]: {
@@ -69,6 +66,9 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
   private _height = 0;
   private _totalHeight = 0;
 
+  /**
+   * 全ての小節を一直線に並べた場合の高さ
+   */
   public get totalHeight() {
     return this._totalHeight;
   }
@@ -84,13 +84,13 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
 
   containsPoint(point: { x: number; y: number }) {
     return (
-      _.inRange(point.x, this.x, this.x + this.width) &&
-      _.inRange(point.y, this.y, this.y + this.height)
+      inRange(point.x, this.x, this.x + this.width) &&
+      inRange(point.y, this.y, this.y + this.height)
     );
   }
 
   getBounds() {
-    return new PIXI.Rectangle(
+    return new Rectangle(
       this.x + Pixi.debugGraphics!.x,
       this.y,
       this.width,
@@ -108,7 +108,7 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
    * @param graphics 対象グラフィック
    * @param rgba 枠の色
    */
-  public drawBounds(graphics: PIXI.Graphics, rgba: number) {
+  public drawBounds(graphics: Graphics, rgba: number) {
     const { color, alpha } = parseRgba(rgba);
     graphics
       .lineStyle(2, color, alpha)

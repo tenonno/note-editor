@@ -9,6 +9,7 @@ import config from "../config";
 import Layer from "./Layer";
 import Notification from "./Notification";
 import Problem from "./Problem";
+import Statistics from "./Statistics";
 
 const drawerWidth: number = config.sidebarWidth;
 const rightDrawerWidth = 300;
@@ -102,19 +103,6 @@ TabPanel.propTypes = {
 };
 */
 
-function a11yProps(index: number, value: number, setValue: any) {
-  return {
-    id: `vertical-tab-${index}`,
-    key: index,
-    "aria-controls": `vertical-tabpanel-${index}`,
-    onClick: (...args: any[]) => {
-      if (value === index) {
-        setValue(3);
-      }
-    },
-  };
-}
-
 export default observer(function RightDrawer() {
   const { editor } = useStores();
   const classes = useStyles();
@@ -135,7 +123,21 @@ export default observer(function RightDrawer() {
     { name: "Layer", element: () => <Layer /> },
     { name: "Problem", element: () => <Problem /> },
     { name: "Notification", element: () => <Notification /> },
+    { name: "Statistics", element: () => <Statistics /> },
   ];
+
+  const a11yProps = (index: number, value: number, setValue: any) => {
+    return {
+      id: `vertical-tab-${index}`,
+      key: index,
+      "aria-controls": `vertical-tabpanel-${index}`,
+      onClick: (...args: any[]) => {
+        if (value === index) {
+          setValue(tabs.length);
+        }
+      },
+    };
+  };
 
   return (
     <Drawer

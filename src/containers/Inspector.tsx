@@ -7,6 +7,7 @@ import TweakpaneInspectorController from "../inspector/tweakpaneInspectorControl
 import Editor from "../stores/EditorStore";
 import { inject, InjectedComponent } from "../stores/inject";
 import guiUtil from "../utils/GuiUtility";
+import { Alert } from "@mui/material";
 
 /**
  * インスペクタコンポーネント
@@ -91,7 +92,12 @@ export default class Inspector extends InjectedComponent {
 
     let component = this;
     return (
-      <div>
+      <>
+        {this.currentInspectorController.getWarnings().map((t, i) => (
+          <Alert severity="warning" key={i}>
+            {t}
+          </Alert>
+        ))}
         <div
           ref={(thisDiv) => {
             component.element = thisDiv!;
@@ -100,7 +106,7 @@ export default class Inspector extends InjectedComponent {
         {targets.length >= this.maxTargetCount ? (
           <span>{targets.length}個のオブジェクトを選択しています</span>
         ) : null}
-      </div>
+      </>
     );
   }
 }

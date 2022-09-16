@@ -1,7 +1,7 @@
 import { Fraction } from "../math";
-import TimelineObject from "./TimelineObject";
 import { Mutable } from "../utils/mutable";
 import { Record } from "immutable";
+import { GUID } from "../utils/guid";
 
 /**
  * レーンの中間点
@@ -13,7 +13,18 @@ export type LanePointData = {
   templateName: string;
 
   color: number; // = 0xffffff;
-} & TimelineObject;
+
+  guid: GUID;
+
+  /**
+   * 小節インデックス
+   */
+  measureIndex: number;
+  /**
+   * 小節内の位置
+   */
+  measurePosition: Fraction;
+};
 
 const defaultNoteLineData: LanePointData = {
   guid: "GUID",

@@ -13,7 +13,7 @@ import { Measure, MeasureData, MeasureRecord, sortMeasure } from "./Measure";
 import { Note, NoteData, NoteRecord } from "./Note";
 import { NoteLine, NoteLineData, NoteLineRecord } from "./NoteLine";
 import { OtherObject, OtherObjectData, OtherObjectRecord } from "./OtherObject";
-import { OtherObjectType } from "../stores/MusicGameSystem";
+import { guid } from "../utils/guid";
 
 export type TimelineJsonData = {
   notes: NoteData[];
@@ -60,7 +60,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
     timeline.chart = chart;
 
-    timeline.toMutable(timeline, chart.musicGameSystem.otherObjectTypes);
+    timeline.toMutable(timeline);
 
     timeline.save();
 
@@ -70,10 +70,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
   /**
    * 各 Record を mutable に変換する
    */
-  private toMutable(
-    data: TimelineJsonData,
-    otherObjectTypes: OtherObjectType[]
-  ) {
+  private toMutable(data: TimelineJsonData) {
     this.mutable.notes = data.notes.map((note) =>
       NoteRecord.new(note, this.chart!)
     );
@@ -88,7 +85,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
       LanePointRecord.new(lanePoint)
     );
     this.mutable.otherObjects = data.otherObjects.map((object) =>
-      OtherObjectRecord.createInstance(object, otherObjectTypes)
+      OtherObjectRecord.createInstance(object, this.chart!)
     );
 
     this.updateNoteMap();
@@ -138,11 +135,30 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     if (object.isBPM()) this.calculateTime();
   }
 
-  removeOtherObject(object: OtherObject) {
+  public removeOtherObject(object: OtherObject) {
     this.mutable.otherObjects = this.otherObjects.filter(
       (obj) => obj !== object
     );
-    if (object.isBPM()) this.calculateTime();
+    if (object.isBPM()) {
+      // BPM が 1 つも存在しなかったら仮 BPM を先頭に配置する
+      if (!this.otherObjects.some((object) => object.isBPM())) {
+        this.addOtherObject(
+          OtherObjectRecord.createInstance(
+            {
+              type: 0,
+              guid: guid(),
+              measureIndex: 0,
+              measurePosition: new Fraction(0, 1),
+              value: 120,
+              layer: this.chart!.layers[0].guid,
+            },
+            this.chart!
+          )
+        );
+      }
+
+      this.calculateTime();
+    }
   }
 
   @action
@@ -179,6 +195,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
   /**
    * 譜面情報をセーブする
    */
+  @action
   public save() {
     for (const note of this.notes) {
       note.normalize();
@@ -223,7 +240,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     ).newDocument;
 
     this.prevData = data;
-    this.toMutable(data, this.chart.musicGameSystem.otherObjectTypes);
+    this.toMutable(data);
 
     this.chart.canRedo = true;
     this.chart.canUndo = this.historyIndex > 1;
@@ -245,7 +262,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     ).newDocument;
 
     this.prevData = data;
-    this.toMutable(data, this.chart.musicGameSystem.otherObjectTypes);
+    this.toMutable(data);
 
     this.chart.canUndo = true;
     this.chart.canRedo = this.historyIndex < this.histories.length;
@@ -314,7 +331,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
   removeNoteLine(noteLine: NoteLine) {
     this.mutable.noteLines = this.noteLines.filter(
-      (_note) => _note != noteLine
+      (_note) => _note !== noteLine
     );
   }
 

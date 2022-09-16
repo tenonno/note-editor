@@ -57,6 +57,8 @@ export default class EditorSetting {
     // 保存してはいけないプロパティを削除する
     // @ts-ignore
     delete setting.measureLayouts;
+    // @ts-ignore
+    delete setting.objectSizes;
     localStorage.setItem("editorSetting", JSON.stringify(setting));
   }
 
@@ -242,7 +244,7 @@ export default class EditorSetting {
   }
 
   @box
-  public otherValue: number | string = 120;
+  public otherValues = new Map<string, number | string>();
 
   measureLayouts: IMeasureLayout[] = [
     new DefaultMeasureLayout(),

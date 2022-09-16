@@ -3,7 +3,8 @@ import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
 import { sortMeasure } from "../objects/Measure";
 import { NoteRecord } from "../objects/Note";
 import Editor from "../stores/EditorStore";
-import { guid } from "../utils/guid";
+import { guid } from "./guid";
+import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
 
 export class ExtensionUtility {
   Vector2 = Vector2;
@@ -17,6 +18,7 @@ export class ExtensionUtility {
   getEditor() {
     return Editor.instance!;
   }
+  BezierNoteLineCalculator = BezierNoteLineCalculator;
 }
 
 export default new ExtensionUtility();

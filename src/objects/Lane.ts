@@ -3,6 +3,7 @@ import { Vector2 } from "../math";
 import { GUID } from "../utils/guid";
 import { Mutable } from "../utils/mutable";
 import { Measure } from "./Measure";
+import { NoteLine } from "./NoteLine";
 
 export type LaneData = {
   guid: GUID;
@@ -47,3 +48,10 @@ export interface LineInfo {
   start: LinePointInfo;
   end: LinePointInfo;
 }
+
+export type NoteLineInfo = {
+  noteLine: NoteLine;
+  measure: Measure;
+  start: LinePointInfo;
+  end: LinePointInfo;
+};

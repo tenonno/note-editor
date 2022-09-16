@@ -1,6 +1,5 @@
 import { IconButton, Slider } from "@mui/material";
 import makeStyles from "@mui/styles/makeStyles";
-import { Theme } from "@mui/material/styles";
 import NotesIcon from "@mui/icons-material/Notes";
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrow from "@mui/icons-material/PlayArrow";
@@ -13,27 +12,21 @@ import { useState } from "react";
 import ChartInformation from "../components/ChartInformation";
 import { useStores } from "../stores/stores";
 import Skeleton from "@mui/material/Skeleton";
+import { IconSlider } from "../components/IconSlider";
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles(() => ({
   playerButton: {},
   timeSliderTrack: {
     height: "4px",
     background: "red",
     border: "none",
+    transition: "none",
   },
   timeSliderThumb: {
     width: "14px",
     height: "14px",
     background: "red",
-  },
-  volumeSliderTrack: {
-    height: "4px",
-    background: "#fff",
-  },
-  volumeSliderThumb: {
-    width: "14px",
-    height: "14px",
-    background: "#fff",
+    transition: "none",
   },
 }));
 
@@ -133,91 +126,41 @@ export default observer(function Player() {
           {formatTime(chart.audioBuffer!.duration)}
         </span>
 
-        <IconButton
-          style={{ color: "#fff" }}
-          className={classes.playerButton}
-          aria-label="Delete"
-          size="large"
-        >
-          <SpeakerIcon />
-        </IconButton>
-
         {/* volume */}
-        <Slider
+        <IconSlider
+          icon={<SpeakerIcon />}
           value={chart.volume}
           min={0}
           max={1}
           step={Number.EPSILON}
-          style={{
-            marginBottom: "-10px",
-            marginRight: "10px",
-            width: "100px",
-            display: "inline-block",
-          }}
-          classes={{
-            track: classes.volumeSliderTrack,
-            thumb: classes.volumeSliderThumb,
-          }}
           onChange={(_, value) => {
-            editor!.currentChart!.setVolume(value as number);
+            chart.setVolume(value as number);
           }}
-        />
+        ></IconSlider>
 
-        <IconButton
-          style={{ color: "#fff" }}
-          className={classes.playerButton}
-          size="large"
-        >
-          <SpeedIcon />
-        </IconButton>
-
-        <Slider
+        {/* speed */}
+        <IconSlider
+          icon={<SpeedIcon />}
           value={chart.speed}
           min={0.1}
           max={1}
           step={0.1}
-          style={{
-            marginBottom: "-10px",
-            marginRight: "10px",
-            width: "100px",
-            display: "inline-block",
-          }}
-          classes={{
-            track: classes.volumeSliderTrack,
-            thumb: classes.volumeSliderThumb,
-          }}
           onChange={(_, value) => {
             chart.setSpeed(value as number);
           }}
-        />
+        ></IconSlider>
 
-        <IconButton
-          style={{ color: "#fff" }}
-          className={classes.playerButton}
-          size="large"
-        >
-          <SeVolumeIcon />
-        </IconButton>
-
-        <Slider
+        {/* seVolume */}
+        <IconSlider
+          icon={<SeVolumeIcon />}
           value={chart.seVolume}
           min={0}
           max={1}
           step={0.1}
-          style={{
-            marginBottom: "-10px",
-            marginRight: "10px",
-            width: "100px",
-            display: "inline-block",
-          }}
-          classes={{
-            track: classes.volumeSliderTrack,
-            thumb: classes.volumeSliderThumb,
-          }}
           onChange={(_, value) => {
             chart.setSeVolume(value as number);
           }}
-        />
+        ></IconSlider>
 
         <IconButton
           id="notes"

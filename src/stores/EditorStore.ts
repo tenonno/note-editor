@@ -2,6 +2,7 @@ import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
 import http from "http";
 import * as _ from "lodash";
+import { min } from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
 import {
@@ -15,7 +16,7 @@ import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureRecord } from "../objects/Measure";
 import { Note, NoteRecord } from "../objects/Note";
-import { OtherObjectRecord } from "../objects/OtherObject";
+import { OtherObject, OtherObjectRecord } from "../objects/OtherObject";
 import { TimelineData } from "../objects/Timeline";
 import BMSImporter from "../plugins/BMSImporter";
 import extensionUtility from "../utils/ExtensionUtility";
@@ -24,6 +25,8 @@ import AssetStore from "./Asset";
 import Chart from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
+import TimelineObject from "../objects/TimelineObject";
+import { NoteLineContextMenu } from "./contextMenu";
 
 const { dialog } = remote;
 
@@ -41,9 +44,10 @@ export default class Editor {
   currentFrame = 0;
 
   @observable.ref
-  inspectorTargets: any[] = [];
+  inspectorTargets: TimelineObject[] = [];
 
-  copiedNotes: Note[] = [];
+  private copiedNotes: Note[] = [];
+  private copiedOtherObjects: OtherObject[] = [];
 
   @observable.shallow
   public notifications: Notification[] = [];
@@ -75,13 +79,13 @@ export default class Editor {
   }
 
   @action
-  addInspectorTarget(target: any) {
+  public addInspectorTarget(target: TimelineObject) {
     this.inspectorTargets = _.uniq([...this.inspectorTargets, target]);
     target.isSelected = true;
   }
 
   @action
-  removeInspectorTarget(target: any) {
+  public removeInspectorTarget(target: TimelineObject) {
     this.inspectorTargets = this.inspectorTargets.filter((x) => x !== target);
     target.isSelected = false;
   }
@@ -97,7 +101,7 @@ export default class Editor {
     this.inspectorTargets = [];
   }
 
-  getInspectNotes(): Note[] {
+  private getInspectNotes(): Note[] {
     const notes = [];
     for (const target of this.inspectorTargets) {
       if (target instanceof NoteRecord) {
@@ -112,6 +116,23 @@ export default class Editor {
       }
     }
     return notes;
+  }
+
+  private getInspectedOtherObjects(): OtherObject[] {
+    const otherObjects = [];
+    for (const target of this.inspectorTargets) {
+      if (target instanceof OtherObjectRecord) {
+        otherObjects.push(target as OtherObject);
+      }
+      if (target instanceof MeasureRecord) {
+        otherObjects.push(
+          ...this.currentChart!.timeline.otherObjects.filter(
+            (n) => n.measureIndex == target.index
+          )
+        );
+      }
+    }
+    return otherObjects;
   }
 
   @observable.ref
@@ -399,22 +420,24 @@ export default class Editor {
   });
 
   @action
-  copy() {
+  private copy() {
     if (!this.existsCurrentChart()) return;
     this.copiedNotes = this.getInspectNotes();
+    this.copiedOtherObjects = this.getInspectedOtherObjects();
 
-    this.notify(`${this.copiedNotes.length} 個のオブジェクトをコピーしました`);
+    this.notify(
+      `${
+        this.copiedNotes.length + this.copiedOtherObjects.length
+      } 個のオブジェクトをコピーしました`
+    );
   }
 
   @action
-  paste() {
-    if (!this.existsCurrentChart()) return;
-    if (this.inspectorTargets.length != 1) return;
-    if (!(this.inspectorTargets[0] instanceof MeasureRecord)) return;
-    if (this.copiedNotes.length == 0) return;
+  private pasteNotes() {
+    if (this.copiedNotes.length === 0) return;
 
     const oldChart = this.copiedNotes[0].chart;
-    if (oldChart.musicGameSystem != this.currentChart!.musicGameSystem) {
+    if (oldChart.musicGameSystem !== this.currentChart!.musicGameSystem) {
       this.notify("musicGameSystemが一致しません", "error");
       return;
     }
@@ -425,8 +448,12 @@ export default class Editor {
       return;
     }
 
+    const minMeasureIndex = min(
+      this.copiedNotes.map((note) => note.measureIndex)
+    ) as number;
+
     const diff =
-      this.inspectorTargets[0].index -
+      minMeasureIndex -
       Math.min(...this.copiedNotes.map((note) => note.measureIndex));
 
     const guidMap = new Map<string, string>();
@@ -463,10 +490,73 @@ export default class Editor {
       newLine.tail = guidMap.get(newLine.tail)!;
       tl.addNoteLine(newLine);
     }
+  }
 
-    this.notify(`${this.copiedNotes.length} 個のオブジェクトを貼り付けました`);
+  @action
+  private pasteOtherObjects() {
+    if (this.copiedOtherObjects.length === 0) return;
 
-    if (this.copiedNotes.length > 0) this.currentChart!.save();
+    const oldChart = this.copiedOtherObjects[0].chart;
+    if (oldChart.musicGameSystem !== this.currentChart!.musicGameSystem) {
+      this.notify("musicGameSystemが一致しません", "error");
+      return;
+    }
+
+    const tl = this.currentChart!.timeline;
+
+    const minMeasureIndex = min(
+      this.copiedOtherObjects.map((note) => note.measureIndex)
+    ) as number;
+
+    const diff =
+      minMeasureIndex -
+      Math.min(...this.copiedOtherObjects.map((note) => note.measureIndex));
+
+    const guidMap = new Map<string, string>();
+    for (let otherObject of this.copiedOtherObjects) {
+      guidMap.set(otherObject.guid, guid());
+      otherObject = otherObject.clone();
+
+      // 新旧小節の拍子を考慮して位置を調整
+      otherObject.measurePosition = Fraction.mul(
+        otherObject.measurePosition,
+        Fraction.div(
+          oldChart.timeline.measures[otherObject.measureIndex].beat,
+          tl.measures[otherObject.measureIndex + diff].beat
+        )
+      );
+      if (
+        otherObject.measurePosition.numerator >=
+        otherObject.measurePosition.denominator
+      ) {
+        continue;
+      }
+
+      otherObject.guid = guidMap.get(otherObject.guid)!;
+      otherObject.measureIndex += diff;
+      otherObject.layer = this.currentChart!.currentLayer.guid;
+      otherObject.chart = this.currentChart!;
+      tl.addOtherObject(otherObject);
+    }
+  }
+
+  @action
+  private paste() {
+    if (!this.existsCurrentChart()) return;
+    if (this.inspectorTargets.length !== 1) return;
+    if (!(this.inspectorTargets[0] instanceof MeasureRecord)) return;
+    this.pasteNotes();
+    this.pasteOtherObjects();
+
+    this.notify(
+      `${
+        this.copiedNotes.length + this.copiedOtherObjects.length
+      } 個のオブジェクトを貼り付けました`
+    );
+
+    if (this.copiedNotes.length > 0 || this.copiedOtherObjects.length > 0) {
+      this.currentChart!.save();
+    }
   }
 
   @action
@@ -596,6 +686,8 @@ export default class Editor {
   @box
   public openReloadDialog = false;
 
+  public readonly noteLineContextMenu = new NoteLineContextMenu();
+
   public constructor() {
     // ファイル
     ipcRenderer.on("open", () => this.open());
@@ -646,12 +738,12 @@ export default class Editor {
       if (this.activeElementIsInput()) return;
       const removeNotes = this.inspectorTargets.filter(
         (target) => target instanceof NoteRecord
-      );
+      ) as Note[];
       removeNotes.forEach((n) => this.currentChart!.timeline.removeNote(n));
 
       const removeOtherObjects = this.inspectorTargets.filter(
         (target) => target instanceof OtherObjectRecord
-      );
+      ) as OtherObject[];
       removeOtherObjects.forEach((o) =>
         this.currentChart!.timeline.removeOtherObject(o)
       );

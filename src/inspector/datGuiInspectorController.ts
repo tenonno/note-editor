@@ -28,6 +28,12 @@ export default class DatGuiInspectorController implements InspectorController {
 
   public constructor(private editor: Editor) {}
 
+  public getWarnings(): string[] {
+    return [
+      "dat.GUI は廃止予定です\nエディタ設定から Tweakpane を選択してください",
+    ];
+  }
+
   public mount(element: HTMLElement): void {
     const gui = this.gui;
     const size = config.sidebarWidth;

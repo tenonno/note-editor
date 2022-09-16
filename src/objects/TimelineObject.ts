@@ -1,15 +1,11 @@
-import { Fraction } from "../math";
-import { GUID, guid } from "../utils/guid";
+import * as PIXI from "pixi.js";
 
-export default class TimelineObject {
-  guid: GUID = guid();
+export default interface TimelineObject {
+  drawBounds(graphics: PIXI.Graphics, rgba: number): void;
 
-  /**
-   * 小節インデックス
-   */
-  measureIndex: number = 0;
-  /**
-   * 小節内の位置
-   */
-  measurePosition: Fraction = Fraction.none;
+  isSelected: boolean;
+}
+
+export interface IRangeSelectableTimelineObject {
+  getBounds(): PIXI.Rectangle;
 }

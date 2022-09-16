@@ -29,6 +29,8 @@ export class TweakpaneSplitValueController {
   public addInput(gui: Tweakpane | FolderApi, parent: any, key: string) {
     const splitValue = this.splitValueKeys.get(key)!;
 
+    console.log("addInput!", splitValue, key, parent);
+
     if (!isString(parent[key])) {
       parent[key] = parent[key].toString();
     }
