@@ -5,8 +5,8 @@ import { useStores } from "../stores/stores";
 import { useStyles } from "../styles/styles";
 
 interface IProps {
-  value: number | null;
-  onChange: (newValue: number | null) => void;
+  value: number;
+  onChange: (newValue: number) => void;
 }
 
 export default observer(function MusicGameSystemSelect({
@@ -25,7 +25,7 @@ export default observer(function MusicGameSystemSelect({
         value={value === null ? -1 : value}
         onChange={(e: any) => {
           const v = e.target.value;
-          onChange(v === -1 ? null : v);
+          onChange(v);
         }}
         inputProps={{
           className: classes.input,

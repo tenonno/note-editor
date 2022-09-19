@@ -227,10 +227,17 @@ function initWindowMenu() {
           },
         },
         {
-          label: "ノートの位置を反転",
+          label: "ノートの位置を左右反転",
           accelerator: "CmdOrCtrl+F",
           click() {
             mainWindow!.webContents.send("flipLane");
+          },
+        },
+        {
+          label: "ノートの位置を上下反転",
+          accelerator: "CmdOrCtrl+D",
+          click() {
+            mainWindow!.webContents.send("flipVertical");
           },
         },
       ],

@@ -1,13 +1,17 @@
-import { Graphics } from "pixi.js";
+import { Graphics, Point, Rectangle } from "pixi.js";
 import Pixi from "../containers/Pixi";
 import MeasureRendererResolver from "../objects/MeasureRendererResolver";
 import Chart from "../stores/Chart";
-import EditorSetting, { EditMode, ObjectCategory } from "../stores/EditorSetting";
-import { Fraction } from "../math";
+import EditorSetting, {
+  EditMode,
+  ObjectCategory,
+} from "../stores/EditorSetting";
+import { Fraction, IFraction } from "../math";
 import Editor from "../stores/EditorStore";
 import { Measure } from "./Measure";
 import TimelineObject from "./TimelineObject";
 import MouseInfo from "../utils/mouseInfo";
+import { clamp } from "lodash";
 
 type UpdateResult = {
   targetMeasure: Measure | null;
@@ -15,8 +19,22 @@ type UpdateResult = {
   selectTargets: TimelineObject[] | null;
 };
 
+export const initialCurrentMeasurePosition = {
+  exists: false,
+  measureIndex: 0,
+  measurePosition: Fraction.none,
+};
+
+export type CurrentMeasurePosition = {
+  exists: boolean;
+  measureIndex: number;
+  measurePosition: IFraction;
+};
+
 export default class MeasureController {
   public constructor(private graphics: Graphics, private editor: Editor) {}
+
+  public currentMeasurePosition: CurrentMeasurePosition = initialCurrentMeasurePosition;
 
   public updateTime(chart: Chart, currentTime: number): void {
     const timeCalculator = chart.timeline.timeCalculator;
@@ -129,6 +147,56 @@ export default class MeasureController {
     };
   }
 
+  private updateCurrentMeasurePosition(
+    targetMeasure: Measure,
+    targetMeasureDivision: number,
+    mouseInfo: MouseInfo
+  ) {
+    function normalizeContainsPoint(measure: Measure, point: Point) {
+      return [
+        (point.x - measure.x) / measure.width,
+        (point.y - measure.y) / measure.height,
+      ];
+    }
+
+    const [, ny] = normalizeContainsPoint(targetMeasure, mouseInfo.position);
+
+    function getBounds(
+      measure: Measure,
+      measurePosition: IFraction
+    ): Rectangle {
+      const lane = measure;
+
+      const y =
+        lane.y +
+        lane.height -
+        (lane.height / measurePosition.denominator) * measurePosition.numerator;
+
+      return new Rectangle(measure.x, y, measure.width, 2);
+    }
+
+    const vlDiv = targetMeasureDivision;
+
+    this.currentMeasurePosition = {
+      exists: true,
+      measureIndex: targetMeasure.index,
+      measurePosition: new Fraction(
+        vlDiv - 1 - clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
+        vlDiv
+      ),
+    };
+
+    const bounds = getBounds(
+      targetMeasure,
+      this.currentMeasurePosition.measurePosition
+    );
+
+    this.graphics
+      .lineStyle(bounds.height, 0x00ff00)
+      .moveTo(bounds.x, bounds.y)
+      .lineTo(bounds.x + bounds.width, bounds.y);
+  }
+
   public update(
     chart: Chart,
     canEdit: boolean,
@@ -153,6 +221,12 @@ export default class MeasureController {
     let selectTargets = null;
 
     if (!targetMeasure || !canEdit) {
+      this.currentMeasurePosition = {
+        exists: false,
+        measureIndex: 0,
+        measurePosition: Fraction.none,
+      };
+
       return {
         targetMeasure,
         targetMeasureDivision,
@@ -171,6 +245,12 @@ export default class MeasureController {
         .moveTo(targetMeasure.x, y)
         .lineTo(targetMeasure.x + measureWidth, y);
     }
+
+    this.updateCurrentMeasurePosition(
+      targetMeasure,
+      targetMeasureDivision,
+      mouseInfo
+    );
 
     // レーン追加モードなら小節の横分割線を描画
     if (

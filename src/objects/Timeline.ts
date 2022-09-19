@@ -372,7 +372,6 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
   laneMap = new Map<string, Lane>();
 
   updateLaneMap() {
-    console.log(this);
     this.laneMap.clear();
     for (const lane of this.lanes) {
       this.laneMap.set(lane.guid, lane);

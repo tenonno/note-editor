@@ -1,6 +1,9 @@
 import { Record } from "immutable";
 import { Fraction, IFraction } from "../math";
-import { MusicGameSystemMeasure, MusicGameSystemMeasureCustomProps } from "../stores/MusicGameSystem";
+import {
+  MusicGameSystemMeasure,
+  MusicGameSystemMeasureCustomProps,
+} from "../stores/MusicGameSystem";
 import { parseRgba } from "../utils/color";
 import { Mutable } from "../utils/mutable";
 import { Graphics, Rectangle } from "pixi.js";
@@ -116,7 +119,7 @@ export class MeasureRecord extends Record<MeasureData>(defaultMeasureData) {
   }
 }
 
-interface MeasureObject {
+export interface MeasureObject {
   measureIndex: number;
   measurePosition: IFraction;
 }

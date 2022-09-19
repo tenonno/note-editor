@@ -27,14 +27,9 @@ export type ChartJsonData = {
   level: string;
   startTime: number;
   developmentStartTime: number;
-  musicGameSystem: {
-    name: string;
-    version: number;
-  };
-  audio: {
-    source: string;
-    startTime: number;
-  };
+  musicGameSystemName: string;
+  musicGameSystemVersion: number;
+  audioSource: string;
   timeline: TimelineJsonData;
   layers: LayerData[];
   customProps: any;
@@ -46,6 +41,7 @@ export default class Chart {
 
   version: number = 3;
 
+  // @ts-ignore
   timeline: Timeline;
 
   @observable.shallow
@@ -192,35 +188,6 @@ export default class Chart {
     this.updatedAt = Date.now();
   }
 
-  public static loadFromJson(json: string) {
-    const editor = Editor.instance!;
-
-    const jsonChart: Chart = JSON.parse(json);
-
-    const musicGameSystem = editor.asset.musicGameSystems.find(
-      (mgs) => mgs.name === jsonChart.musicGameSystemName
-    );
-
-    if (!musicGameSystem) {
-      return console.error(
-        "MusicGameSystem が見つかりません",
-        jsonChart.musicGameSystemName,
-        jsonChart.musicGameSystemVersion
-      );
-    }
-    if (musicGameSystem.version !== jsonChart.musicGameSystemVersion) {
-      // TODO: 更新処理を実装する
-      editor.notify(
-        `${musicGameSystem.name} のバージョンが異なります`,
-        "warning"
-      );
-    }
-
-    const chart = editor.newChart(musicGameSystem, jsonChart.audioSource!);
-    chart.load(json);
-    editor.setCurrentChart(editor.charts.length - 1);
-  }
-
   /**
    * 小節を生成する
    * @param index 小節番号
@@ -245,8 +212,7 @@ export default class Chart {
   }
 
   @action
-  private load(json: string) {
-    const chartData: ChartJsonData = JSON.parse(json);
+  public load(chartData: ChartJsonData) {
     console.log("譜面を読み込みます", chartData);
 
     updateChart(chartData, this.version);
@@ -340,14 +306,13 @@ export default class Chart {
     this.setStartTime(chartData.startTime);
     this.setDifficulty(chartData.difficulty || 0);
     this.setCreator(chartData.creator);
+    this.setAudioFromSource(chartData.audioSource);
     this.level = chartData.level;
     this.developmentStartTime = chartData.developmentStartTime || 0;
   }
 
-  constructor(musicGameSystem: MusicGameSystem, audioSource: string) {
+  public constructor(musicGameSystem: MusicGameSystem) {
     this.musicGameSystem = musicGameSystem;
-    this.timeline = TimelineRecord.new(this);
-    this.setAudioFromSource(audioSource);
   }
 
   @observable
@@ -483,7 +448,7 @@ export default class Chart {
   };
 
   @action
-  private setAudioFromSource(source: string) {
+  public setAudioFromSource(source: string) {
     const audioBuffer = Editor.instance!.asset.loadAudioAsset(source);
 
     if (!audioBuffer) {

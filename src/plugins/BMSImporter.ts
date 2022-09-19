@@ -3,8 +3,8 @@ import * as fs from "fs";
 import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureData } from "../objects/Measure";
-import Chart from "../stores/Chart";
 import { guid } from "../utils/guid";
+
 const { dialog } = remote;
 
 type Stop = {
@@ -465,6 +465,7 @@ export default class BMSImporter {
       newMeasures[measure.index].beat = measure.beat;
     }
 
+    /*
     Chart.loadFromJson(
       JSON.stringify({
         version: 2,
@@ -564,5 +565,6 @@ export default class BMSImporter {
         musicGameSystemVersion: 0.1,
       })
     );
+    */
   }
 }

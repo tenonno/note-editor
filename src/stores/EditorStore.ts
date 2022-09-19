@@ -1,8 +1,7 @@
 import { ipcRenderer, remote } from "electron";
 import * as fs from "fs";
 import http from "http";
-import * as _ from "lodash";
-import { min } from "lodash";
+import { clamp, cloneDeep, uniq } from "lodash";
 import { action, flow, observable, runInAction } from "mobx";
 import * as Mousetrap from "mousetrap";
 import {
@@ -13,20 +12,25 @@ import {
 } from "notistack";
 import box from "../utils/mobx-box";
 import * as util from "util";
-import { Fraction } from "../math";
+import { Fraction, inverseLerp } from "../math";
 import { MeasureRecord } from "../objects/Measure";
 import { Note, NoteRecord } from "../objects/Note";
 import { OtherObject, OtherObjectRecord } from "../objects/OtherObject";
-import { TimelineData } from "../objects/Timeline";
 import BMSImporter from "../plugins/BMSImporter";
 import extensionUtility from "../utils/ExtensionUtility";
 import { GUID, guid } from "../utils/guid";
 import AssetStore from "./Asset";
-import Chart from "./Chart";
+import Chart, { ChartJsonData } from "./Chart";
 import EditorSetting, { EditMode } from "./EditorSetting";
 import MusicGameSystem from "./MusicGameSystem";
 import TimelineObject from "../objects/TimelineObject";
 import { NoteLineContextMenu } from "./contextMenu";
+import { MeasureObjectGroup } from "../utils/noteGroupUtility";
+import { TimelineRecord } from "../objects/Timeline";
+import {
+  CurrentMeasurePosition,
+  initialCurrentMeasurePosition,
+} from "../objects/MeasureController";
 
 const { dialog } = remote;
 
@@ -80,7 +84,7 @@ export default class Editor {
 
   @action
   public addInspectorTarget(target: TimelineObject) {
-    this.inspectorTargets = _.uniq([...this.inspectorTargets, target]);
+    this.inspectorTargets = uniq([...this.inspectorTargets, target]);
     target.isSelected = true;
   }
 
@@ -159,14 +163,71 @@ export default class Editor {
    * 新規譜面を作成する
    */
   @action
-  public newChart(
+  public createChart(
     musicGameSystem: MusicGameSystem,
     audioSource: string,
-    data?: TimelineData
+    name: string,
+    creator: string,
+    difficulty: number,
+    level: string,
+    bpm: number
   ) {
-    const newChart = new Chart(musicGameSystem, audioSource);
-    this.charts.push(newChart);
-    return newChart;
+    const chart = new Chart(musicGameSystem);
+    chart.timeline = TimelineRecord.new(chart);
+    chart.setAudioFromSource(audioSource);
+    chart.setName(name);
+    chart.setCreator(creator);
+    chart.setDifficulty(difficulty);
+    chart.level = level;
+    chart.loadInitialMeasures();
+    chart.loadInitialLanes();
+    chart.addLayer();
+
+    const newObject = OtherObjectRecord.createInstance(
+      {
+        type: 0,
+        measureIndex: 0,
+        measurePosition: new Fraction(0, 1),
+        guid: guid(),
+        value: bpm,
+        layer: chart.currentLayer.guid,
+      },
+      chart
+    );
+
+    chart.timeline.addOtherObject(newObject);
+
+    this.charts.push(chart);
+    this.setCurrentChart(this.charts.length - 1);
+    return chart;
+  }
+
+  @action
+  public loadChart(jsonData: ChartJsonData) {
+    const musicGameSystem = this.asset.musicGameSystems.find(
+      (mgs) => mgs.name === jsonData.musicGameSystemName
+    );
+
+    if (!musicGameSystem) {
+      return console.error(
+        "MusicGameSystem が見つかりません",
+        jsonData.musicGameSystemName,
+        jsonData.musicGameSystemVersion
+      );
+    }
+    if (musicGameSystem.version !== jsonData.musicGameSystemVersion) {
+      // TODO: 更新処理を実装する
+      this.notify(
+        `${musicGameSystem.name} のバージョンが異なります`,
+        "warning"
+      );
+    }
+
+    const chart = new Chart(musicGameSystem);
+    chart.load(jsonData);
+    this.charts.push(chart);
+    this.setCurrentChart(this.charts.length - 1);
+    return chart;
   }
 
   /**
@@ -414,7 +475,7 @@ export default class Editor {
   private openCharts = flow(function* (this: Editor, filePaths: string[]) {
     for (const filePath of filePaths) {
       const file = yield util.promisify(fs.readFile)(filePath);
-      Chart.loadFromJson(file.toString());
+      this.loadChart(JSON.parse(file.toString()));
       this.currentChart!.filePath = filePath;
     }
   });
@@ -432,9 +493,16 @@ export default class Editor {
     );
   }
 
+  public currentMeasurePosition: CurrentMeasurePosition = initialCurrentMeasurePosition;
+
   @action
   private pasteNotes() {
     if (this.copiedNotes.length === 0) return;
+
+    if (!this.currentMeasurePosition.exists) {
+      this.notify("貼り付け位置が指定されていません", "error");
+      return;
+    }
 
     const oldChart = this.copiedNotes[0].chart;
     if (oldChart.musicGameSystem !== this.currentChart!.musicGameSystem) {
@@ -448,46 +516,38 @@ export default class Editor {
       return;
     }
 
-    const minMeasureIndex = min(
-      this.copiedNotes.map((note) => note.measureIndex)
-    ) as number;
+    const noteGroup = new MeasureObjectGroup<Note>(this.copiedNotes, [
+      this.currentMeasurePosition,
+    ]);
 
-    const diff =
-      minMeasureIndex -
-      Math.min(...this.copiedNotes.map((note) => note.measureIndex));
+    const originalGuidMap = new Map<string, string>();
 
-    const guidMap = new Map<string, string>();
-    for (let note of this.copiedNotes) {
-      guidMap.set(note.guid, guid());
-      note = note.clone();
+    noteGroup.moveTo(
+      this.currentMeasurePosition.measureIndex,
+      this.currentMeasurePosition.measurePosition,
+      (note, measureIndex, measurePosition) => {
+        const newNote = note.clone();
 
-      // 新旧小節の拍子を考慮して位置を調整
-      note.measurePosition = Fraction.mul(
-        note.measurePosition,
-        Fraction.div(
-          oldChart.timeline.measures[note.measureIndex].beat,
-          tl.measures[note.measureIndex + diff].beat
-        )
-      );
-      if (note.measurePosition.numerator >= note.measurePosition.denominator)
-        continue;
+        newNote.guid = guid();
+        newNote.measureIndex = measureIndex;
+        newNote.measurePosition = measurePosition;
 
-      note.guid = guidMap.get(note.guid)!;
-      note.measureIndex += diff;
-      note.layer = this.currentChart!.currentLayer.guid;
-      note.chart = this.currentChart!;
-      tl.addNote(note, false);
-    }
+        originalGuidMap.set(note.guid, newNote.guid);
+
+        tl.addNote(newNote, false);
+      }
+    );
 
     tl.updateNoteMap();
 
     // ノートラインを複製する
     for (const line of oldChart.timeline.noteLines) {
-      if (!guidMap.has(line.head) || !guidMap.has(line.tail)) continue;
-      const newLine = _.cloneDeep(line);
+      if (!originalGuidMap.has(line.head) || !originalGuidMap.has(line.tail))
+        continue;
+      const newLine = cloneDeep(line);
       newLine.guid = guid();
-      newLine.head = guidMap.get(newLine.head)!;
-      newLine.tail = guidMap.get(newLine.tail)!;
+      newLine.head = originalGuidMap.get(newLine.head)!;
+      newLine.tail = originalGuidMap.get(newLine.tail)!;
       tl.addNoteLine(newLine);
     }
   }
@@ -496,55 +556,39 @@ export default class Editor {
   private pasteOtherObjects() {
     if (this.copiedOtherObjects.length === 0) return;
 
+    if (!this.currentMeasurePosition.exists) {
+      this.notify("貼り付け位置が指定されていません", "error");
+      return;
+    }
+
     const oldChart = this.copiedOtherObjects[0].chart;
     if (oldChart.musicGameSystem !== this.currentChart!.musicGameSystem) {
       this.notify("musicGameSystemが一致しません", "error");
       return;
     }
 
-    const tl = this.currentChart!.timeline;
+    const group = new MeasureObjectGroup<OtherObject>(this.copiedOtherObjects, [
+      this.currentMeasurePosition,
+    ]);
 
-    const minMeasureIndex = min(
-      this.copiedOtherObjects.map((note) => note.measureIndex)
-    ) as number;
+    group.moveTo(
+      this.currentMeasurePosition.measureIndex,
+      this.currentMeasurePosition.measurePosition,
+      (otherObject, measureIndex, measurePosition) => {
+        const newNote = otherObject.clone();
 
-    const diff =
-      minMeasureIndex -
-      Math.min(...this.copiedOtherObjects.map((note) => note.measureIndex));
+        newNote.guid = guid();
+        newNote.measureIndex = measureIndex;
+        newNote.measurePosition = measurePosition;
 
-    const guidMap = new Map<string, string>();
-    for (let otherObject of this.copiedOtherObjects) {
-      guidMap.set(otherObject.guid, guid());
-      otherObject = otherObject.clone();
-
-      // 新旧小節の拍子を考慮して位置を調整
-      otherObject.measurePosition = Fraction.mul(
-        otherObject.measurePosition,
-        Fraction.div(
-          oldChart.timeline.measures[otherObject.measureIndex].beat,
-          tl.measures[otherObject.measureIndex + diff].beat
-        )
-      );
-      if (
-        otherObject.measurePosition.numerator >=
-        otherObject.measurePosition.denominator
-      ) {
-        continue;
+        oldChart.timeline.addOtherObject(newNote);
       }
-
-      otherObject.guid = guidMap.get(otherObject.guid)!;
-      otherObject.measureIndex += diff;
-      otherObject.layer = this.currentChart!.currentLayer.guid;
-      otherObject.chart = this.currentChart!;
-      tl.addOtherObject(otherObject);
-    }
+    );
   }
 
   @action
   private paste() {
     if (!this.existsCurrentChart()) return;
-    if (this.inspectorTargets.length !== 1) return;
-    if (!(this.inspectorTargets[0] instanceof MeasureRecord)) return;
     this.pasteNotes();
     this.pasteOtherObjects();
 
@@ -602,7 +646,8 @@ export default class Editor {
 
     for (const note of notes) {
       const { numerator, denominator } = note.horizontalPosition;
-      note.horizontalPosition.numerator = _.clamp(
+
+      note.horizontalPosition.numerator = clamp(
         numerator + value,
         0,
         denominator - note.horizontalSize
@@ -632,6 +677,37 @@ export default class Editor {
     }
 
     this.currentChart.musicGameSystem.eventListeners.onMirror?.(notes);
+  }
+
+  /**
+   * 選択中のノートを上下反転する
+   */
+  @action
+  private flipVertical() {
+    if (!this.currentChart) return;
+
+    const notes = this.getInspectNotes();
+
+    const noteGroup = new MeasureObjectGroup(notes);
+
+    const { lcmDenominator, tickMap, minTick, maxTick } = noteGroup;
+
+    const tickLength = maxTick - minTick;
+
+    console.log(minTick, maxTick);
+
+    for (const [note, tick] of tickMap) {
+      const inverseTick =
+        minTick + inverseLerp(maxTick, minTick, tick) * tickLength;
+
+      const measureI = Math.floor(inverseTick / lcmDenominator);
+      const measureT = inverseTick % lcmDenominator;
+
+      note.measureIndex = measureI;
+      note.measurePosition = Fraction.reduce(
+        new Fraction(measureT, lcmDenominator)
+      );
+    }
   }
 
   @action
@@ -766,6 +842,11 @@ export default class Editor {
       if (this.activeElementIsInput()) return;
       this.moveLane((i) => this.currentChart!.timeline.lanes.length - i - 1);
       this.flipSelectedNotes();
+    });
+    ipcRenderer.on("flipVertical", () => {
+      if (this.activeElementIsInput()) return;
+      this.moveLane((i) => this.currentChart!.timeline.lanes.length - i - 1);
+      this.flipVertical();
     });
 
     // 選択

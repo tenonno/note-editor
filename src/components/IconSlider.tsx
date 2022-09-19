@@ -52,25 +52,23 @@ export function IconSlider({
         {icon}
       </IconButton>
 
-      {hover && (
-        <Slider
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          style={{
-            marginBottom: "-10px",
-            marginRight: "60px",
-            width: "100px",
-            display: "inline-block",
-          }}
-          classes={{
-            track: classes.volumeSliderTrack,
-            thumb: classes.volumeSliderThumb,
-          }}
-          onChange={onChange}
-        />
-      )}
+      <Slider
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        style={{
+          marginBottom: "-10px",
+          marginRight: "10px",
+          width: "100px",
+          display: "inline-block",
+        }}
+        classes={{
+          track: classes.volumeSliderTrack,
+          thumb: classes.volumeSliderThumb,
+        }}
+        onChange={onChange}
+      />
     </span>
   );
 }

@@ -11,7 +11,7 @@ export default function NETextField({
   fullWidth = true,
 }: {
   label: string;
-  value: string;
+  value: string | number;
   onChange: any;
   type?: HTMLInputTypeAttribute;
   fullWidth?: boolean;

@@ -6,6 +6,7 @@ import Editor from "../stores/EditorStore";
 import InspectorController from "./inspectorController";
 import { TweakpaneSplitValueController } from "./tweakpaneSplitValueController";
 import { InspectorPointValue } from "../objects/OtherObject";
+import { isNil } from "lodash";
 
 export default class TweakpaneInspectorController
   implements InspectorController {
@@ -57,6 +58,7 @@ export default class TweakpaneInspectorController
       for (const key of Object.keys(obj)) {
         if (key === "inspectorConfig") continue;
         if (ignoreKeys.includes(key)) continue;
+        if (isNil(obj[key])) continue;
 
         if (obj[key] instanceof InspectorPointValue) {
           const point = obj[key] as InspectorPointValue;

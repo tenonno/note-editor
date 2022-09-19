@@ -306,6 +306,8 @@ export default class Pixi extends InjectedComponent {
       selectTargets: selectMeasure,
     } = this.measureController!.update(chart, canEdit, mouseInfo);
 
+    editor.currentMeasurePosition = this.measureController!.currentMeasurePosition;
+
     const { targetNotePoint } = this.laneController!.update(
       chart,
       canEdit,
