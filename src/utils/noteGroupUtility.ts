@@ -23,8 +23,6 @@ export class MeasureObjectGroup<T extends MeasureObject> {
       .map((note) => note.measurePosition.denominator)
       .reduce((a, b) => lcm(a, b), 1);
 
-    console.log(this.lcmDenominator);
-
     for (const note of notes) {
       const { numerator, denominator } = note.measurePosition;
 

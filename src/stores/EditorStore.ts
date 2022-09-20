@@ -665,6 +665,10 @@ export default class Editor {
 
     const notes = this.getInspectNotes();
 
+    if (notes.length === 0) {
+      return;
+    }
+
     for (const note of notes) {
       const { numerator, denominator } = note.horizontalPosition;
       note.horizontalPosition.numerator =
@@ -674,6 +678,18 @@ export default class Editor {
       if (mirrorType) {
         note.updateType(mirrorType);
       }
+    }
+
+    const noteGuids = new Set(notes.map((note) => note.guid));
+
+    const noteLines = this.currentChart.timeline.noteLines.filter(
+      (noteLine) => {
+        return noteGuids.has(noteLine.head) || noteGuids.has(noteLine.tail);
+      }
+    );
+
+    for (const noteLine of noteLines) {
+      noteLine.bezier.x = 1.0 - noteLine.bezier.x;
     }
 
     this.currentChart.musicGameSystem.eventListeners.onMirror?.(notes);
@@ -688,13 +704,15 @@ export default class Editor {
 
     const notes = this.getInspectNotes();
 
+    if (notes.length === 0) {
+      return;
+    }
+
     const noteGroup = new MeasureObjectGroup(notes);
 
     const { lcmDenominator, tickMap, minTick, maxTick } = noteGroup;
 
     const tickLength = maxTick - minTick;
-
-    console.log(minTick, maxTick);
 
     for (const [note, tick] of tickMap) {
       const inverseTick =
@@ -707,6 +725,18 @@ export default class Editor {
       note.measurePosition = Fraction.reduce(
         new Fraction(measureT, lcmDenominator)
       );
+    }
+
+    const noteGuids = new Set(notes.map((note) => note.guid));
+
+    const noteLines = this.currentChart.timeline.noteLines.filter(
+      (noteLine) => {
+        return noteGuids.has(noteLine.head) || noteGuids.has(noteLine.tail);
+      }
+    );
+
+    for (const noteLine of noteLines) {
+      noteLine.bezier.y = 1.0 - noteLine.bezier.y;
     }
   }
 
@@ -770,6 +800,13 @@ export default class Editor {
     ipcRenderer.on("save", () => this.save());
     ipcRenderer.on("saveAs", () => this.saveAs());
     ipcRenderer.on("importBMS", () => BMSImporter.import());
+
+    Mousetrap.bind("shift", () => (this.setting.isPressingShiftKey = true));
+    Mousetrap.bind(
+      "shift",
+      () => (this.setting.isPressingShiftKey = false),
+      "keyup"
+    );
 
     Mousetrap.bind("mod", () => (this.setting.isPressingModKey = true));
     Mousetrap.bind(

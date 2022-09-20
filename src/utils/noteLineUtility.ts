@@ -1,7 +1,7 @@
 import { NoteLine } from "../objects/NoteLine";
 import { Measure } from "../objects/Measure";
 import { Graphics, Rectangle } from "pixi.js";
-import { Fraction, lerp, Vector2 } from "../math";
+import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
 import { NoteLineInfo } from "../objects/Lane";
 import { GetLineInfoFromPool } from "./pool";
 import { LinePoint } from "../objects/LaneRenderer";
@@ -101,10 +101,12 @@ type R = {
   }[];
 };
 
-export function getQuadraticBezierLines2(
+export function getBezierPointInfo(
   points: LinePoint[],
   noteLine: NoteLine,
-  measures: Measure[]
+  measures: Measure[],
+  horizontalDivision: number,
+  measureDivision: number
 ): R {
   const firstPoint = points[0];
   const lastPoint = points[points.length - 1];
@@ -112,9 +114,9 @@ export function getQuadraticBezierLines2(
   const s = firstPoint.measureIndex + Fraction.to01(firstPoint.measurePosition);
   const e = lastPoint.measureIndex + Fraction.to01(lastPoint.measurePosition);
 
-  const div = 10;
+  const divX = horizontalDivision;
 
-  function getPos(tX: number, t: number) {
+  function getPointByNormalizedPoint(tX: number, t: number) {
     const p = s + (e - s) * t;
 
     const measureIndex = Math.floor(p);
@@ -127,21 +129,43 @@ export function getQuadraticBezierLines2(
     return new Vector2(x, y);
   }
 
+  function getPos(tX: number, t: number, measureIndex: number) {
+    const measure = measures[measureIndex];
+    const y = lerp(measure.y, measure.y + measure.height, 1 - (t % 1.0));
+    const x = measure.x + measure.width * tX;
+    return new Vector2(x, y);
+  }
+
   const result: R = {
-    currentPoint: getPos(noteLine.bezier.x, noteLine.bezier.y),
+    currentPoint: getPointByNormalizedPoint(
+      noteLine.bezier.x,
+      noteLine.bezier.y
+    ),
     points: [],
   };
 
-  for (let x = 0; x < div + 1; x++) {
-    for (let y = 0; y < div + 1; y++) {
-      const normalizedX = (1 / div) * x;
-      const normalizedY = (1 / div) * y;
+  for (let x = 0; x < divX + 1; x++) {
+    const normalizedX = (1 / divX) * x;
 
-      const pos = getPos(normalizedX, normalizedY);
-      result.points.push({
-        point: pos,
-        normalizedPoint: new Vector2(normalizedX, normalizedY),
-      });
+    for (
+      let measureIndex = firstPoint.measureIndex;
+      measureIndex < lastPoint.measureIndex + 1;
+      measureIndex++
+    ) {
+      for (let y = 0; y < measureDivision; y++) {
+        const position = measureIndex + (1 / measureDivision) * y;
+
+        if (position >= s && position <= e) {
+          const pos = getPos(normalizedX, position, measureIndex);
+
+          const normalizedY = inverseLerp(s, e, position);
+
+          result.points.push({
+            point: pos,
+            normalizedPoint: new Vector2(normalizedX, normalizedY),
+          });
+        }
+      }
     }
   }
 

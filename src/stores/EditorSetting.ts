@@ -305,6 +305,11 @@ export default class EditorSetting {
   public serverPort = 3000;
 
   /**
+   * shift キーを押しているか
+   */
+  public isPressingShiftKey = false;
+
+  /**
    * mod キーを押しているか
    */
   public isPressingModKey = false;

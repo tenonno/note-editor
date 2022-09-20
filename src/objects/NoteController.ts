@@ -57,6 +57,8 @@ export default class NoteController {
     );
   }
 
+  public T_dragAndResize: any = null;
+
   private dragAndResize(
     chart: Chart,
     targetMeasure: Measure,
@@ -359,15 +361,19 @@ export default class NoteController {
       this.connectTargetNote = null;
     }
 
+    this.T_dragAndResize = null;
+
     if (canEdit && targetMeasure && targetNextMeasure) {
-      this.dragAndResize(
-        chart,
-        targetMeasure,
-        targetNextMeasure,
-        mousePosition,
-        targetMeasureDivision,
-        setCursor
-      );
+      this.T_dragAndResize = () => {
+        this.dragAndResize(
+          chart,
+          targetMeasure,
+          targetNextMeasure,
+          mousePosition,
+          targetMeasureDivision,
+          setCursor
+        );
+      };
     }
 
     // レーン選択中ならノートを配置する
@@ -497,6 +503,7 @@ export default class NoteController {
       // ノートラインに挿入
       const { isOverlap, targetNoteLine } = this.checkNoteLineOverlap(
         newNote,
+        chart,
         lineInfos,
         true
       );
@@ -566,22 +573,42 @@ export default class NoteController {
       NoteRendererResolver.resolve(newNote).render(newNote, this.graphics);
 
       // ノートラインに重なっているかチェック
-      this.checkNoteLineOverlap(newNote, lineInfos, false);
+      this.checkNoteLineOverlap(newNote, chart, lineInfos, false);
     }
   }
 
   private checkNoteLineOverlap(
     note: Note,
+    chart: Chart,
     lineInfos: NoteLineInfo[],
     updateNoteBounds: boolean
   ): {
     isOverlap: boolean;
     targetNoteLine?: NoteLine;
   } {
+    // shift キーを押している場合は挿入しない
+    if (this.editor.setting.isPressingShiftKey) {
+      return { isOverlap: false };
+    }
+
     // ノーツの領域を更新しないと正常に判定できない
     if (updateNoteBounds) {
       note.updateBounds();
     }
+
+    const noteType = chart.musicGameSystem.noteTypeMap.get(note.type)!;
+
+    // 接続できないノートラインは除外する
+    const filteredLineInfos = lineInfos.filter(({ noteLine }) => {
+      const head = chart.timeline.noteMap.get(noteLine.head);
+
+      // ノーツを上書きして消えている場合がある
+      if (!head) {
+        return false;
+      }
+
+      return noteType.connectableTypes.includes(head.type);
+    });
 
     for (let x = 0; x < note.horizontalSize + 1; x++) {
       // ラインの横に配置した際に重なった判定にならないようにする
@@ -593,7 +620,7 @@ export default class NoteController {
       );
 
       const { isOverlap, targetNoteLineInfo: line } = new NoteLineRenderInfo(
-        lineInfos
+        filteredLineInfos
       ).overlap(pos, note.measureIndex);
 
       if (isOverlap && line) {

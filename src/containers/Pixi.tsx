@@ -14,10 +14,13 @@ import NoteController from "../objects/NoteController";
 import OtherObjectController from "../objects/OtherObjectController";
 import LaneController from "../objects/LaneController";
 import Chart from "../stores/Chart";
-import { IRangeSelectableTimelineObject } from "../objects/TimelineObject";
+import TimelineObject, {
+  IRangeSelectableTimelineObject,
+} from "../objects/TimelineObject";
 import PixiTextPool from "../utils/pixiTextPool";
 import NoteLineController from "../objects/NoteLineController";
 import MouseInfo from "../utils/mouseInfo";
+import BezierPointController from "../objects/BezierPointController";
 
 @inject
 @observer
@@ -39,6 +42,7 @@ export default class Pixi extends InjectedComponent {
 
   private noteController: NoteController | null = null;
   private noteLineController: NoteLineController | null = null;
+  private bezierPointController: BezierPointController | null = null;
   private otherObjectController: OtherObjectController | null = null;
   private laneController: LaneController | null = null;
   private measureController: MeasureController | null = null;
@@ -128,6 +132,11 @@ export default class Pixi extends InjectedComponent {
     );
 
     this.noteLineController = new NoteLineController(
+      graphics,
+      this.injected.editor
+    );
+
+    this.bezierPointController = new BezierPointController(
       graphics,
       this.injected.editor
     );
@@ -291,6 +300,9 @@ export default class Pixi extends InjectedComponent {
 
     if (graphics.x > 0) graphics.x = 0;
 
+    const setCursor = (value: string) => (this.app!.view.style.cursor = value);
+    const cancelRangeSelection = () => this.cancelRangeSelection();
+
     // レーン中間点描画
     if (setting.objectVisibility.lanePoint) {
       for (const lanePoint of chart.timeline.lanePoints) {
@@ -325,19 +337,20 @@ export default class Pixi extends InjectedComponent {
       mouseInfo,
       targetMeasure,
       targetMeasureDivision,
-      (value) => (this.app!.view.style.cursor = value),
-      () => this.cancelRangeSelection()
+      setCursor,
+      cancelRangeSelection
     );
 
     const {
       selectTargets: selectNoteLines,
       noteLineInfos,
+      bezierPointInfos,
     } = this.noteLineController!.update(
       chart,
       mouseInfo,
       chart.timeline.measures,
       targetMeasure,
-      () => this.cancelRangeSelection()
+      cancelRangeSelection
     );
 
     const { selectTargets: selectNotes } = this.noteController!.update(
@@ -348,14 +361,44 @@ export default class Pixi extends InjectedComponent {
       targetMeasure ? chart.timeline.measures[targetMeasure.index + 1] : null,
       targetMeasureDivision,
       targetNotePoint,
-      (value) => (this.app!.view.style.cursor = value),
-      () => this.cancelRangeSelection(),
+      setCursor,
+      cancelRangeSelection,
       noteLineInfos
     );
 
+    let dragOrResize: (() => void) | null = this.noteController!
+      .T_dragAndResize;
+
+    // ベジェ制御点を描画
+    let isHoverBezier: TimelineObject[] | null = null;
+
+    const {
+      isHover: isBezierPointHover,
+      isDragging: isBezierDragging,
+    } = this.bezierPointController!.update(
+      bezierPointInfos,
+      chart.timeline.measures,
+      mouseInfo,
+      setCursor,
+      cancelRangeSelection
+    );
+    if (isBezierPointHover) {
+      isHoverBezier = [];
+    }
+
+    if (isBezierDragging) {
+      dragOrResize = null;
+    }
+
+    dragOrResize?.();
+
     // カーソルを合わせているオブジェクトを描画
     const selectTargets =
-      selectNotes ?? selectNoteLines ?? selectOtherObjects ?? selectMeasure;
+      isHoverBezier ??
+      selectNotes ??
+      selectNoteLines ??
+      selectOtherObjects ??
+      selectMeasure;
     if (selectTargets && !this.isRangeSelection) {
       if (setting.editMode === EditMode.Select && isClick) {
         if (!editor.setting.isPressingModKey) {
