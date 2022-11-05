@@ -23,6 +23,7 @@ export default observer(function EditorSetting() {
     setting.setBackgroundImagePath(newValue, editor.asset.assetsPath);
   }
 
+  // @ts-ignore
   return (
     <div style={{ width: "100%" }}>
       <FormControl>
@@ -216,6 +217,16 @@ export default observer(function EditorSetting() {
             />
           </>
         )}
+        <FormControlLabel
+        control={
+          <Switch
+            checked={setting.saveToDrive}
+            onChange={(_, value) => setting.setSaveToDrive(value)}
+            color="primary"
+          />
+        }
+        label="保存時にDriveにアップロード"
+      />
       </FormControl>
     </div>
   );
