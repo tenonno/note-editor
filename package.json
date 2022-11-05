@@ -57,6 +57,7 @@
     "config": "^3.2.4",
     "dat.gui": "^0.7.5",
     "fast-json-patch": "^3.0.0-1",
+    "googleapis": "^109.0.1",
     "howler": "^2.2.3",
     "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.21",
@@ -69,6 +70,7 @@
     "react": "^16.12.0",
     "react-color": "^2.17.0",
     "react-dom": "^16.12.0",
+    "ts-google-drive": "^0.0.6",
     "ts-loader": "^6.2.1",
     "tweakpane": "^1.5.7"
   },

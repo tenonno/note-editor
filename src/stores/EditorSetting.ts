@@ -289,6 +289,14 @@ export default class EditorSetting {
     this.perspective = perspective;
   }
 
+  @observable
+  public saveToDrive = false;
+
+  @action
+  setSaveToDrive(value: boolean) {
+    this.saveToDrive = value;
+  }
+
   @box
   public tabLabelType = ChartTabLabelType.Name;
 
