@@ -108,7 +108,13 @@ export default class NoteController {
           ),
           true
         );
+
         if (targetNotePoint) {
+          // 同じレーン内で左右にドラッグできない場合
+          if (lane.division === 1 && targetNotePoint.horizontalIndex !== 0) {
+            continue;
+          }
+
           return targetNotePoint;
         }
       }
@@ -160,13 +166,14 @@ export default class NoteController {
 
       if (targetNotePoint) {
         this.dragTargetNote.horizontalPosition = new Fraction(
-          targetNotePoint!.horizontalIndex,
-          targetNotePoint!.lane.division
+          targetNotePoint.horizontalIndex,
+          targetNotePoint.lane.division
         );
 
-        this.dragTargetNote.measureIndex = targetNotePoint!.measureIndex;
+        this.dragTargetNote.lane = targetNotePoint.lane.guid;
+        this.dragTargetNote.measureIndex = targetNotePoint.measureIndex;
         this.dragTargetNote.measurePosition = new Fraction(
-          targetMeasureDivision - 1 - targetNotePoint!.verticalIndex!,
+          targetMeasureDivision - 1 - targetNotePoint.verticalIndex!,
           targetMeasureDivision
         );
       } else {
@@ -241,13 +248,15 @@ export default class NoteController {
         canDrag = true;
         setCursor("move");
 
-        if (Math.abs(bounds.x - mousePosition.x) < 8) {
-          canWResize = true;
-          setCursor("w-resize");
-        }
-        if (Math.abs(bounds.x + bounds.width - mousePosition.x) < 8) {
-          canEResize = true;
-          setCursor("e-resize");
+        if (note.getLane().canResize()) {
+          if (Math.abs(bounds.x - mousePosition.x) < 8) {
+            canWResize = true;
+            setCursor("w-resize");
+          }
+          if (Math.abs(bounds.x + bounds.width - mousePosition.x) < 8) {
+            canEResize = true;
+            setCursor("e-resize");
+          }
         }
       }
 

@@ -36,6 +36,10 @@ export class LaneRecord extends Record<LaneData>(defaultLaneData) {
   private constructor(data: LaneData) {
     super(data);
   }
+
+  public canResize() {
+    return this.division > 1;
+  }
 }
 
 export interface LinePointInfo {
