@@ -1,4 +1,5 @@
 import { last } from "lodash";
+import { CurveType, NoteLineRecord } from "../objects/NoteLine";
 import { OtherObjectData } from "../objects/OtherObject";
 import { ChartJsonData } from "../stores/Chart";
 import { guid } from "./guid";
@@ -17,21 +18,18 @@ function updateToV3(chart: ChartJsonData) {
       otherObject.layer = last(chart.layers)!.guid;
     }
   }
+}
 
-  // ベジェ対応
+function updateToV4(chart: ChartJsonData) {
+  // 曲線対応
   for (const noteLine of chart.timeline.noteLines) {
-    if (!noteLine.bezier) {
-      noteLine.bezier = {
-        enabled: false,
-        x: 1,
-        y: 0.5,
-      };
-    }
-    if (noteLine.bezier.x === undefined) {
-      noteLine.bezier.x = 1;
-    }
-    if (noteLine.bezier.y === undefined) {
-      noteLine.bezier.y = 0.5;
+    if (!noteLine.curve) {
+      const bezier = (noteLine as any).bezier
+      noteLine.curve = bezier ? {
+        type: bezier.enabled ? CurveType.Bezier : CurveType.None,
+        x: bezier.x,
+        y: bezier.y,
+      } : NoteLineRecord.defaultCurveData()
     }
   }
 }
@@ -87,5 +85,8 @@ export default function updateChart(
 
   if (chart.version < 3) {
     updateToV3(chart);
+  }
+  if (chart.version < 4) {
+    updateToV4(chart);
   }
 }
