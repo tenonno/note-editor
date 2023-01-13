@@ -17,7 +17,8 @@ type W = {
 };
 
 export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
-  private readonly bezier: Bezier;
+  private readonly x: number;
+  private readonly y: number;
 
   public static fromNoteLine(noteLine: NoteLine, chart: Chart) {
     const headNote = chart.timeline.noteMap.get(noteLine.head)!;
@@ -64,14 +65,8 @@ export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
         measureIndex: p.measureIndex,
       }));
 
-    const measureHeight = measures[0].height;
-
-    this.bezier = new Bezier(
-      noteLine,
-      this.headPoint,
-      this.tailPoint,
-      measureHeight
-    );
+    this.x = noteLine.curve.x;
+    this.y = noteLine.curve.y;
   }
 
   // 値を点に変換
@@ -91,7 +86,10 @@ export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
     // 0.0-1.0
     const normalizedMeasureVerticalT = measureIndex + 1 - value;
 
-    const ppppX = this.bezier.get(normalizedT);
+    // ベジェ逆変換
+    // https://www.wolframalpha.com/input?i=Solve%5By%3D%3D1*x*x%2B2*x*%281-x%29*p%2B%281-x%29*%281-x%29*0%2Cx%5D&lang=ja
+    const t = this.y == 0.5 ? normalizedT : ((this.y - Math.sqrt(this.y * this.y - 2 * this.y * normalizedT + normalizedT)) / (2 * this.y - 1));
+    const ppppX = quadraticBezier(t, p1.normalizedX, this.x, p2.normalizedX);
     const x = measure.x + measure.width * ppppX;
     const y = measure.y + measure.height * normalizedMeasureVerticalT; // - (pos.y - p1Y), // normalizedMeasureVerticalT,;
 
@@ -104,116 +102,21 @@ export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
 
     const left = clampMeasure(x - width / 2);
     const right = clampMeasure(x + width / 2);
-    const clampedWidth = right - left;
 
     return GetLinePointInfoFromPool(
-      (left + right) / 2.0 - clampedWidth / 2.0,
+      left,
       y,
-      clampedWidth
+      right - left
     );
-  }
-
-  public debug(graphics: Graphics) {
-    this.bezier.debug(graphics);
-  }
-}
-
-class Bezier {
-  private normalizedPoints: (Vector2 & { t: number })[] = [];
-
-  public constructor(
-    noteLine: NoteLine,
-    startPoint: W,
-    endPoint: W,
-    measureHeight: number
-  ) {
-    const div = Math.max(
-      10,
-      Math.floor(((endPoint.value - startPoint.value) * measureHeight) / 10)
-    );
-
-    const p1Y = 0;
-    const p2Y = 1;
-
-    const controlPoint = {
-      x: noteLine.curve.x,
-      y: noteLine.curve.y,
-    };
-
-    for (let y = 0; y <= div; y++) {
-      const t = (1.0 / div) * y;
-
-      const pos = quadraticBezier(
-        t,
-        startPoint.normalizedX,
-        p1Y,
-        controlPoint.x,
-        controlPoint.y,
-        endPoint.normalizedX,
-        p2Y
-      );
-
-      this.normalizedPoints.push(Object.assign(pos, { t }));
-    }
-  }
-
-  public get(t: number): number {
-    const get = (index: number) => {
-      const n = inverseLerp(
-        this.normalizedPoints[index].y,
-        this.normalizedPoints[index + 1].y,
-        t
-      );
-
-      return lerp(
-        this.normalizedPoints[index].x,
-        this.normalizedPoints[index + 1].x,
-        n
-      );
-    };
-
-    for (let i = 0; i < this.normalizedPoints.length - 1; i++) {
-      if (
-        this.normalizedPoints[i].y <= t &&
-        this.normalizedPoints[i + 1].y >= t
-      ) {
-        return get(i);
-      }
-    }
-
-    console.warn("想定外");
-    return get(this.normalizedPoints.length - 2);
-  }
-
-  public debug(graphics: Graphics, size = 200) {
-    graphics.beginFill(0xffffff).drawRect(0, 0, size, size).endFill();
-
-    for (let i = 0; i < this.normalizedPoints.length - 1; i++) {
-      graphics
-        .lineStyle(1, 0xff0000)
-        .moveTo(
-          this.normalizedPoints[i].x * size,
-          size - this.normalizedPoints[i].y * size
-        )
-        .lineTo(
-          this.normalizedPoints[i + 1].x * size,
-          size - this.normalizedPoints[i + 1].y * size
-        );
-    }
   }
 }
 
 function quadraticBezier(
   t: number,
   x1: number,
-  y1: number,
   x2: number,
-  y2: number,
-  x3: number,
-  y3: number
+  x3: number
 ) {
   const tp = 1 - t;
-  const x = t * t * x3 + 2 * t * tp * x2 + tp * tp * x1;
-  const y = t * t * y3 + 2 * t * tp * y2 + tp * tp * y1;
-  return new Vector2(x, y);
+  return t * t * x3 + 2 * t * tp * x2 + tp * tp * x1;
 }
