@@ -99,28 +99,20 @@ app.on("activate", () => {
 });
 
 function initWindowMenu() {
-  ipcMain.on("showNoteLineContextMenu", (event, bezierEnabled) => {
+  ipcMain.on("showNoteLineContextMenu", (event, type, types: any[]) => {
     const template: Electron.MenuItemConstructorOptions[] = [
       {
-        label: "bezier",
-        submenu: [
+        label: "curve",
+        submenu: types.map(value => (
           {
-            label: "enabled",
+            label: value,
             type: "checkbox",
-            checked: bezierEnabled,
+            checked: type === value,
             click() {
-              mainWindow!.webContents.send("setBezier", true);
+              mainWindow!.webContents.send("setCurveType", value);
             },
-          },
-          {
-            label: "disabled",
-            type: "checkbox",
-            checked: !bezierEnabled,
-            click() {
-              mainWindow!.webContents.send("setBezier", false);
-            },
-          },
-        ],
+          }
+        )),
       },
       { type: "separator" },
       {

@@ -1,5 +1,5 @@
 import { ipcRenderer } from "electron";
-import { NoteLine } from "../objects/NoteLine";
+import { CurveType, NoteLine } from "../objects/NoteLine";
 import Chart from "./Chart";
 
 export class NoteLineContextMenu {
@@ -11,8 +11,8 @@ export class NoteLineContextMenu {
       this.delete();
     });
 
-    ipcRenderer.on("setBezier", (_, value) => {
-      this.setBezier(value);
+    ipcRenderer.on("setCurveType", (_, value) => {
+      this.setCurveType(value);
     });
   }
 
@@ -21,8 +21,8 @@ export class NoteLineContextMenu {
     this.chart!.timeline.save();
   }
 
-  public setBezier(enabled: boolean) {
-    this.noteLine!.bezier.enabled = enabled;
+  public setCurveType(type: CurveType) {
+    this.noteLine!.curve.type = type;
     this.chart!.timeline.save();
   }
 
@@ -30,6 +30,6 @@ export class NoteLineContextMenu {
     this.noteLine = noteLine;
     this.chart = chart;
 
-    ipcRenderer.send("showNoteLineContextMenu", noteLine.bezier.enabled);
+    ipcRenderer.send("showNoteLineContextMenu", noteLine.curve.type, Object.values(CurveType));
   }
 }
