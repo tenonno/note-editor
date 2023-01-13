@@ -1,6 +1,6 @@
 import { CurveType, NoteLine } from "../objects/NoteLine";
 import { Measure } from "../objects/Measure";
-import { Graphics, Rectangle } from "pixi.js";
+import { Rectangle } from "pixi.js";
 import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
 import { LinePointInfo, NoteLineInfo } from "../objects/Lane";
 import { GetLineInfoFromPool } from "./pool";
@@ -9,10 +9,42 @@ import { Note } from "../objects/Note";
 import { LanePoint } from "../objects/LanePoint";
 import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
 import { EaseNoteLineCalculator } from "./EaseNoteLineCalculator";
+import Chart from "src/stores/Chart";
 
 export interface ICurveNoteLineCalculator {
   // 値を点に変換
   getLinePointInfo(measureIndex: number, value: number): LinePointInfo
+}
+
+export function createCurveNoteLineCalculatorFromNoteLine(noteLine: NoteLine, chart: Chart) {
+  const headNote = chart.timeline.noteMap.get(noteLine.head)!;
+  const tailNote = chart.timeline.noteMap.get(noteLine.tail)!;
+
+  headNote.updateBounds();
+  tailNote.updateBounds();
+
+  const headLinePoint = noteToLanePoint(
+    headNote,
+    headNote.getBounds(),
+    chart.timeline.measures
+  );
+  const tailLinePoint = noteToLanePoint(
+    tailNote,
+    tailNote.getBounds(),
+    chart.timeline.measures
+  );
+
+  return createCurveNoteLineCalculator(
+    noteLine,
+    [headLinePoint, tailLinePoint],
+    chart.timeline.measures
+  );
+}
+
+function createCurveNoteLineCalculator(noteLine: NoteLine, points: LinePoint[], measures: Measure[]) {
+  return noteLine.curve.type == CurveType.Bezier
+    ? new BezierNoteLineCalculator(noteLine, points, measures)
+    : new EaseNoteLineCalculator(noteLine, points, measures);
 }
 
 export function noteToLanePoint(
@@ -35,7 +67,6 @@ export function getCurveLines(
   points: LinePoint[],
   noteLine: NoteLine,
   measures: Measure[],
-  debugGraphics?: Graphics
 ): NoteLineInfo[] {
   if (points.length !== 2) {
     console.error("想定外です");
@@ -44,9 +75,7 @@ export function getCurveLines(
 
   const lines: NoteLineInfo[] = [];
 
-  const curveNoteLineCalculator = noteLine.curve.type == CurveType.Bezier
-    ? new BezierNoteLineCalculator(noteLine, points, measures)
-    : new EaseNoteLineCalculator(noteLine, points, measures);
+  const curveNoteLineCalculator = createCurveNoteLineCalculator(noteLine, points, measures);
 
   const p1 = curveNoteLineCalculator.headPoint;
   const p2 = curveNoteLineCalculator.tailPoint;

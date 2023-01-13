@@ -4,7 +4,7 @@ import { sortMeasure } from "../objects/Measure";
 import { NoteRecord } from "../objects/Note";
 import Editor from "../stores/EditorStore";
 import { guid } from "./guid";
-import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
+import { createCurveNoteLineCalculatorFromNoteLine } from "./noteLineUtility";
 import { TsGoogleDrive } from "ts-google-drive";
 import { google } from "googleapis";
 
@@ -22,7 +22,7 @@ export class ExtensionUtility {
     return Editor.instance!;
   }
 
-  BezierNoteLineCalculator = BezierNoteLineCalculator;
+  createCurveNoteLineCalculator = createCurveNoteLineCalculatorFromNoteLine;
   TsGoogleDrive = TsGoogleDrive;
   google = google;
 }

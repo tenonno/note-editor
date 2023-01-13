@@ -1,12 +1,10 @@
 import { NoteLine } from "../objects/NoteLine";
-import Chart from "../stores/Chart";
 import { LinePoint } from "../objects/LaneRenderer";
 import { Measure, sortMeasure } from "../objects/Measure";
-import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
+import { Fraction, inverseLerp, lerp } from "../math";
 import { clamp } from "lodash";
 import { GetLinePointInfoFromPool } from "./pool";
-import { Graphics } from "pixi.js";
-import { ICurveNoteLineCalculator, noteToLanePoint } from "./noteLineUtility";
+import { ICurveNoteLineCalculator } from "./noteLineUtility";
 import { LinePointInfo } from "../objects/Lane";
 
 type W = {
@@ -19,31 +17,6 @@ type W = {
 export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
   private readonly x: number;
   private readonly y: number;
-
-  public static fromNoteLine(noteLine: NoteLine, chart: Chart) {
-    const headNote = chart.timeline.noteMap.get(noteLine.head)!;
-    const tailNote = chart.timeline.noteMap.get(noteLine.tail)!;
-
-    headNote.updateBounds();
-    tailNote.updateBounds();
-
-    const headLinePoint = noteToLanePoint(
-      headNote,
-      headNote.getBounds(),
-      chart.timeline.measures
-    );
-    const tailLinePoint = noteToLanePoint(
-      tailNote,
-      tailNote.getBounds(),
-      chart.timeline.measures
-    );
-
-    return new BezierNoteLineCalculator(
-      noteLine,
-      [headLinePoint, tailLinePoint],
-      chart.timeline.measures
-    );
-  }
 
   public readonly headPoint: W;
   public readonly tailPoint: W;
