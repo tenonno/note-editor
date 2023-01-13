@@ -138,8 +138,8 @@ export function getBezierPointInfo(
 
   const result: R = {
     currentPoint: getPointByNormalizedPoint(
-      noteLine.bezier.x,
-      noteLine.bezier.y
+      noteLine.curve.x,
+      noteLine.curve.y
     ),
     points: [],
   };

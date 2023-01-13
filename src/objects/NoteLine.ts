@@ -6,15 +6,23 @@ import { Graphics } from "pixi.js";
 import { NoteLineInfo } from "./Lane";
 import { parseRgba } from "../utils/color";
 
+export const CurveType = {
+  None: "none",
+  Bezier: "bezier",
+  EaseInQuad: "easeInQuad",
+  EaseOutQuad: "easeOutQuad",
+} as const;
+export type CurveType = typeof CurveType[keyof typeof CurveType];
+
 export type NoteLineData = {
   guid: GUID;
   head: GUID;
   tail: GUID;
   centerNotes: GUID[];
-  bezier: {
-    enabled: boolean;
-    x: number;
-    y: number;
+  curve: {
+    type: CurveType,
+    x: number,
+    y: number,
   };
 };
 
@@ -23,9 +31,9 @@ const defaultNoteLineData: NoteLineData = {
   head: "GUID",
   tail: "GUID",
   centerNotes: [],
-  bezier: {
-    enabled: false,
-    x: 1,
+  curve: {
+    type: CurveType.None,
+    x: 0.5,
     y: 0.5,
   },
 };
@@ -37,6 +45,10 @@ export class NoteLineRecord
   implements TimelineObject {
   static new(data: NoteLineData): NoteLine {
     return new NoteLineRecord(data).asMutable();
+  }
+
+  static defaultCurveData() {
+    return { ...defaultNoteLineData.curve }
   }
 
   private constructor(data: NoteLineData) {

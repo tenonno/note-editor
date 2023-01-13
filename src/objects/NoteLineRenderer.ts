@@ -7,7 +7,7 @@ import { LanePoint } from "./LanePoint";
 import { getLines } from "./LaneRenderer";
 import { sortMeasure, sortMeasureData } from "./Measure";
 import { Note } from "./Note";
-import { NoteLine } from "./NoteLine";
+import { CurveType, NoteLine } from "./NoteLine";
 import {
   getQuadraticBezierLines,
   noteToLanePoint,
@@ -138,13 +138,13 @@ class NoteLineRenderer implements INoteLineRenderer {
         const headNoteLaneLeft =
           headBounds.x -
           (headNoteLaneWidth / head.horizontalPosition.denominator) *
-            head.horizontalPosition.numerator;
+          head.horizontalPosition.numerator;
 
         // 末尾ノートが配置してあるレーンの左座標
         const tailNoteLaneLeft =
           tailBounds.x -
           (tailNoteLaneWidth / tail.horizontalPosition.denominator) *
-            tail.horizontalPosition.numerator;
+          tail.horizontalPosition.numerator;
 
         const headLaneNormalizedHorizontalPos =
           (headBounds.x - headNoteLaneLeft) / headNoteLaneWidth;
@@ -159,14 +159,14 @@ class NoteLineRenderer implements INoteLineRenderer {
         const s_pos =
           headLaneNormalizedHorizontalPos +
           (tailLaneNormalizedHorizontalPos - headLaneNormalizedHorizontalPos) *
-            pp;
+          pp;
 
         // レーンの左
         const left =
           Fraction.to01(lp.horizontalPosition) * measureW +
           (measureW / lp.horizontalPosition.denominator) *
-            lp.horizontalSize *
-            s_pos;
+          lp.horizontalSize *
+          s_pos;
 
         lp.horizontalSize = curSize;
         lp.horizontalPosition = new Fraction(left, measureW);
@@ -180,7 +180,7 @@ class NoteLineRenderer implements INoteLineRenderer {
     ];
 
     result.lanePoints = lps;
-    result.noteLineInfos = noteLine.bezier.enabled
+    result.noteLineInfos = noteLine.curve.type == CurveType.Bezier
       ? getQuadraticBezierLines(lps, noteLine, measures)
       : getLines(lps, measures).map((lineInfo) => ({ ...lineInfo, noteLine }));
 
@@ -205,7 +205,7 @@ class NoteLineRenderer implements INoteLineRenderer {
 }
 
 export class NoteLineRenderInfo {
-  public constructor(private infos: NoteLineInfo[]) {}
+  public constructor(private infos: NoteLineInfo[]) { }
 
   public overlap(
     pos: Vector2,

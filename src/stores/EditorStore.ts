@@ -157,7 +157,7 @@ export default class Editor {
   charts: Chart[] = [];
 
   @action
-  setAudioDirectory(path: string) {}
+  setAudioDirectory(path: string) { }
 
   /**
    * 新規譜面を作成する
@@ -487,8 +487,7 @@ export default class Editor {
     this.copiedOtherObjects = this.getInspectedOtherObjects();
 
     this.notify(
-      `${
-        this.copiedNotes.length + this.copiedOtherObjects.length
+      `${this.copiedNotes.length + this.copiedOtherObjects.length
       } 個のオブジェクトをコピーしました`
     );
   }
@@ -593,8 +592,7 @@ export default class Editor {
     this.pasteOtherObjects();
 
     this.notify(
-      `${
-        this.copiedNotes.length + this.copiedOtherObjects.length
+      `${this.copiedNotes.length + this.copiedOtherObjects.length
       } 個のオブジェクトを貼り付けました`
     );
 
@@ -689,7 +687,7 @@ export default class Editor {
     );
 
     for (const noteLine of noteLines) {
-      noteLine.bezier.x = 1.0 - noteLine.bezier.x;
+      noteLine.curve.x = 1.0 - noteLine.curve.x;
     }
 
     this.currentChart.musicGameSystem.eventListeners.onMirror?.(notes);
@@ -736,7 +734,7 @@ export default class Editor {
     );
 
     for (const noteLine of noteLines) {
-      noteLine.bezier.y = 1.0 - noteLine.bezier.y;
+      noteLine.curve.y = 1.0 - noteLine.curve.y;
     }
   }
 

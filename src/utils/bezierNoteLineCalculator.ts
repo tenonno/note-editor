@@ -138,8 +138,8 @@ class Bezier {
     const p2Y = 1;
 
     const controlPoint = {
-      x: noteLine.bezier.x,
-      y: noteLine.bezier.y,
+      x: noteLine.curve.x,
+      y: noteLine.curve.y,
     };
 
     for (let y = 0; y <= div; y++) {
