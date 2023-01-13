@@ -8,10 +8,7 @@ import { getLines } from "./LaneRenderer";
 import { sortMeasure, sortMeasureData } from "./Measure";
 import { Note } from "./Note";
 import { CurveType, NoteLine } from "./NoteLine";
-import {
-  getQuadraticBezierLines,
-  noteToLanePoint,
-} from "../utils/noteLineUtility";
+import { getCurveLines, noteToLanePoint } from "../utils/noteLineUtility";
 import { Graphics } from "pixi.js";
 
 type NoteLineRenderResult = {
@@ -180,8 +177,8 @@ class NoteLineRenderer implements INoteLineRenderer {
     ];
 
     result.lanePoints = lps;
-    result.noteLineInfos = noteLine.curve.type == CurveType.Bezier
-      ? getQuadraticBezierLines(lps, noteLine, measures)
+    result.noteLineInfos = noteLine.curve.type != CurveType.None
+      ? getCurveLines(lps, noteLine, measures)
       : getLines(lps, measures).map((lineInfo) => ({ ...lineInfo, noteLine }));
 
     this.customRender(graphics, result.noteLineInfos, head, tail);

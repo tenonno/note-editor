@@ -1,13 +1,19 @@
-import { NoteLine } from "../objects/NoteLine";
+import { CurveType, NoteLine } from "../objects/NoteLine";
 import { Measure } from "../objects/Measure";
 import { Graphics, Rectangle } from "pixi.js";
 import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
-import { NoteLineInfo } from "../objects/Lane";
+import { LinePointInfo, NoteLineInfo } from "../objects/Lane";
 import { GetLineInfoFromPool } from "./pool";
 import { LinePoint } from "../objects/LaneRenderer";
 import { Note } from "../objects/Note";
 import { LanePoint } from "../objects/LanePoint";
 import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
+import { EaseNoteLineCalculator } from "./EaseNoteLineCalculator";
+
+export interface ICurveNoteLineCalculator {
+  // 値を点に変換
+  getLinePointInfo(measureIndex: number, value: number): LinePointInfo
+}
 
 export function noteToLanePoint(
   note: Note,
@@ -25,7 +31,7 @@ export function noteToLanePoint(
   } as LanePoint;
 }
 
-export function getQuadraticBezierLines(
+export function getCurveLines(
   points: LinePoint[],
   noteLine: NoteLine,
   measures: Measure[],
@@ -38,19 +44,12 @@ export function getQuadraticBezierLines(
 
   const lines: NoteLineInfo[] = [];
 
-  const bezierNoteLineCalculator = new BezierNoteLineCalculator(
-    noteLine,
-    points[0],
-    points[1],
-    measures
-  );
+  const curveNoteLineCalculator = noteLine.curve.type == CurveType.Bezier
+    ? new BezierNoteLineCalculator(noteLine, points, measures)
+    : new EaseNoteLineCalculator(noteLine, points, measures);
 
-  if (debugGraphics) {
-    bezierNoteLineCalculator.debug(debugGraphics);
-  }
-
-  const p1 = bezierNoteLineCalculator.headPoint;
-  const p2 = bezierNoteLineCalculator.tailPoint;
+  const p1 = curveNoteLineCalculator.headPoint;
+  const p2 = curveNoteLineCalculator.tailPoint;
 
   // 始点の小節番号
   let v1 = p1.value;
@@ -61,22 +60,22 @@ export function getQuadraticBezierLines(
   while (true) {
     const measureIndex = Math.floor(v1);
 
-    const bezierDivision = Math.max(
+    const division = Math.max(
       Math.floor(measures[measureIndex].height / 20),
       10
     );
 
-    for (let i2 = 0; i2 < bezierDivision; i2++) {
+    for (let i2 = 0; i2 < division; i2++) {
       lines.push({
         ...GetLineInfoFromPool(
           measures[measureIndex],
-          bezierNoteLineCalculator.getLinePointInfo(
+          curveNoteLineCalculator.getLinePointInfo(
             measureIndex,
-            v1 + (1 / bezierDivision) * (v2 - v1) * i2
+            v1 + (1 / division) * (v2 - v1) * i2
           ),
-          bezierNoteLineCalculator.getLinePointInfo(
+          curveNoteLineCalculator.getLinePointInfo(
             measureIndex,
-            v1 + (1 / bezierDivision) * (v2 - v1) * (i2 + 1)
+            v1 + (1 / division) * (v2 - v1) * (i2 + 1)
           )
         ),
         noteLine: noteLine,

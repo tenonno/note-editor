@@ -6,7 +6,7 @@ import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
 import { clamp } from "lodash";
 import { GetLinePointInfoFromPool } from "./pool";
 import { Graphics } from "pixi.js";
-import { noteToLanePoint } from "./noteLineUtility";
+import { ICurveNoteLineCalculator, noteToLanePoint } from "./noteLineUtility";
 import { LinePointInfo } from "../objects/Lane";
 
 type W = {
@@ -16,7 +16,7 @@ type W = {
   measureIndex: number;
 };
 
-export class BezierNoteLineCalculator {
+export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
   private readonly bezier: Bezier;
 
   public static fromNoteLine(noteLine: NoteLine, chart: Chart) {
@@ -39,8 +39,7 @@ export class BezierNoteLineCalculator {
 
     return new BezierNoteLineCalculator(
       noteLine,
-      headLinePoint,
-      tailLinePoint,
+      [headLinePoint, tailLinePoint],
       chart.timeline.measures
     );
   }
@@ -50,11 +49,10 @@ export class BezierNoteLineCalculator {
 
   public constructor(
     noteLine: NoteLine,
-    headLinePoint: LinePoint,
-    tailLanePoint: LinePoint,
+    linePoints: LinePoint[],
     private measures: Measure[]
   ) {
-    [this.headPoint, this.tailPoint] = [headLinePoint, tailLanePoint]
+    [this.headPoint, this.tailPoint] = linePoints
       .slice()
       .sort(sortMeasure)
       .map((p) => ({
