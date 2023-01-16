@@ -7,8 +7,8 @@ import { ICurveNoteLineCalculator } from "./noteLineUtility";
 import { LinePointInfo } from "../objects/Lane";
 
 type W = {
-  left: number;
-  right: number;
+  x: number;
+  width: number;
   value: number;
 };
 
@@ -27,9 +27,8 @@ export class EaseNoteLineCalculator implements ICurveNoteLineCalculator {
       .slice()
       .sort(sortMeasure)
       .map((p) => ({
-        left: Fraction.to01(p.horizontalPosition),
-        right: Fraction.to01(p.horizontalPosition) +
-          p.horizontalSize / p.horizontalPosition.denominator,
+        x: Fraction.to01(p.horizontalPosition),
+        width: p.horizontalSize / p.horizontalPosition.denominator,
         value: p.measureIndex + Fraction.to01(p.measurePosition),
       }));
 
@@ -48,13 +47,12 @@ export class EaseNoteLineCalculator implements ICurveNoteLineCalculator {
     const measure = this.measures[measureIndex];
 
     const easedT = this.ease(inverseLerp(p1.value, p2.value, value));
-    const left = measure.x + measure.width * lerp(p1.left, p2.left, easedT);
-    const right = measure.x + measure.width * lerp(p1.right, p2.right, easedT);
-    const width = right - left;
+    const x = measure.x + measure.width * lerp(p1.x, p2.x, easedT);
+    const width = measure.width * lerp(p1.width, p2.width, easedT);
 
     const normalizedMeasureVerticalT = measureIndex + 1 - value;
     return GetLinePointInfoFromPool(
-      left,
+      x,
       measure.y + measure.height * normalizedMeasureVerticalT,
       width
     );
