@@ -1,10 +1,10 @@
 import { NoteLine } from "../objects/NoteLine";
 import { LinePoint } from "../objects/LaneRenderer";
-import { Measure, sortMeasure } from "../objects/Measure";
+import { Measure } from "../objects/Measure";
 import { Fraction, inverseLerp, lerp } from "../math";
 import { clamp } from "lodash";
 import { GetLinePointInfoFromPool } from "./pool";
-import { ICurveNoteLineCalculator } from "./noteLineUtility";
+import { INoteLineCalculator } from "./noteLineUtility";
 import { LinePointInfo } from "../objects/Lane";
 
 type W = {
@@ -14,7 +14,7 @@ type W = {
   measureIndex: number;
 };
 
-export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
+export class BezierNoteLineCalculator implements INoteLineCalculator {
   private readonly x: number;
   private readonly y: number;
 
@@ -26,17 +26,14 @@ export class BezierNoteLineCalculator implements ICurveNoteLineCalculator {
     linePoints: LinePoint[],
     private measures: Measure[]
   ) {
-    [this.headPoint, this.tailPoint] = linePoints
-      .slice()
-      .sort(sortMeasure)
-      .map((p) => ({
-        normalizedX:
-          Fraction.to01(p.horizontalPosition) +
-          p.horizontalSize / p.horizontalPosition.denominator / 2,
-        normalizedWidth: p.horizontalSize / p.horizontalPosition.denominator,
-        value: p.measureIndex + Fraction.to01(p.measurePosition),
-        measureIndex: p.measureIndex,
-      }));
+    [this.headPoint, this.tailPoint] = linePoints.map((p) => ({
+      normalizedX:
+        Fraction.to01(p.horizontalPosition) +
+        p.horizontalSize / p.horizontalPosition.denominator / 2,
+      normalizedWidth: p.horizontalSize / p.horizontalPosition.denominator,
+      value: p.measureIndex + Fraction.to01(p.measurePosition),
+      measureIndex: p.measureIndex,
+    }));
 
     this.x = noteLine.curve.x;
     this.y = noteLine.curve.y;

@@ -1,9 +1,9 @@
 import { CurveType, NoteLine } from "../objects/NoteLine";
 import { LinePoint } from "../objects/LaneRenderer";
-import { Measure, sortMeasure } from "../objects/Measure";
+import { Measure } from "../objects/Measure";
 import { Fraction, inverseLerp, lerp } from "../math";
 import { GetLinePointInfoFromPool } from "./pool";
-import { ICurveNoteLineCalculator } from "./noteLineUtility";
+import { INoteLineCalculator } from "./noteLineUtility";
 import { LinePointInfo } from "../objects/Lane";
 
 type W = {
@@ -12,7 +12,7 @@ type W = {
   value: number;
 };
 
-export class EaseNoteLineCalculator implements ICurveNoteLineCalculator {
+export class EaseNoteLineCalculator implements INoteLineCalculator {
 
   public readonly headPoint: W;
   public readonly tailPoint: W;
@@ -23,19 +23,16 @@ export class EaseNoteLineCalculator implements ICurveNoteLineCalculator {
     linePoints: LinePoint[],
     private measures: Measure[]
   ) {
-    [this.headPoint, this.tailPoint] = linePoints
-      .slice()
-      .sort(sortMeasure)
-      .map((p) => ({
-        x: Fraction.to01(p.horizontalPosition),
-        width: p.horizontalSize / p.horizontalPosition.denominator,
-        value: p.measureIndex + Fraction.to01(p.measurePosition),
-      }));
+    [this.headPoint, this.tailPoint] = linePoints.map((p) => ({
+      x: Fraction.to01(p.horizontalPosition),
+      width: p.horizontalSize / p.horizontalPosition.denominator,
+      value: p.measureIndex + Fraction.to01(p.measurePosition),
+    }));
 
     const type = noteLine.curve.type;
     this.ease =
       type == CurveType.EaseInQuad ? t => t * t :
-        type == CurveType.EaseOutQuad ? t => 1 - (1 - t) * (1 - t) :
+        type == CurveType.EaseOutQuad ? t => t * (2 - t) :
           t => t;
   }
 

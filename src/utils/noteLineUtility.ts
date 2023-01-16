@@ -1,5 +1,5 @@
 import { CurveType, NoteLine } from "../objects/NoteLine";
-import { Measure } from "../objects/Measure";
+import { Measure, sortMeasure } from "../objects/Measure";
 import { Rectangle } from "pixi.js";
 import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
 import { LinePointInfo, NoteLineInfo } from "../objects/Lane";
@@ -11,43 +11,31 @@ import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
 import { EaseNoteLineCalculator } from "./EaseNoteLineCalculator";
 import Chart from "src/stores/Chart";
 
-export interface ICurveNoteLineCalculator {
+export interface INoteLineCalculator {
+  headPoint: { value: number },
+  tailPoint: { value: number },
   // 値を点に変換
   getLinePointInfo(measureIndex: number, value: number): LinePointInfo
 }
 
-export function createCurveNoteLineCalculatorFromNoteLine(noteLine: NoteLine, chart: Chart) {
-  const headNote = chart.timeline.noteMap.get(noteLine.head)!;
-  const tailNote = chart.timeline.noteMap.get(noteLine.tail)!;
-
-  headNote.updateBounds();
-  tailNote.updateBounds();
-
-  const headLinePoint = noteToLanePoint(
-    headNote,
-    headNote.getBounds(),
-    chart.timeline.measures
-  );
-  const tailLinePoint = noteToLanePoint(
-    tailNote,
-    tailNote.getBounds(),
-    chart.timeline.measures
-  );
-
-  return createCurveNoteLineCalculator(
-    noteLine,
-    [headLinePoint, tailLinePoint],
-    chart.timeline.measures
-  );
+export function getLanePoints(noteLine: NoteLine, chart: Chart) {
+  return [noteLine.head, noteLine.tail].map(guid => {
+    const note = chart.timeline.noteMap.get(guid)!;
+    note.updateBounds();
+    return noteToLanePoint(note,
+      note.getBounds(),
+      chart.timeline.measures
+    )
+  }).sort(sortMeasure);
 }
 
-function createCurveNoteLineCalculator(noteLine: NoteLine, points: LinePoint[], measures: Measure[]) {
+export function createNoteLineCalculator(noteLine: NoteLine, points: LinePoint[], measures: Measure[]) {
   return noteLine.curve.type == CurveType.Bezier
     ? new BezierNoteLineCalculator(noteLine, points, measures)
     : new EaseNoteLineCalculator(noteLine, points, measures);
 }
 
-export function noteToLanePoint(
+function noteToLanePoint(
   note: Note,
   noteBounds: Rectangle,
   measures: Measure[]
@@ -63,22 +51,15 @@ export function noteToLanePoint(
   } as LanePoint;
 }
 
-export function getCurveLines(
-  points: LinePoint[],
+export function getLines(
+  noteLineCalculator: INoteLineCalculator,
   noteLine: NoteLine,
   measures: Measure[],
 ): NoteLineInfo[] {
-  if (points.length !== 2) {
-    console.error("想定外です");
-    return [];
-  }
-
   const lines: NoteLineInfo[] = [];
 
-  const curveNoteLineCalculator = createCurveNoteLineCalculator(noteLine, points, measures);
-
-  const p1 = curveNoteLineCalculator.headPoint;
-  const p2 = curveNoteLineCalculator.tailPoint;
+  const p1 = noteLineCalculator.headPoint;
+  const p2 = noteLineCalculator.tailPoint;
 
   // 始点の小節番号
   let v1 = p1.value;
@@ -89,7 +70,7 @@ export function getCurveLines(
   while (true) {
     const measureIndex = Math.floor(v1);
 
-    const division = Math.max(
+    const division = noteLine.curve.type == CurveType.None ? 1 : Math.max(
       Math.floor(measures[measureIndex].height / 20),
       10
     );
@@ -98,11 +79,11 @@ export function getCurveLines(
       lines.push({
         ...GetLineInfoFromPool(
           measures[measureIndex],
-          curveNoteLineCalculator.getLinePointInfo(
+          noteLineCalculator.getLinePointInfo(
             measureIndex,
             v1 + (1 / division) * (v2 - v1) * i2
           ),
-          curveNoteLineCalculator.getLinePointInfo(
+          noteLineCalculator.getLinePointInfo(
             measureIndex,
             v1 + (1 / division) * (v2 - v1) * (i2 + 1)
           )
