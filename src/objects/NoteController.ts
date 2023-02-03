@@ -331,12 +331,8 @@ export default class NoteController {
             guid: guid(),
             head: head.guid,
             tail: tail.guid,
-            centerNotes: [],
-            bezier: {
-              enabled: false,
-              x: 0.5,
-              y: 0.5,
-            },
+            innerNotes: [],
+            curve: NoteLineRecord.defaultCurveData(),
           });
 
           // ノートラインプレビュー
@@ -477,12 +473,8 @@ export default class NoteController {
             guid: guid(),
             head: head.guid,
             tail: tail.guid,
-            centerNotes: [],
-            bezier: {
-              enabled: false,
-              x: 1,
-              y: 0.5,
-            },
+            innerNotes: [],
+            curve: NoteLineRecord.defaultCurveData(),
           }),
           this.graphics!
         );
@@ -497,9 +489,9 @@ export default class NoteController {
           note.layer === newNote.layer &&
           note.isSameMeasurePosition(newNote) &&
           newNote.horizontalPosition.numerator <=
-            note.horizontalPosition.numerator + note.horizontalSize - 1 &&
+          note.horizontalPosition.numerator + note.horizontalSize - 1 &&
           note.horizontalPosition.numerator <=
-            newNote.horizontalPosition.numerator + newNote.horizontalSize - 1
+          newNote.horizontalPosition.numerator + newNote.horizontalSize - 1
       );
 
       // 重なっているノートを削除する
@@ -524,12 +516,8 @@ export default class NoteController {
             guid: guid(),
             head: targetNoteLine.head,
             tail: newNote.guid,
-            centerNotes: [],
-            bezier: {
-              enabled: targetNoteLine.bezier.enabled,
-              x: targetNoteLine.bezier.x,
-              y: targetNoteLine.bezier.y,
-            },
+            innerNotes: [],
+            curve: { ...targetNoteLine.curve },
           })
         );
 
@@ -538,12 +526,8 @@ export default class NoteController {
             guid: guid(),
             head: newNote.guid,
             tail: targetNoteLine.tail,
-            centerNotes: [],
-            bezier: {
-              enabled: targetNoteLine.bezier.enabled,
-              x: targetNoteLine.bezier.x,
-              y: targetNoteLine.bezier.y,
-            },
+            innerNotes: [],
+            curve: { ...targetNoteLine.curve },
           })
         );
 
@@ -563,12 +547,8 @@ export default class NoteController {
           guid: guid(),
           head: head.guid,
           tail: tail.guid,
-          centerNotes: [],
-          bezier: {
-            enabled: false,
-            x: 0,
-            y: 0,
-          },
+          innerNotes: [],
+          curve: NoteLineRecord.defaultCurveData(),
         });
 
         chart.timeline.addNoteLine(newNoteLine);
@@ -610,9 +590,10 @@ export default class NoteController {
     // 接続できないノートラインは除外する
     const filteredLineInfos = lineInfos.filter(({ noteLine }) => {
       const head = chart.timeline.noteMap.get(noteLine.head);
+      const tail = chart.timeline.noteMap.get(noteLine.tail);
 
       // ノーツを上書きして消えている場合がある
-      if (!head) {
+      if (!head || !tail) {
         return false;
       }
 

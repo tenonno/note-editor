@@ -99,28 +99,32 @@ app.on("activate", () => {
 });
 
 function initWindowMenu() {
-  ipcMain.on("showNoteLineContextMenu", (event, bezierEnabled) => {
+  ipcMain.on("showNoteLineContextMenu", (event, curveType, curveTypes: string[], innerNoteTypes: string[]) => {
     const template: Electron.MenuItemConstructorOptions[] = [
       {
-        label: "bezier",
-        submenu: [
+        label: "curve",
+        submenu: curveTypes.map(value => (
           {
-            label: "enabled",
+            label: value,
             type: "checkbox",
-            checked: bezierEnabled,
+            checked: curveType === value,
             click() {
-              mainWindow!.webContents.send("setBezier", true);
+              mainWindow!.webContents.send("setCurveType", value);
             },
-          },
+          }
+        )),
+      },
+      { type: "separator" },
+      {
+        label: "addInnerNote",
+        submenu: innerNoteTypes.map(value => (
           {
-            label: "disabled",
-            type: "checkbox",
-            checked: !bezierEnabled,
+            label: value,
             click() {
-              mainWindow!.webContents.send("setBezier", false);
+              mainWindow!.webContents.send("addInnerNote", value);
             },
-          },
-        ],
+          }
+        )),
       },
       { type: "separator" },
       {
@@ -192,6 +196,13 @@ function initWindowMenu() {
         {
           label: "貼り付け",
           role: "paste",
+        },
+        {
+          label: "左右反転して貼り付け",
+          accelerator: "CmdOrCtrl+Shift+V",
+          click() {
+            mainWindow!.webContents.send("pasteFlipLane");
+          },
         },
         {
           label: "削除",

@@ -43,6 +43,11 @@ export interface MusicGameSystemNoteType {
   ignoreOverlap: boolean;
 
   /**
+   * ノーツライン内ノーツか
+   */
+  isInnerLine: boolean;
+
+  /**
    * カスタムプロパティ
    */
   customProps: { key: string; defaultValue: any; config?: any }[];

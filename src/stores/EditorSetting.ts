@@ -233,14 +233,22 @@ export default class EditorSetting {
     }
   }
 
+  @observable
+  public saveObjectSizeByNoteType = false;
+
   @computed
   public get objectSize() {
-    return this.objectSizes[this.editNoteTypeIndex];
+    return this.objectSizes[this.saveObjectSizeByNoteType ? this.editNoteTypeIndex : 0];
   }
 
   @action
   public setObjectSize(value: number) {
-    this.objectSizes[this.editNoteTypeIndex] = value;
+    this.objectSizes[this.saveObjectSizeByNoteType ? this.editNoteTypeIndex : 0] = value;
+  }
+
+  @action
+  public setSaveObjectSizeByNoteType(value: boolean) {
+    this.saveObjectSizeByNoteType = value;
   }
 
   @box

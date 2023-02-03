@@ -144,9 +144,9 @@ export default observer(function EditorSetting() {
             <Switch
               checked={setting.tabLabelType == ChartTabLabelType.FilePath}
               onChange={(_, value) =>
-                (setting.tabLabelType = value
-                  ? ChartTabLabelType.FilePath
-                  : ChartTabLabelType.Name)
+              (setting.tabLabelType = value
+                ? ChartTabLabelType.FilePath
+                : ChartTabLabelType.Name)
               }
               color="primary"
             />
@@ -218,15 +218,25 @@ export default observer(function EditorSetting() {
           </>
         )}
         <FormControlLabel
-        control={
-          <Switch
-            checked={setting.saveToDrive}
-            onChange={(_, value) => setting.setSaveToDrive(value)}
-            color="primary"
-          />
-        }
-        label="保存時にDriveにアップロード"
-      />
+          control={
+            <Switch
+              checked={setting.saveToDrive}
+              onChange={(_, value) => setting.setSaveToDrive(value)}
+              color="primary"
+            />
+          }
+          label="保存時にDriveにアップロード"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={setting.saveObjectSizeByNoteType}
+              onChange={(_, value) => setting.setSaveObjectSizeByNoteType(value)}
+              color="primary"
+            />
+          }
+          label="ノートサイズを種類ごとに保存"
+        />
       </FormControl>
     </div>
   );

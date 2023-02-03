@@ -21,6 +21,7 @@ export class NoteRenderer implements INoteRenderer {
   private customRender = defaultRender;
 
   public render(note: Note, graphics: PIXI.Graphics) {
+    if (note.horizontalSize == 0) return;
     const linePointInfo = note.updateBounds();
     if (!linePointInfo) return;
     this.customRender(graphics, note, linePointInfo);

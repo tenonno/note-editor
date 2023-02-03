@@ -131,6 +131,12 @@ export class NoteRecord
     }
 
     linePointInfo.width *= this.horizontalSize;
+    this.setBounds(linePointInfo)
+
+    return linePointInfo;
+  }
+
+  public setBounds(linePointInfo: LinePointInfo) {
     this.x = linePointInfo.point.x;
     this.y = linePointInfo.point.y - 5;
     this.width = linePointInfo.width;
@@ -138,8 +144,6 @@ export class NoteRecord
 
     this.lastUpdateBoundsFrame = Editor.instance!.currentFrame;
     this.boundsCache = linePointInfo;
-
-    return linePointInfo;
   }
 
   isVisible = false;
@@ -279,8 +283,8 @@ export class NoteRecord
     ) {
       const diff = Math.abs(
         this.horizontalPosition.numerator +
-          this.horizontalSize -
-          this.horizontalPosition.denominator
+        this.horizontalSize -
+        this.horizontalPosition.denominator
       );
       (this as any).horizontalSize -= diff;
     }

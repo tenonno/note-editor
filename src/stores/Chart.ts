@@ -39,7 +39,7 @@ export default class Chart {
   // TODO: Record にする
   // data = new ChartRecord();
 
-  version: number = 3;
+  version: number = 4;
 
   // @ts-ignore
   timeline: Timeline;
@@ -263,9 +263,9 @@ export default class Chart {
       );
       console.log(
         "ノーツを整理しました: " +
-          beforeNoteCount +
-          " - " +
-          chartData.timeline.notes.length
+        beforeNoteCount +
+        " - " +
+        chartData.timeline.notes.length
       );
       const noteGuids = chartData.timeline.notes.map((note) => note.guid);
       chartData.timeline.noteLines = chartData.timeline.noteLines.filter(
@@ -459,7 +459,7 @@ export default class Chart {
   }
 
   public updateTime() {
-    if (!this.audio) return;
+    if (!this.audio || !this.audio.playing()) return;
     const time = this.audio!.seek() as number;
     if (this.time !== time) this.setTime(time);
   }

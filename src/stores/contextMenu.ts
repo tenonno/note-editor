@@ -1,5 +1,5 @@
 import { ipcRenderer } from "electron";
-import { NoteLine } from "../objects/NoteLine";
+import { CurveType, NoteLine } from "../objects/NoteLine";
 import Chart from "./Chart";
 
 export class NoteLineContextMenu {
@@ -11,8 +11,12 @@ export class NoteLineContextMenu {
       this.delete();
     });
 
-    ipcRenderer.on("setBezier", (_, value) => {
-      this.setBezier(value);
+    ipcRenderer.on("setCurveType", (_, value) => {
+      this.setCurveType(value);
+    });
+
+    ipcRenderer.on("addInnerNote", (_, value) => {
+      this.addInnerNote(value);
     });
   }
 
@@ -21,8 +25,13 @@ export class NoteLineContextMenu {
     this.chart!.timeline.save();
   }
 
-  public setBezier(enabled: boolean) {
-    this.noteLine!.bezier.enabled = enabled;
+  public setCurveType(type: CurveType) {
+    this.noteLine!.curve.type = type;
+    this.chart!.timeline.save();
+  }
+
+  public addInnerNote(type: string) {
+    this.chart!.timeline.addInnerLineNote(this.noteLine!, type);
     this.chart!.timeline.save();
   }
 
@@ -30,6 +39,7 @@ export class NoteLineContextMenu {
     this.noteLine = noteLine;
     this.chart = chart;
 
-    ipcRenderer.send("showNoteLineContextMenu", noteLine.bezier.enabled);
+    const innerNoteTypes = chart.musicGameSystem.noteTypes.filter(type => type.isInnerLine).map(type => type.name);
+    ipcRenderer.send("showNoteLineContextMenu", noteLine.curve.type, Object.values(CurveType), innerNoteTypes);
   }
 }

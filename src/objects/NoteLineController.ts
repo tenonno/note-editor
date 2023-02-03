@@ -9,6 +9,7 @@ import TimelineObject from "./TimelineObject";
 import MouseInfo from "../utils/mouseInfo";
 import { Graphics } from "pixi.js";
 import { BezierPointInfo } from "./BezierPointController";
+import { CurveType } from "./NoteLine";
 
 type UpdateResult = {
   selectTargets: TimelineObject[] | null;
@@ -17,7 +18,7 @@ type UpdateResult = {
 };
 
 export default class NoteLineController {
-  public constructor(private graphics: Graphics, private editor: Editor) {}
+  public constructor(private graphics: Graphics, private editor: Editor) { }
 
   public update(
     chart: Chart,
@@ -49,7 +50,7 @@ export default class NoteLineController {
         this.graphics
       );
 
-      if (isSuccess && noteLine.bezier.enabled) {
+      if (isSuccess && noteLine.curve.type == CurveType.Bezier) {
         bezierPointInfos.push({
           noteLine,
           lanePoints,

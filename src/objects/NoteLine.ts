@@ -6,15 +6,23 @@ import { Graphics } from "pixi.js";
 import { NoteLineInfo } from "./Lane";
 import { parseRgba } from "../utils/color";
 
+export const CurveType = {
+  None: "none",
+  Bezier: "bezier",
+  EaseInQuad: "easeInQuad",
+  EaseOutQuad: "easeOutQuad",
+} as const;
+export type CurveType = typeof CurveType[keyof typeof CurveType];
+
 export type NoteLineData = {
   guid: GUID;
   head: GUID;
   tail: GUID;
-  centerNotes: GUID[];
-  bezier: {
-    enabled: boolean;
-    x: number;
-    y: number;
+  innerNotes: GUID[];
+  curve: {
+    type: CurveType,
+    x: number,
+    y: number,
   };
 };
 
@@ -22,10 +30,10 @@ const defaultNoteLineData: NoteLineData = {
   guid: "GUID",
   head: "GUID",
   tail: "GUID",
-  centerNotes: [],
-  bezier: {
-    enabled: false,
-    x: 1,
+  innerNotes: [],
+  curve: {
+    type: CurveType.None,
+    x: 0.5,
     y: 0.5,
   },
 };
@@ -39,11 +47,15 @@ export class NoteLineRecord
     return new NoteLineRecord(data).asMutable();
   }
 
+  static defaultCurveData() {
+    return { ...defaultNoteLineData.curve }
+  }
+
   private constructor(data: NoteLineData) {
     super(
       (() => {
         if (data.guid === "") data.guid = guid();
-        if (!data.centerNotes) data.centerNotes = [];
+        if (!data.innerNotes) data.innerNotes = [];
         return data;
       })()
     );

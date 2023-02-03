@@ -21,11 +21,11 @@ export default class BezierPointController {
     isDragging: boolean;
     noteLine: NoteLine | null;
   } = {
-    isDragging: false,
-    noteLine: null,
-  };
+      isDragging: false,
+      noteLine: null,
+    };
 
-  public constructor(private graphics: Graphics, private editor: Editor) {}
+  public constructor(private graphics: Graphics, private editor: Editor) { }
 
   public update(
     infos: BezierPointInfo[],
@@ -98,8 +98,8 @@ export default class BezierPointController {
         point.point.distanceToSquared(Vector2.from(mouseInfo.position))
       )!.normalizedPoint;
 
-      noteLine.bezier.x = nn.x;
-      noteLine.bezier.y = nn.y;
+      noteLine.curve.x = nn.x;
+      noteLine.curve.y = nn.y;
 
       for (const { point } of points) {
         this.graphics

@@ -1,13 +1,27 @@
-import { NoteLine } from "../objects/NoteLine";
+import { CurveType, NoteLine } from "../objects/NoteLine";
 import { Measure } from "../objects/Measure";
-import { Graphics, Rectangle } from "pixi.js";
+import { Rectangle } from "pixi.js";
 import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
-import { NoteLineInfo } from "../objects/Lane";
+import { LinePointInfo, NoteLineInfo } from "../objects/Lane";
 import { GetLineInfoFromPool } from "./pool";
 import { LinePoint } from "../objects/LaneRenderer";
 import { Note } from "../objects/Note";
 import { LanePoint } from "../objects/LanePoint";
 import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
+import { EaseNoteLineCalculator } from "./EaseNoteLineCalculator";
+
+export interface INoteLineCalculator {
+  headPoint: { value: number },
+  tailPoint: { value: number },
+  // 値を点に変換
+  getLinePointInfo(measureIndex: number, value: number): LinePointInfo
+}
+
+export function createNoteLineCalculator(noteLine: NoteLine, points: LinePoint[], measures: Measure[]) {
+  return noteLine.curve.type == CurveType.Bezier
+    ? new BezierNoteLineCalculator(noteLine, points, measures)
+    : new EaseNoteLineCalculator(noteLine, points, measures);
+}
 
 export function noteToLanePoint(
   note: Note,
@@ -25,32 +39,15 @@ export function noteToLanePoint(
   } as LanePoint;
 }
 
-export function getQuadraticBezierLines(
-  points: LinePoint[],
+export function getLines(
+  noteLineCalculator: INoteLineCalculator,
   noteLine: NoteLine,
   measures: Measure[],
-  debugGraphics?: Graphics
 ): NoteLineInfo[] {
-  if (points.length !== 2) {
-    console.error("想定外です");
-    return [];
-  }
-
   const lines: NoteLineInfo[] = [];
 
-  const bezierNoteLineCalculator = new BezierNoteLineCalculator(
-    noteLine,
-    points[0],
-    points[1],
-    measures
-  );
-
-  if (debugGraphics) {
-    bezierNoteLineCalculator.debug(debugGraphics);
-  }
-
-  const p1 = bezierNoteLineCalculator.headPoint;
-  const p2 = bezierNoteLineCalculator.tailPoint;
+  const p1 = noteLineCalculator.headPoint;
+  const p2 = noteLineCalculator.tailPoint;
 
   // 始点の小節番号
   let v1 = p1.value;
@@ -61,22 +58,22 @@ export function getQuadraticBezierLines(
   while (true) {
     const measureIndex = Math.floor(v1);
 
-    const bezierDivision = Math.max(
+    const division = noteLine.curve.type == CurveType.None ? 1 : Math.max(
       Math.floor(measures[measureIndex].height / 20),
       10
     );
 
-    for (let i2 = 0; i2 < bezierDivision; i2++) {
+    for (let i2 = 0; i2 < division; i2++) {
       lines.push({
         ...GetLineInfoFromPool(
           measures[measureIndex],
-          bezierNoteLineCalculator.getLinePointInfo(
+          noteLineCalculator.getLinePointInfo(
             measureIndex,
-            v1 + (1 / bezierDivision) * (v2 - v1) * i2
+            v1 + (1 / division) * (v2 - v1) * i2
           ),
-          bezierNoteLineCalculator.getLinePointInfo(
+          noteLineCalculator.getLinePointInfo(
             measureIndex,
-            v1 + (1 / bezierDivision) * (v2 - v1) * (i2 + 1)
+            v1 + (1 / division) * (v2 - v1) * (i2 + 1)
           )
         ),
         noteLine: noteLine,
@@ -138,8 +135,8 @@ export function getBezierPointInfo(
 
   const result: R = {
     currentPoint: getPointByNormalizedPoint(
-      noteLine.bezier.x,
-      noteLine.bezier.y
+      noteLine.curve.x,
+      noteLine.curve.y
     ),
     points: [],
   };
