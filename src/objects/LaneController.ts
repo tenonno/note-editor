@@ -21,7 +21,7 @@ type UpdateResult = {
 export default class LaneController {
   private connectTargetLanePoint: LanePoint | null = null;
 
-  public constructor(private graphics: PIXI.Graphics, private editor: Editor) {}
+  public constructor(private graphics: PIXI.Graphics, private editor: Editor) { }
 
   public update(
     chart: Chart,
@@ -123,7 +123,7 @@ export default class LaneController {
 
             if (isClick) {
               chart.timeline.addLane(newLane);
-              chart.timeline.optimiseLane();
+              chart.timeline.optimizeLane();
             }
           }
 

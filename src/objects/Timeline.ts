@@ -318,6 +318,11 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
       this.removeNoteLine(noteLine);
     }
 
+    // ノートライン内に配置されているものを消す
+    for (const noteLine of this.noteLines) {
+      noteLine.innerNotes = noteLine.innerNotes.filter(guid => guid != note.guid);
+    }
+
     (this as Mutable<TimelineRecord>).notes = this.notes.filter(
       (_note) => _note != note
     );
@@ -333,6 +338,42 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
     this.mutable.noteLines = this.noteLines.filter(
       (_note) => _note !== noteLine
     );
+  }
+
+  addInnerLineNote(noteLine: NoteLine, typeName: string) {
+    const head = this.noteMap.get(noteLine.head);
+    const tail = this.noteMap.get(noteLine.tail);
+    if (!head || !tail) return;
+
+    const center = Fraction.mul(
+      Fraction.add(
+        Fraction.add(head.measurePosition, tail.measurePosition),
+        new Fraction(tail.measureIndex - head.measureIndex, 1)
+      ),
+      new Fraction(1, 2)
+    );
+
+    const note = NoteRecord.new(
+      {
+        guid: guid(),
+        horizontalSize: 0,
+        horizontalPosition: Fraction.none,
+        measureIndex: head.measureIndex,
+        measurePosition: center,
+        type: typeName,
+        speed: 1,
+        lane: head.lane,
+        layer: this.chart!.currentLayer.guid,
+        editorProps: {
+          time: 0,
+        },
+        customProps: {
+        },
+      },
+      this.chart!
+    );
+    noteLine.innerNotes.push(note.guid);
+    this.addNote(note);
   }
 
   lanePointMap = new Map<string, LanePoint>();
@@ -420,16 +461,17 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
    * 最適化する
    */
   @action
-  optimise() {
-    this.optimiseLane();
+  optimize() {
+    this.optimizeLane();
     this.optimizeNoteLine();
+    this.optimizeNote();
   }
 
   /**
    * レーンを最適化する
    */
   @action
-  optimiseLane() {
+  optimizeLane() {
     // レーンポイントをソートする
     for (const lane of this.lanes) {
       lane.points = lane.points.slice().sort((a, b) => {
@@ -477,6 +519,39 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
 
       if (!f) break;
     }
+  }
+
+  /**
+   * ノートを最適化する
+   */
+  @action
+  optimizeNote() {
+    const innerNotes = new Set<string>();
+
+    // 範囲外のinnerNotesを削除
+    for (const noteLine of this.noteLines) {
+      const head = this.noteMap.get(noteLine.head)!.getMeasurePosition();
+      const tail = this.noteMap.get(noteLine.tail)!.getMeasurePosition();
+
+      for (const guid of noteLine.innerNotes) {
+        const note = this.noteMap.get(guid)!;
+        const pos = note.getMeasurePosition();
+        if (pos < head || pos > tail) {
+          this.removeNote(note, false);
+        } else {
+          innerNotes.add(guid);
+        }
+      }
+    }
+
+    // innerNotesに入っていないsize0のノーツを削除
+    for (const note of this.notes) {
+      if (note.horizontalSize == 0 && !innerNotes.has(note.guid)) {
+        this.removeNote(note, false);
+      }
+    }
+
+    this.updateNoteMap();
   }
 
   /**

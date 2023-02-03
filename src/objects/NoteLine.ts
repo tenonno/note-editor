@@ -18,7 +18,7 @@ export type NoteLineData = {
   guid: GUID;
   head: GUID;
   tail: GUID;
-  centerNotes: GUID[];
+  innerNotes: GUID[];
   curve: {
     type: CurveType,
     x: number,
@@ -30,7 +30,7 @@ const defaultNoteLineData: NoteLineData = {
   guid: "GUID",
   head: "GUID",
   tail: "GUID",
-  centerNotes: [],
+  innerNotes: [],
   curve: {
     type: CurveType.None,
     x: 0.5,
@@ -55,7 +55,7 @@ export class NoteLineRecord
     super(
       (() => {
         if (data.guid === "") data.guid = guid();
-        if (!data.centerNotes) data.centerNotes = [];
+        if (!data.innerNotes) data.innerNotes = [];
         return data;
       })()
     );

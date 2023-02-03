@@ -27,11 +27,10 @@ const useStyles = makeStyles((theme: Theme) =>
     badge: {
       marginTop: ".8rem",
       marginRight: ".5rem",
-      boxShadow: `0 0 0 2px ${
-        theme.palette.mode === "light"
+      boxShadow: `0 0 0 2px ${theme.palette.mode === "light"
           ? theme.palette.grey[200]
           : theme.palette.grey[900]
-      }`,
+        }`,
     },
     displaySetting: {
       outline: 0,
@@ -239,15 +238,16 @@ export default observer(function Toolbar() {
       >
         {(() => {
           if (!chart.musicGameSystem) return;
-          return chart.musicGameSystem.noteTypes.map(({ name }, index) => (
+          return chart.musicGameSystem.noteTypes.map((type, index) => (
             <MenuItem
               key={index}
+              disabled={type.isInnerLine}
               onClick={() => {
                 setting.editNoteTypeIndex = index;
                 setState({ ...state, noteAnchorEl: null });
               }}
             >
-              {index + 1}: {name}
+              {index + 1}: {type.name}
             </MenuItem>
           ));
         })()}

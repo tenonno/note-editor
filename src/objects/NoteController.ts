@@ -331,7 +331,7 @@ export default class NoteController {
             guid: guid(),
             head: head.guid,
             tail: tail.guid,
-            centerNotes: [],
+            innerNotes: [],
             curve: NoteLineRecord.defaultCurveData(),
           });
 
@@ -473,7 +473,7 @@ export default class NoteController {
             guid: guid(),
             head: head.guid,
             tail: tail.guid,
-            centerNotes: [],
+            innerNotes: [],
             curve: NoteLineRecord.defaultCurveData(),
           }),
           this.graphics!
@@ -516,7 +516,7 @@ export default class NoteController {
             guid: guid(),
             head: targetNoteLine.head,
             tail: newNote.guid,
-            centerNotes: [],
+            innerNotes: [],
             curve: { ...targetNoteLine.curve },
           })
         );
@@ -526,7 +526,7 @@ export default class NoteController {
             guid: guid(),
             head: newNote.guid,
             tail: targetNoteLine.tail,
-            centerNotes: [],
+            innerNotes: [],
             curve: { ...targetNoteLine.curve },
           })
         );
@@ -547,7 +547,7 @@ export default class NoteController {
           guid: guid(),
           head: head.guid,
           tail: tail.guid,
-          centerNotes: [],
+          innerNotes: [],
           curve: NoteLineRecord.defaultCurveData(),
         });
 
@@ -590,9 +590,10 @@ export default class NoteController {
     // 接続できないノートラインは除外する
     const filteredLineInfos = lineInfos.filter(({ noteLine }) => {
       const head = chart.timeline.noteMap.get(noteLine.head);
+      const tail = chart.timeline.noteMap.get(noteLine.tail);
 
       // ノーツを上書きして消えている場合がある
-      if (!head) {
+      if (!head || !tail) {
         return false;
       }
 

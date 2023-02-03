@@ -99,17 +99,29 @@ app.on("activate", () => {
 });
 
 function initWindowMenu() {
-  ipcMain.on("showNoteLineContextMenu", (event, type, types: any[]) => {
+  ipcMain.on("showNoteLineContextMenu", (event, curveType, curveTypes: string[], innerNoteTypes: string[]) => {
     const template: Electron.MenuItemConstructorOptions[] = [
       {
         label: "curve",
-        submenu: types.map(value => (
+        submenu: curveTypes.map(value => (
           {
             label: value,
             type: "checkbox",
-            checked: type === value,
+            checked: curveType === value,
             click() {
               mainWindow!.webContents.send("setCurveType", value);
+            },
+          }
+        )),
+      },
+      { type: "separator" },
+      {
+        label: "addInnerNote",
+        submenu: innerNoteTypes.map(value => (
+          {
+            label: value,
+            click() {
+              mainWindow!.webContents.send("addInnerNote", value);
             },
           }
         )),

@@ -371,7 +371,7 @@ export default class Editor {
     }
 
     // 譜面を最適化する
-    chart.timeline.optimise();
+    chart.timeline.optimize();
 
     this.checkNoteOverlap();
 
@@ -541,12 +541,20 @@ export default class Editor {
 
     // ノートラインを複製する
     for (const line of oldChart.timeline.noteLines) {
-      if (!originalGuidMap.has(line.head) || !originalGuidMap.has(line.tail))
+      if (!originalGuidMap.has(line.head) || !originalGuidMap.has(line.tail)) {
+        // innerNotesだけコピペされていたら元のノートラインに追加
+        for (const guid of line.innerNotes) {
+          const newGuid = originalGuidMap.get(guid);
+          if (newGuid) line.innerNotes.push(newGuid);
+        }
         continue;
+      }
       const newLine = cloneDeep(line);
       newLine.guid = guid();
       newLine.head = originalGuidMap.get(newLine.head)!;
       newLine.tail = originalGuidMap.get(newLine.tail)!;
+      newLine.innerNotes = newLine.innerNotes.map(guid => originalGuidMap.get(guid))
+        .filter((guid): guid is string => guid !== undefined);
       tl.addNoteLine(newLine);
     }
   }
@@ -899,8 +907,10 @@ export default class Editor {
     });
     ipcRenderer.on("changeNoteTypeIndex", (_: any, index: number) => {
       if (this.activeElementIsInput()) return;
-      const max = this.currentChart!.musicGameSystem.noteTypes.length - 1;
-      this.setting.editNoteTypeIndex = Math.min(index, max);
+      const types = this.currentChart!.musicGameSystem.noteTypes;
+      index = Math.min(index, types.length - 1);
+      if (types[index].isInnerLine) return;
+      this.setting.editNoteTypeIndex = index;
     });
 
     // 制御

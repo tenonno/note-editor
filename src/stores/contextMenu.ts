@@ -14,6 +14,10 @@ export class NoteLineContextMenu {
     ipcRenderer.on("setCurveType", (_, value) => {
       this.setCurveType(value);
     });
+
+    ipcRenderer.on("addInnerNote", (_, value) => {
+      this.addInnerNote(value);
+    });
   }
 
   public delete() {
@@ -26,10 +30,16 @@ export class NoteLineContextMenu {
     this.chart!.timeline.save();
   }
 
+  public addInnerNote(type: string) {
+    this.chart!.timeline.addInnerLineNote(this.noteLine!, type);
+    this.chart!.timeline.save();
+  }
+
   public show(noteLine: NoteLine, chart: Chart) {
     this.noteLine = noteLine;
     this.chart = chart;
 
-    ipcRenderer.send("showNoteLineContextMenu", noteLine.curve.type, Object.values(CurveType));
+    const innerNoteTypes = chart.musicGameSystem.noteTypes.filter(type => type.isInnerLine).map(type => type.name);
+    ipcRenderer.send("showNoteLineContextMenu", noteLine.curve.type, Object.values(CurveType), innerNoteTypes);
   }
 }

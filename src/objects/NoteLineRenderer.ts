@@ -6,8 +6,10 @@ import { LineInfo, NoteLineInfo } from "./Lane";
 import { LanePoint } from "./LanePoint";
 import { Note } from "./Note";
 import { NoteLine } from "./NoteLine";
-import { createNoteLineCalculator, getLanePoints, getLines } from "../utils/noteLineUtility";
+import { createNoteLineCalculator, getLines, noteToLanePoint } from "../utils/noteLineUtility";
 import { Graphics } from "pixi.js";
+import NoteRendererResolver from "./NoteRendererResolver";
+import { sortMeasure } from "./Measure";
 
 type NoteLineRenderResult = {
   isSuccess: boolean;
@@ -78,13 +80,32 @@ class NoteLineRenderer implements INoteLineRenderer {
     }
 
     const chart = Pixi.instance!.injected.editor!.currentChart!;
+    const {
+      measures,
+      noteMap
+    } = chart.timeline;
 
-    result.lanePoints = getLanePoints(noteLine, chart);
+    result.lanePoints = [head, tail].map(note => {
+      note.updateBounds();
+      return noteToLanePoint(note,
+        note.getBounds(),
+        chart.timeline.measures
+      )
+    }).sort(sortMeasure);
 
-    const calculator = createNoteLineCalculator(noteLine, result.lanePoints, chart.timeline.measures);
-    result.noteLineInfos = getLines(calculator, noteLine, chart.timeline.measures)
+    const calculator = createNoteLineCalculator(noteLine, result.lanePoints, measures);
+    result.noteLineInfos = getLines(calculator, noteLine, measures)
 
     this.customRender(graphics, result.noteLineInfos, head, tail);
+
+    for (const guid of noteLine.innerNotes) {
+      const note = noteMap.get(guid);
+      if (!note) continue;
+      if (!chart.layers.find(layer => layer.visible && layer.guid == note.layer)) continue;
+      const point = calculator.getLinePointInfo(note.measureIndex, note.getMeasurePosition());
+      note.setBounds(point);
+      (NoteRendererResolver.resolve(note) as any).customRender(graphics, note, point);
+    }
 
     result.isSuccess = true;
     return result;

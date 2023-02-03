@@ -1,5 +1,5 @@
 import { CurveType, NoteLine } from "../objects/NoteLine";
-import { Measure, sortMeasure } from "../objects/Measure";
+import { Measure } from "../objects/Measure";
 import { Rectangle } from "pixi.js";
 import { Fraction, inverseLerp, lerp, Vector2 } from "../math";
 import { LinePointInfo, NoteLineInfo } from "../objects/Lane";
@@ -9,7 +9,6 @@ import { Note } from "../objects/Note";
 import { LanePoint } from "../objects/LanePoint";
 import { BezierNoteLineCalculator } from "./bezierNoteLineCalculator";
 import { EaseNoteLineCalculator } from "./EaseNoteLineCalculator";
-import Chart from "src/stores/Chart";
 
 export interface INoteLineCalculator {
   headPoint: { value: number },
@@ -18,24 +17,13 @@ export interface INoteLineCalculator {
   getLinePointInfo(measureIndex: number, value: number): LinePointInfo
 }
 
-export function getLanePoints(noteLine: NoteLine, chart: Chart) {
-  return [noteLine.head, noteLine.tail].map(guid => {
-    const note = chart.timeline.noteMap.get(guid)!;
-    note.updateBounds();
-    return noteToLanePoint(note,
-      note.getBounds(),
-      chart.timeline.measures
-    )
-  }).sort(sortMeasure);
-}
-
 export function createNoteLineCalculator(noteLine: NoteLine, points: LinePoint[], measures: Measure[]) {
   return noteLine.curve.type == CurveType.Bezier
     ? new BezierNoteLineCalculator(noteLine, points, measures)
     : new EaseNoteLineCalculator(noteLine, points, measures);
 }
 
-function noteToLanePoint(
+export function noteToLanePoint(
   note: Note,
   noteBounds: Rectangle,
   measures: Measure[]
