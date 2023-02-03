@@ -520,6 +520,7 @@ export default class Editor {
     ]);
 
     const originalGuidMap = new Map<string, string>();
+    const pastedNotes: Note[] = [];
 
     noteGroup.moveTo(
       this.currentMeasurePosition.measureIndex,
@@ -534,6 +535,7 @@ export default class Editor {
         originalGuidMap.set(note.guid, newNote.guid);
 
         tl.addNote(newNote, false);
+        pastedNotes.push(newNote);
       }
     );
 
@@ -557,6 +559,8 @@ export default class Editor {
         .filter((guid): guid is string => guid !== undefined);
       tl.addNoteLine(newLine);
     }
+
+    return pastedNotes;
   }
 
   @action
@@ -594,9 +598,14 @@ export default class Editor {
   }
 
   @action
-  private paste() {
+  private paste(withFlipLane: boolean) {
     if (!this.existsCurrentChart()) return;
-    this.pasteNotes();
+
+    const newNotes = this.pasteNotes();
+    if (withFlipLane && newNotes && newNotes.length > 0) {
+      this.moveLane(newNotes, i => this.currentChart!.timeline.lanes.length - i - 1);
+      this.flipNotes(newNotes);
+    }
     this.pasteOtherObjects();
 
     this.notify(
@@ -622,9 +631,8 @@ export default class Editor {
   }
 
   @action
-  moveLane(indexer: (i: number) => number) {
+  moveLane(notes: Note[], indexer: (i: number) => number) {
     const lanes = this.currentChart!.timeline.lanes;
-    const notes = this.getInspectNotes();
 
     notes.forEach((note) => {
       // 移動先レーンを取得
@@ -639,17 +647,14 @@ export default class Editor {
 
       note.lane = lane.guid;
     });
-    if (notes.length > 0) this.currentChart!.save();
   }
 
   /**
-   * 選択中のノートを左右に移動する
+   * ノートを左右に移動する
    * @param value 移動量
    */
   @action
-  private moveSelectedNotes(value: number) {
-    const notes = this.getInspectNotes();
-
+  private moveNotes(notes: Note[], value: number) {
     for (const note of notes) {
       const { numerator, denominator } = note.horizontalPosition;
 
@@ -662,18 +667,12 @@ export default class Editor {
   }
 
   /**
-   * 選択中のノートを左右反転する
+   * ノートを左右反転する
    */
   @action
-  private flipSelectedNotes() {
+  private flipNotes(notes: Note[]) {
     if (!this.currentChart) return;
     const { noteTypeMap } = this.currentChart.musicGameSystem;
-
-    const notes = this.getInspectNotes();
-
-    if (notes.length === 0) {
-      return;
-    }
 
     for (const note of notes) {
       const { numerator, denominator } = note.horizontalPosition;
@@ -705,14 +704,8 @@ export default class Editor {
    * 選択中のノートを上下反転する
    */
   @action
-  private flipVertical() {
+  private flipVertical(notes: Note[]) {
     if (!this.currentChart) return;
-
-    const notes = this.getInspectNotes();
-
-    if (notes.length === 0) {
-      return;
-    }
 
     const noteGroup = new MeasureObjectGroup(notes);
 
@@ -769,6 +762,17 @@ export default class Editor {
     });
     this.currentChart!.timeline.calculateTime();
     if (notes.length > 0) this.currentChart!.save();
+  }
+
+  /**
+   * 選択中ノーツに対して操作を適用する
+   */
+  private manipulateInspectNotes(action: (notes: Note[]) => void) {
+    if (this.activeElementIsInput()) return;
+    const notes = this.getInspectNotes();
+    if (notes.length == 0) return;
+    action(notes);
+    this.currentChart!.save();
   }
 
   /**
@@ -851,7 +855,7 @@ export default class Editor {
     });
     Mousetrap.bind("mod+v", () => {
       if (this.activeElementIsInput()) return;
-      this.paste();
+      this.paste(false);
     });
     Mousetrap.bind(["del", "backspace"], () => {
       if (this.activeElementIsInput()) return;
@@ -877,19 +881,25 @@ export default class Editor {
       this.moveDivision(index);
     });
     ipcRenderer.on("moveLane", (_: any, index: number) => {
-      if (this.activeElementIsInput()) return;
-      this.moveLane((i) => i + index);
-      this.moveSelectedNotes(index);
+      this.manipulateInspectNotes(notes => {
+        this.moveLane(notes, i => i + index);
+        this.moveNotes(notes, index);
+      });
     });
     ipcRenderer.on("flipLane", () => {
-      if (this.activeElementIsInput()) return;
-      this.moveLane((i) => this.currentChart!.timeline.lanes.length - i - 1);
-      this.flipSelectedNotes();
+      this.manipulateInspectNotes(notes => {
+        this.moveLane(notes, i => this.currentChart!.timeline.lanes.length - i - 1);
+        this.flipNotes(notes);
+      });
     });
     ipcRenderer.on("flipVertical", () => {
+      this.manipulateInspectNotes(notes => {
+        this.flipVertical(notes);
+      });
+    });
+    ipcRenderer.on("pasteFlipLane", () => {
       if (this.activeElementIsInput()) return;
-      this.moveLane((i) => this.currentChart!.timeline.lanes.length - i - 1);
-      this.flipVertical();
+      this.paste(true);
     });
 
     // 選択

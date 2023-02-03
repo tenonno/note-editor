@@ -198,6 +198,13 @@ function initWindowMenu() {
           role: "paste",
         },
         {
+          label: "左右反転して貼り付け",
+          accelerator: "CmdOrCtrl+Shift+V",
+          click() {
+            mainWindow!.webContents.send("pasteFlipLane");
+          },
+        },
+        {
           label: "削除",
           role: "delete",
         },
