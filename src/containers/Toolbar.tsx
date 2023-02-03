@@ -28,8 +28,8 @@ const useStyles = makeStyles((theme: Theme) =>
       marginTop: ".8rem",
       marginRight: ".5rem",
       boxShadow: `0 0 0 2px ${theme.palette.mode === "light"
-          ? theme.palette.grey[200]
-          : theme.palette.grey[900]
+        ? theme.palette.grey[200]
+        : theme.palette.grey[900]
         }`,
     },
     displaySetting: {
@@ -52,7 +52,7 @@ export default observer(function Toolbar() {
     objectSizeAnchorEl: Element | null;
     displaySettingAnchorEl: Element | null;
     customColorAnchorEl: Element | null;
-    anchorEl: Element | null;
+    measureDivisionAnchorEl: Element | null;
   }>({
     // タイムライン上に配置するオブジェクトのサイズ
     timelineDivisionSize: 1,
@@ -71,27 +71,14 @@ export default observer(function Toolbar() {
 
     customColorAnchorEl: null,
 
-    anchorEl: null,
+    measureDivisionAnchorEl: null,
   });
-
-  function handleClick(event: any) {
-    setState({
-      ...state,
-      anchorEl: event.currentTarget as HTMLElement,
-    });
-  }
-
-  function handleClose() {
-    setState({ ...state, anchorEl: null });
-  }
 
   function handleDrawerToggle() {
     editor.setting.drawerOpened = !editor.setting.drawerOpened;
   }
 
   const { setting } = editor;
-
-  const { anchorEl } = state;
 
   const chart: IEmptyChart = editor.currentChart ?? emptyChart;
 
@@ -135,7 +122,15 @@ export default observer(function Toolbar() {
         classes={{ badge: classes.badge }}
         max={999}
       >
-        <IconButton aria-label="Delete" onClick={handleClick} size="large">
+        <IconButton
+          aria-label="Delete"
+          onClick={e => {
+            // スペースキーでまた開かないようにフォーカスを外しておく
+            e.currentTarget.blur();
+            setState({ ...state, measureDivisionAnchorEl: e.currentTarget })
+          }}
+          size="large"
+        >
           <MenuIcon />
         </IconButton>
       </Badge>
@@ -148,9 +143,11 @@ export default observer(function Toolbar() {
       >
         <IconButton
           aria-label="Delete"
-          onClick={(e) =>
+          onClick={e => {
+            // スペースキーでまた開かないようにフォーカスを外しておく
+            e.currentTarget.blur();
             setState({ ...state, objectSizeAnchorEl: e.currentTarget })
-          }
+          }}
           size="large"
         >
           <MenuIcon />
@@ -158,9 +155,9 @@ export default observer(function Toolbar() {
       </Badge>
       <Menu
         id="simple-menu"
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
+        anchorEl={state.measureDivisionAnchorEl}
+        open={Boolean(state.measureDivisionAnchorEl)}
+        onClose={e => setState({ ...state, measureDivisionAnchorEl: null })}
       >
         {(() => {
           if (!chart.musicGameSystem) return;
@@ -170,7 +167,7 @@ export default observer(function Toolbar() {
                 key={index}
                 onClick={() => {
                   setting.setMeasureDivision(division);
-                  handleClose();
+                  setState({ ...state, measureDivisionAnchorEl: null });
                 }}
               >
                 {division}
@@ -183,7 +180,7 @@ export default observer(function Toolbar() {
       <Menu
         anchorEl={state.objectSizeAnchorEl}
         open={Boolean(state.objectSizeAnchorEl)}
-        onClose={() => setState({ ...state, objectSizeAnchorEl: null })}
+        onClose={e => setState({ ...state, objectSizeAnchorEl: null })}
       >
         {Array.from({ length: 24 })
           .fill(0)
@@ -299,11 +296,13 @@ export default observer(function Toolbar() {
           ));
         })()}
       </Menu>
-      {Array.from({ length: 0 }).map((_, index) => (
-        <IconButton key={index} aria-label="Delete" size="large">
-          <AddIcon />
-        </IconButton>
-      ))}
+      {
+        Array.from({ length: 0 }).map((_, index) => (
+          <IconButton key={index} aria-label="Delete" size="large">
+            <AddIcon />
+          </IconButton>
+        ))
+      }
 
       <VerticalDivider />
 
@@ -361,6 +360,6 @@ export default observer(function Toolbar() {
         />
       </Menu>
       <NewChartDialog />
-    </div>
+    </div >
   );
 });
