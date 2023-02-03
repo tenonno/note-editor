@@ -459,7 +459,7 @@ export default class Chart {
   }
 
   public updateTime() {
-    if (!this.audio) return;
+    if (!this.audio || !this.audio.playing()) return;
     const time = this.audio!.seek() as number;
     if (this.time !== time) this.setTime(time);
   }
