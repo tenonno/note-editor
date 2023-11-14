@@ -1,37 +1,33 @@
 import { LanePoint } from "./LanePoint";
 import { Measure } from "./Measure";
-import * as PIXI from "pixi.js";
+import { Graphics, Rectangle } from "pixi.js";
 
 class LanePointRenderer {
-  getBounds(lanePoint: LanePoint, measure: Measure): PIXI.Rectangle {
-    const lane = measure;
-
+  getBounds(lanePoint: LanePoint, measure: Measure): Rectangle {
     const w =
       (measure.width / lanePoint.horizontalPosition!.denominator) *
       lanePoint.horizontalSize;
 
     const x =
-      lane.x +
+      measure.x +
       (measure.width / lanePoint.horizontalPosition!.denominator) *
         lanePoint.horizontalPosition!.numerator;
 
     const y =
-      lane.y +
-      lane.height -
-      (lane.height / lanePoint.measurePosition!.denominator) *
+      measure.y +
+      measure.height -
+      (measure.height / lanePoint.measurePosition!.denominator) *
         lanePoint.measurePosition!.numerator;
 
     const colliderH = 20;
 
-    // this.width = w;
-    //this.height = colliderH;
     const _x = x;
     const _y = y - colliderH / 2;
 
-    return new PIXI.Rectangle(_x, _y, w, colliderH);
+    return new Rectangle(_x, _y, w, colliderH);
   }
 
-  render(lanePoint: LanePoint, graphics: PIXI.Graphics, measure: Measure) {
+  render(lanePoint: LanePoint, graphics: Graphics, measure: Measure) {
     const bounds = this.getBounds(lanePoint, measure);
 
     graphics

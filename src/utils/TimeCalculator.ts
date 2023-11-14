@@ -89,10 +89,11 @@ export class TimeCalculator {
     let prevBeat = Fraction.none as IFraction;
 
     for (let i = 0; i < measures.length; i++) {
-      const newBpm = bpmAndBeatMap.has(i)
+      const newBpm: BpmChangeAndBeat = bpmAndBeatMap.has(i)
         ? bpmAndBeatMap.get(i)!
         : {
             type: 0,
+            typeName: "bpm",
             guid: guid(),
             measureIndex: i,
             measurePosition: new Fraction(0, 1),

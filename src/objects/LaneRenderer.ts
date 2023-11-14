@@ -10,6 +10,7 @@ import { GetLineInfoFromPool, GetLinePointInfoFromPool } from "../utils/pool";
 import { Lane, LineInfo, LinePointInfo } from "./Lane";
 import { LanePoint } from "./LanePoint";
 import { Graphics } from "pixi.js";
+import { isTargetLane } from "./LaneController";
 
 export interface LinePoint {
   measureIndex: number;
@@ -282,7 +283,16 @@ class LaneRenderer implements ILaneRenderer {
 
     this.defaultRender(graphics, lines, laneTemplate);
 
-    if (noteType.excludeLanes.includes(lane.templateName)) return;
+    if (
+      !isTargetLane(
+        noteType,
+        lane,
+        Pixi.instance!.injected.editor!.currentChart!.musicGameSystem,
+        Pixi.instance!.injected.editor!.setting
+      )
+    ) {
+      return;
+    }
 
     // 選択中の小節に乗っているレーン
     const targetMeasureLines = !drawHorizontalLineTargetMeasure
@@ -293,7 +303,11 @@ class LaneRenderer implements ILaneRenderer {
 
     for (const line of targetMeasureLines) {
       for (let i = 1; i < lane.division; ++i) {
-        const width = !laneTemplate.boldInterval ? 1 : i % 4 === 0 ? 2 : 1;
+        const width = !laneTemplate.boldInterval
+          ? 1
+          : i % laneTemplate.boldInterval === 0
+          ? 2
+          : 1;
         graphics
           .lineStyle(width, 0xffffff)
           .moveTo(

@@ -2,6 +2,7 @@ import { last } from "lodash";
 import { OtherObjectData } from "../objects/OtherObject";
 import { ChartJsonData } from "../stores/Chart";
 import { guid } from "./guid";
+import MusicGameSystem from "../stores/MusicGameSystem";
 
 function updateToV3(chart: ChartJsonData) {
   // レイヤーにグループを追加
@@ -36,6 +37,20 @@ function updateToV3(chart: ChartJsonData) {
   }
 }
 
+function updateToV4(chart: ChartJsonData, musicGameSystem: MusicGameSystem) {
+  // OtherObject に measureLine, memo を追加したため、type を typeName に変更
+  for (const otherObject of chart.timeline.otherObjects) {
+    let type = otherObject.type;
+
+    if (type >= 4) {
+      type++;
+    }
+
+    // @ts-ignore
+    otherObject.typeName = musicGameSystem.otherObjectTypes[type].name;
+  }
+}
+
 /**
  * 譜面のバージョンを更新する
  * @param chart 譜面
@@ -43,6 +58,7 @@ function updateToV3(chart: ChartJsonData) {
  */
 export default function updateChart(
   chart: ChartJsonData,
+  musicGameSystem: MusicGameSystem,
   currentVersion: number
 ) {
   chart.version = parseInt(chart.version.toString());
@@ -87,5 +103,8 @@ export default function updateChart(
 
   if (chart.version < 3) {
     updateToV3(chart);
+  }
+  if (chart.version < 4) {
+    updateToV4(chart, musicGameSystem);
   }
 }

@@ -8,7 +8,6 @@ import {
   Menu as MenuIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { observer } from "mobx-react";
@@ -21,6 +20,7 @@ import ThemeButton from "../components/ThemeButton";
 import VerticalDivider from "../components/VerticalDivider";
 import { emptyChart, IEmptyChart } from "../stores/EmptyChart";
 import { useStores } from "../stores/stores";
+import LaneGroupSelect from "../components/LaneGroupSelect";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -47,9 +47,10 @@ export default observer(function Toolbar() {
   const [state, setState] = React.useState<{
     timelineDivisionSize: number;
     laneDivisionSize: number;
-    laneAnchorEl: Element | null;
     noteAnchorEl: Element | null;
+    laneAnchorEl: Element | null;
     otherAnchorEl: Element | null;
+    laneGroupAnchorEl: Element | null;
     objectSizeAnchorEl: Element | null;
     displaySettingAnchorEl: Element | null;
     customColorAnchorEl: Element | null;
@@ -59,12 +60,13 @@ export default observer(function Toolbar() {
     timelineDivisionSize: 1,
     // レーン上に配置するオブジェクのサイズ
     laneDivisionSize: 1,
-
-    laneAnchorEl: null,
     noteAnchorEl: null,
+    laneAnchorEl: null,
 
     // その他オブジェクトメニューアンカー
     otherAnchorEl: null,
+
+    laneGroupAnchorEl: null,
 
     objectSizeAnchorEl: null,
 
@@ -108,9 +110,7 @@ export default observer(function Toolbar() {
       <IconButton onClick={handleDrawerToggle} size="large">
         <MenuIcon />
       </IconButton>
-
       <VerticalDivider />
-
       {/* Undo */}
       <IconButton
         disabled={!chart.canUndo}
@@ -127,9 +127,7 @@ export default observer(function Toolbar() {
       >
         <ArrowForwardIcon />
       </IconButton>
-
       <VerticalDivider />
-
       <Badge
         badgeContent={setting.measureDivision}
         color="primary"
@@ -140,7 +138,6 @@ export default observer(function Toolbar() {
           <MenuIcon />
         </IconButton>
       </Badge>
-
       <Badge
         badgeContent={setting.objectSize}
         color="primary"
@@ -201,12 +198,10 @@ export default observer(function Toolbar() {
             </MenuItem>
           ))}
       </Menu>
-
       <EditModeSelect
         value={setting.editMode}
         onChange={(editMode) => setting.setEditMode(editMode)}
       />
-
       <EditTargetSelect
         value={setting.editObjectCategory}
         onChange={(editObjectCategory) =>
@@ -227,8 +222,8 @@ export default observer(function Toolbar() {
         onNote={(noteAnchorEl) => setState({ ...state, noteAnchorEl })}
         onLane={(laneAnchorEl) => setState({ ...state, laneAnchorEl })}
         onOther={(otherAnchorEl) => setState({ ...state, otherAnchorEl })}
+        laneEditMode={setting.laneEditMode}
       />
-
       {/* 配置ノートタイプ */}
       <Menu
         anchorEl={state.noteAnchorEl}
@@ -239,17 +234,20 @@ export default observer(function Toolbar() {
       >
         {(() => {
           if (!chart.musicGameSystem) return;
-          return chart.musicGameSystem.noteTypes.map(({ name }, index) => (
-            <MenuItem
-              key={index}
-              onClick={() => {
-                setting.editNoteTypeIndex = index;
-                setState({ ...state, noteAnchorEl: null });
-              }}
-            >
-              {index + 1}: {name}
-            </MenuItem>
-          ));
+          return chart.musicGameSystem.noteTypes.map(
+            ({ name, obsolete }, index) => (
+              <MenuItem
+                key={index}
+                disabled={obsolete}
+                onClick={() => {
+                  setting.editNoteTypeIndex = index;
+                  setState({ ...state, noteAnchorEl: null });
+                }}
+              >
+                {index + 1}: {name}
+              </MenuItem>
+            )
+          );
         })()}
       </Menu>
       {/* 配置レーンタイプ */}
@@ -299,14 +297,47 @@ export default observer(function Toolbar() {
           ));
         })()}
       </Menu>
-      {Array.from({ length: 0 }).map((_, index) => (
-        <IconButton key={index} aria-label="Delete" size="large">
-          <AddIcon />
-        </IconButton>
-      ))}
-
       <VerticalDivider />
+      {/* レーングループ */}
+      <LaneGroupSelect
+        musicGameSystem={chart.musicGameSystem}
+        editNoteTypeIndex={setting.editNoteTypeIndex}
+        editLaneTypeIndex={setting.laneGroupIndex}
+        onLane={(laneGroupAnchorEl) =>
+          setState({ ...state, laneGroupAnchorEl })
+        }
+      />
+      {/* レーングループタイプ */}
+      <Menu
+        anchorEl={state.laneGroupAnchorEl}
+        open={Boolean(state.laneGroupAnchorEl)}
+        onClose={(e: any) => {
+          setState({ ...state, laneGroupAnchorEl: null });
+        }}
+      >
+        {(() => {
+          if (!chart.musicGameSystem) return;
 
+          var p = chart.musicGameSystem.noteLaneGroupMap.get(
+            chart.musicGameSystem.noteTypes[setting.editNoteTypeIndex]?.name
+          );
+
+          if (!p) return;
+
+          return p.map(({ name }, index) => (
+            <MenuItem
+              key={index}
+              onClick={() => {
+                setting.setLaneGroupIndex(chart, index);
+                setState({ ...state, laneGroupAnchorEl: null });
+              }}
+            >
+              {name}
+            </MenuItem>
+          ));
+        })()}
+      </Menu>
+      <VerticalDivider />
       {/* 表示設定 */}
       <IconButton
         onClick={(event) => {
@@ -344,9 +375,7 @@ export default observer(function Toolbar() {
           ))}
         </FormGroup>
       </Menu>
-
       <ThemeButton />
-
       <Menu
         style={{ marginTop: "2rem" }}
         anchorEl={state.customColorAnchorEl}

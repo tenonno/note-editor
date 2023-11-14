@@ -242,6 +242,7 @@ export default class BMSImporter {
         measures.push({
           index: laneIndex,
           beat: new Fraction(value, 1),
+          invisibleLine: false,
           customProps: {},
         });
 
@@ -319,7 +320,7 @@ export default class BMSImporter {
 
                         String[] s = splitTokens(line);         // トークンで分割
 
-                        // 
+                        //
                         const id_36 = line.Substring(4, 2);
 
                         int id = RadixConvert.ToInt32(line.Substring(4, 2), 36);
@@ -335,7 +336,7 @@ export default class BMSImporter {
 
                         continue;
                     }
-                    
+
 */
 
         if (line.match(/#TITLE .+/)) {
@@ -454,6 +455,7 @@ export default class BMSImporter {
         return {
           index,
           beat: new Fraction(4, 4),
+          invisibleLine: false,
           editorProps: { time: 0 },
           customProps: {},
         };

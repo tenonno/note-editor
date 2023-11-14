@@ -2,8 +2,8 @@ import { Howl } from "howler";
 import * as _ from "lodash";
 import { action, computed, observable } from "mobx";
 import { Fraction } from "../math";
-import { Lane } from "../objects/Lane";
-import { LanePoint } from "../objects/LanePoint";
+import { LaneRecord } from "../objects/Lane";
+import { LanePointRecord } from "../objects/LanePoint";
 import { Layer, LayerData, LayerRecord } from "../objects/Layer";
 import { MeasureRecord } from "../objects/Measure";
 import {
@@ -16,7 +16,7 @@ import { guid } from "../utils/guid";
 import box from "../utils/mobx-box";
 import updateChart from "../utils/updateChart";
 import Editor from "./EditorStore";
-import MusicGameSystem from "./MusicGameSystem";
+import MusicGameSystem, { InitialLane, LaneTemplate } from "./MusicGameSystem";
 
 export type ChartJsonData = {
   name: string;
@@ -39,7 +39,7 @@ export default class Chart {
   // TODO: Record にする
   // data = new ChartRecord();
 
-  version: number = 3;
+  version: number = 4;
 
   // @ts-ignore
   timeline: Timeline;
@@ -205,6 +205,7 @@ export default class Chart {
       {
         index,
         beat: new Fraction(4, 4),
+        invisibleLine: false,
         customProps,
       },
       this.musicGameSystem.measure
@@ -215,7 +216,7 @@ export default class Chart {
   public load(chartData: ChartJsonData) {
     console.log("譜面を読み込みます", chartData);
 
-    updateChart(chartData, this.version);
+    updateChart(chartData, this.musicGameSystem, this.version);
 
     // 譜面のカスタムオプションを読み込む
     (() => {
@@ -281,6 +282,7 @@ export default class Chart {
       timelineData.measures.push({
         index: i,
         beat: new Fraction(4, 4),
+        invisibleLine: false,
         customProps: {},
       });
     }
@@ -294,6 +296,32 @@ export default class Chart {
     }
 
     this.timeline = TimelineRecord.new(this, timelineData as TimelineData);
+
+    // 存在していないレーンがあれば生成する
+    (() => {
+      const laneTemplateNames = new Set(
+        chartData.timeline.lanes.map((lane) => lane.templateName)
+      );
+
+      for (const initialLane of this.musicGameSystem.initialLanes) {
+        if (laneTemplateNames.has(initialLane.template)) {
+          continue;
+        }
+
+        console.log("レーンないよｗ:", initialLane);
+
+        const laneTemplate = this.musicGameSystem.laneTemplateMap.get(
+          initialLane.template
+        )!;
+
+        this.createLane(
+          laneTemplate,
+          initialLane,
+          "initialLane-" + initialLane.template,
+          this.musicGameSystem
+        );
+      }
+    })();
 
     const layers = (chartData.layers || []) as LayerData[];
     this.layers = layers.map((layer) => LayerRecord.new(layer));
@@ -514,6 +542,7 @@ export default class Chart {
             {
               index,
               beat: new Fraction(4, 4),
+              invisibleLine: false,
               customProps: {},
             },
             this.musicGameSystem.measure
@@ -526,7 +555,7 @@ export default class Chart {
    * 初期レーンを読み込む
    */
   @action
-  loadInitialLanes() {
+  public loadInitialLanes() {
     const musicGameSystem = this.musicGameSystem;
 
     musicGameSystem.initialLanes.forEach((initialLane, index) => {
@@ -534,33 +563,48 @@ export default class Chart {
         initialLane.template
       )!;
 
-      const lanePoints = Array.from({ length: 2 }).map((_, index) => {
-        const newLanePoint = {
-          measureIndex: index * 300,
-          measurePosition: new Fraction(0, 1),
-          guid: guid(),
-          color: Number(laneTemplate.color),
-          horizontalSize: initialLane.horizontalSize,
-          templateName: laneTemplate.name,
-          horizontalPosition: new Fraction(
-            initialLane.horizontalPosition,
-            musicGameSystem.measureHorizontalDivision
-          ),
-        } as LanePoint;
+      this.createLane(
+        laneTemplate,
+        initialLane,
+        "initialLane" + index,
+        musicGameSystem
+      );
+    });
+  }
 
-        this.timeline.addLanePoint(newLanePoint);
-
-        return newLanePoint.guid;
+  @action
+  private createLane(
+    laneTemplate: LaneTemplate,
+    initialLane: InitialLane,
+    laneGuid: string,
+    musicGameSystem: MusicGameSystem
+  ) {
+    const lanePoints = Array.from({ length: 2 }).map((_, index) => {
+      const newLanePoint = LanePointRecord.new({
+        measureIndex: index * 999,
+        measurePosition: new Fraction(0, 1),
+        guid: guid(),
+        color: Number(laneTemplate.color),
+        horizontalSize: initialLane.horizontalSize,
+        templateName: laneTemplate.name,
+        horizontalPosition: new Fraction(
+          initialLane.horizontalPosition,
+          musicGameSystem.measureHorizontalDivision
+        ),
       });
 
-      const newLane = {
-        guid: "initialLane" + index,
-        templateName: laneTemplate.name,
-        division: laneTemplate.division,
-        points: lanePoints,
-      } as Lane;
-      this.timeline.addLane(newLane);
+      this.timeline.addLanePoint(newLanePoint);
+
+      return newLanePoint.guid;
     });
+
+    const newLane = LaneRecord.new({
+      guid: laneGuid,
+      templateName: laneTemplate.name,
+      division: laneTemplate.division,
+      points: lanePoints,
+    });
+    this.timeline.addLane(newLane);
   }
 
   @action

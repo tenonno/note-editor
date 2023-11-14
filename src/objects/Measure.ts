@@ -20,12 +20,14 @@ export interface IMeasureCustomProps {
 export type MeasureData = {
   index: number;
   beat: IFraction;
+  invisibleLine: boolean;
   customProps: any;
 };
 
 const defaultMeasureData: MeasureData = {
   index: -1,
   beat: Fraction.none,
+  invisibleLine: false,
   customProps: {},
 };
 

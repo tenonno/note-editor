@@ -218,15 +218,25 @@ export default observer(function EditorSetting() {
           </>
         )}
         <FormControlLabel
-        control={
-          <Switch
-            checked={setting.saveToDrive}
-            onChange={(_, value) => setting.setSaveToDrive(value)}
-            color="primary"
-          />
-        }
-        label="保存時にDriveにアップロード"
-      />
+          control={
+            <Switch
+              checked={setting.laneEditMode}
+              onChange={(_, value) => setting.setLaneEditMode(value)}
+              color="primary"
+            />
+          }
+          label="レーン配置モード"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={setting.saveToDrive}
+              onChange={(_, value) => setting.setSaveToDrive(value)}
+              color="primary"
+            />
+          }
+          label="保存時にDriveにアップロード"
+        />
       </FormControl>
     </div>
   );

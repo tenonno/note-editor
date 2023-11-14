@@ -17,6 +17,7 @@ import { NoteLineInfo } from "./Lane";
 import { NoteLineRenderInfo } from "./NoteLineRenderer";
 import MouseInfo from "../utils/mouseInfo";
 import { Graphics } from "pixi.js";
+import { isTargetLane } from "./LaneController";
 
 type UpdateResult = {
   selectTargets: TimelineObject[] | null;
@@ -93,7 +94,7 @@ export default class NoteController {
         const laneRenderer = LaneRendererResolver.resolve(lane);
 
         // 配置できないレーンならやめる
-        if ((noteType.excludeLanes || []).includes(lane.templateName)) {
+        if (!isTargetLane(noteType, lane, chart.musicGameSystem, setting)) {
           continue;
         }
 

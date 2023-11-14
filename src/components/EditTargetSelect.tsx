@@ -78,6 +78,7 @@ export default function EditTargetSelect({
   onNote,
   onLane,
   onOther,
+  laneEditMode,
 }: {
   value: ObjectCategory;
   onChange: (editObjectCategory: ObjectCategory) => void;
@@ -90,6 +91,7 @@ export default function EditTargetSelect({
   onNote: (el: Element) => void;
   onLane: (el: Element) => void;
   onOther: (el: Element) => void;
+  laneEditMode: boolean;
 }) {
   const classes = useStyles();
 
@@ -119,14 +121,16 @@ export default function EditTargetSelect({
           <ArrowDropDownIcon onClick={(e) => onNote(e.currentTarget)} />
         </ToggleButton>
         {/* Lane */}
-        <ToggleButton
-          className={classes.toggleButton}
-          value={ObjectCategory.Lane}
-          disabled={laneDisabled}
-        >
-          {musicGameSystem.laneTemplates[editLaneTypeIndex]?.name}
-          <ArrowDropDownIcon onClick={(e) => onLane(e.currentTarget)} />
-        </ToggleButton>
+        {laneEditMode && (
+          <ToggleButton
+            className={classes.toggleButton}
+            value={ObjectCategory.Lane}
+            disabled={laneDisabled}
+          >
+            {musicGameSystem.laneTemplates[editLaneTypeIndex]?.name}
+            <ArrowDropDownIcon onClick={(e) => onLane(e.currentTarget)} />
+          </ToggleButton>
+        )}
         {/* Other */}
         <ToggleButton
           className={classes.toggleButton}

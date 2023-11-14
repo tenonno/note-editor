@@ -146,6 +146,7 @@ export class TimelineRecord extends Record<TimelineData>(defaultTimelineData) {
           OtherObjectRecord.createInstance(
             {
               type: 0,
+              typeName: "bpm",
               guid: guid(),
               measureIndex: 0,
               measurePosition: new Fraction(0, 1),

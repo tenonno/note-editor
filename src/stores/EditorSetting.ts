@@ -9,6 +9,7 @@ import {
 import box from "../utils/mobx-box";
 import fs from "fs";
 import path from "path";
+import { IEmptyChart } from "./EmptyChart";
 
 /**
  * 編集モード
@@ -59,6 +60,8 @@ export default class EditorSetting {
     delete setting.measureLayouts;
     // @ts-ignore
     delete setting.objectSizes;
+    // @ts-ignore
+    delete setting.laneGroupIndex;
     localStorage.setItem("editorSetting", JSON.stringify(setting));
   }
 
@@ -169,6 +172,22 @@ export default class EditorSetting {
   }
 
   @observable
+  public laneGroupIndex = new Map<string, Map<string, number>>();
+
+  @action
+  public setLaneGroupIndex(chart: IEmptyChart, value: number) {
+    var musicGameSystem = chart.musicGameSystem;
+    var musicGameSystemName = musicGameSystem.name;
+    var noteType = musicGameSystem.noteTypes[this.editNoteTypeIndex].name;
+
+    if (!this.laneGroupIndex.has(musicGameSystemName)) {
+      this.laneGroupIndex.set(musicGameSystemName, new Map<string, number>());
+    }
+
+    this.laneGroupIndex.get(musicGameSystemName)!.set(noteType, value);
+  }
+
+  @observable
   measureWidth = 300;
 
   @action
@@ -203,6 +222,14 @@ export default class EditorSetting {
   @action
   setReverseScroll(value: boolean) {
     this.reverseScroll = value;
+  }
+
+  @observable
+  public laneEditMode = false;
+
+  @action
+  public setLaneEditMode(value: boolean) {
+    this.laneEditMode = value;
   }
 
   /**

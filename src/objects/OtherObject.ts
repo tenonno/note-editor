@@ -8,10 +8,15 @@ import { Graphics, Rectangle } from "pixi.js";
 import { OtherObjectRenderer } from "./OtherObjectRenderer";
 import Chart from "../stores/Chart";
 import * as _ from "lodash";
+import { keyBy } from "lodash";
 import { OtherObjectPointOption } from "../stores/MusicGameSystem";
 
 export type OtherObjectData = {
+  /**
+   * @deprecated 代わりに typeName フィールドを使用してください
+   * */
   type: number;
+  typeName: "bpm" | "speed" | "stop" | "measureLine" | "memo" | "unknown";
   value: number | string;
   guid: GUID;
 
@@ -31,6 +36,7 @@ export type OtherObjectData = {
 
 const defaultOtherObjectData: OtherObjectData = {
   type: 0,
+  typeName: "unknown",
   guid: "",
   measureIndex: 0,
   measurePosition: Fraction.none,
@@ -106,13 +112,19 @@ export class OtherObjectRecord
     };
 
     const { otherObjectTypes } = chart.musicGameSystem;
-    const otherObjectType = otherObjectTypes[data.type];
+    const otherObjectTypeMap = keyBy(otherObjectTypes, "name");
+
+    const otherObjectType = otherObjectTypeMap[data.typeName];
+
+    if (!otherObjectType) {
+      console.error(data);
+    }
 
     if (otherObjectType.splitValueLabels.length > 0) {
       data.inspectorConfig?.splitValues.push({
         key: "value",
-        labels: otherObjectTypes[data.type].splitValueLabels,
-        pointLabel: otherObjectTypes[data.type].splitValuePointLabel,
+        labels: otherObjectTypeMap[data.typeName].splitValueLabels,
+        pointLabel: otherObjectTypeMap[data.typeName].splitValuePointLabel,
         pointParams: {
           x: { min: -1, max: 1, step: 0.1 },
           y: { min: -1, max: 1, step: 0.1 },
@@ -175,21 +187,21 @@ export class OtherObjectRecord
    * BPMオブジェクトか
    */
   public isBPM() {
-    return this.type === 0;
+    return this.typeName === "bpm";
   }
 
   /**
    * 速度変更オブジェクトか
    */
   public isSpeed() {
-    return this.type === 1;
+    return this.typeName === "speed";
   }
 
   /**
    * 停止オブジェクトか
    */
   public isStop() {
-    return this.type === 2;
+    return this.typeName === "stop";
   }
 
   public isSelected = false;

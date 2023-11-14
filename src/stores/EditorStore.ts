@@ -186,6 +186,7 @@ export default class Editor {
     const newObject = OtherObjectRecord.createInstance(
       {
         type: 0,
+        typeName: "bpm",
         measureIndex: 0,
         measurePosition: new Fraction(0, 1),
         guid: guid(),
@@ -628,8 +629,16 @@ export default class Editor {
 
       // 置けないならやめる
       const typeMap = this.currentChart!.musicGameSystem.noteTypeMap;
-      const excludeLanes = typeMap.get(note.type)!.excludeLanes || [];
-      if (excludeLanes.includes(lane.templateName)) return;
+      if (
+        !isTargetLane(
+          typeMap.get(note.type)!,
+          lane,
+          this.currentChart!.musicGameSystem,
+          this.setting
+        )
+      ) {
+        return;
+      }
 
       note.lane = lane.guid;
     });

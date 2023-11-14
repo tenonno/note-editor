@@ -146,14 +146,28 @@ export default class AssetStore {
 
     // その他オブジェクトのデフォルト値を追加
     musicGameSystems.otherObjectTypes.unshift({
-      name: "Stop",
+      name: "memo",
+      color: "0xffffff",
+      valueType: "text",
+      splitValueLabels: [],
+      splitValuePointLabel: "",
+    });
+    musicGameSystems.otherObjectTypes.unshift({
+      name: "measureLine",
+      color: "0xffffff",
+      valueType: "none",
+      splitValueLabels: [],
+      splitValuePointLabel: "",
+    });
+    musicGameSystems.otherObjectTypes.unshift({
+      name: "stop",
       color: "0x0000ff",
       valueType: "none",
       splitValueLabels: [],
       splitValuePointLabel: "",
     });
     musicGameSystems.otherObjectTypes.unshift({
-      name: "Speed",
+      name: "speed",
       color: "0x00ff00",
       valueType: "number",
       defaultValue: 1,
@@ -161,7 +175,7 @@ export default class AssetStore {
       splitValuePointLabel: "",
     });
     musicGameSystems.otherObjectTypes.unshift({
-      name: "BPM",
+      name: "bpm",
       color: "0xff0000",
       valueType: "number",
       defaultValue: 120,

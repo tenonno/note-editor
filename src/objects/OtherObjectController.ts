@@ -271,6 +271,10 @@ export default class OtherObjectController {
     const newObject = OtherObjectRecord.createInstance(
       {
         type: setting.editOtherTypeIndex,
+        // @ts-ignore
+        typeName:
+          chart.musicGameSystem.otherObjectTypes[setting.editOtherTypeIndex]
+            .name,
         measureIndex: newMeasureIndex,
         measurePosition: newMeasurePosition,
         guid: guid(),

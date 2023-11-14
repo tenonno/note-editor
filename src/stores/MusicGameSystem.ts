@@ -19,10 +19,20 @@ export interface InitialLane {
   horizontalPosition: number;
 }
 
+export interface LaneGroup {
+  name: string;
+  lanes: string[];
+}
+
 export interface MusicGameSystemNoteType {
   name: string;
   renderer: string;
   rendererReference: any;
+  laneGroups: LaneGroup[];
+
+  /**
+   * @deprecated laneGroups を使用してください
+   */
   excludeLanes: string[];
 
   /**
@@ -41,6 +51,11 @@ export interface MusicGameSystemNoteType {
    * 重なりを無視するか
    */
   ignoreOverlap: boolean;
+
+  /**
+   * 廃止されたノートか
+   */
+  obsolete: boolean;
 
   /**
    * カスタムプロパティ
@@ -141,6 +156,8 @@ export default interface MusicGameSystem {
 
   noteTypeMap: Map<string, MusicGameSystemNoteType>;
 
+  noteLaneGroupMap: Map<string, LaneGroup[]>;
+
   customNoteLineRenderers: CustomNoteLineRenderer[];
 
   customNoteLineRendererMap: Map<string, CustomNoteLineRenderer>;
@@ -176,7 +193,6 @@ export function normalizeMusicGameSystem(
       editorProps: [],
       noteTypes: [],
       otherObjectTypes: [],
-
       measure: {
         renderer: "default",
         customProps: [],
@@ -209,6 +225,25 @@ export function normalizeMusicGameSystem(
     otherObjectType.splitValueLabels ??= [];
   }
 
+  system.noteLaneGroupMap = new Map<string, LaneGroup[]>();
+
+  const getLaneGroups = (noteType: MusicGameSystemNoteType): LaneGroup[] => {
+    if (noteType.laneGroups.length > 0) {
+      return noteType.laneGroups;
+    }
+
+    return [
+      {
+        name: "default",
+        lanes: system.laneTemplates
+          .filter(
+            (laneTemplate) => !noteType.excludeLanes.includes(laneTemplate.name)
+          )
+          .map((laneTemplate) => laneTemplate.name),
+      },
+    ];
+  };
+
   for (const noteType of system.noteTypes) {
     noteType.editorProps = Object.assign(
       {
@@ -216,8 +251,12 @@ export function normalizeMusicGameSystem(
       },
       noteType.editorProps
     );
+    noteType.laneGroups = noteType.laneGroups || [];
     noteType.excludeLanes = noteType.excludeLanes || [];
     noteType.connectableTypes = noteType.connectableTypes || [];
+    noteType.obsolete = noteType.obsolete || false;
+
+    system.noteLaneGroupMap.set(noteType.name, getLaneGroups(noteType));
   }
 
   return system;

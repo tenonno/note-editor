@@ -1,5 +1,7 @@
-import * as PIXI from "pixi.js";
-import { EditMode, ObjectCategory } from "../stores/EditorSetting";
+import EditorSetting, {
+  EditMode,
+  ObjectCategory,
+} from "../stores/EditorSetting";
 import Vector2 from "../math/Vector2";
 import { Measure } from "./Measure";
 import Chart from "../stores/Chart";
@@ -9,19 +11,36 @@ import LanePointRenderer from "./LanePointRenderer";
 import { guid } from "../utils/guid";
 import { Lane } from "./Lane";
 import { Fraction } from "../math";
-import * as _ from "lodash";
+import { clamp } from "lodash";
 import { LanePoint } from "./LanePoint";
 import { NotePointInfo } from "./LaneRenderer";
 import MouseInfo from "../utils/mouseInfo";
+import MusicGameSystem, {
+  MusicGameSystemNoteType,
+} from "../stores/MusicGameSystem";
+import { Graphics, Point } from "pixi.js";
 
 type UpdateResult = {
   targetNotePoint: NotePointInfo | null;
 };
 
+export const isTargetLane = (
+  newNoteType: MusicGameSystemNoteType,
+  lane: Lane,
+  musicGameSystem: MusicGameSystem,
+  setting: EditorSetting
+) => {
+  const laneGroup = musicGameSystem.noteLaneGroupMap.get(newNoteType.name)![
+    setting.laneGroupIndex.get(musicGameSystem.name)?.get(newNoteType.name) || 0
+  ];
+
+  return laneGroup.lanes.includes(lane.templateName);
+};
+
 export default class LaneController {
   private connectTargetLanePoint: LanePoint | null = null;
 
-  public constructor(private graphics: PIXI.Graphics, private editor: Editor) {}
+  public constructor(private graphics: Graphics, private editor: Editor) {}
 
   public update(
     chart: Chart,
@@ -67,7 +86,7 @@ export default class LaneController {
       }
 
       // 配置できないレーンならやめる
-      if ((newNoteType.excludeLanes || []).includes(lane.templateName)) {
+      if (!isTargetLane(newNoteType, lane, chart.musicGameSystem, setting)) {
         continue;
       }
 
@@ -160,7 +179,7 @@ export default class LaneController {
     const { isClick } = mouseInfo;
     const mousePosition = mouseInfo.position;
 
-    function normalizeContainsPoint(measure: Measure, point: PIXI.Point) {
+    function normalizeContainsPoint(measure: Measure, point: Point) {
       return [
         (point.x - measure.x) / measure.width,
         (point.y - measure.y) / measure.height,
@@ -184,7 +203,7 @@ export default class LaneController {
     const newLanePoint = {
       measureIndex: targetMeasure.index,
       measurePosition: new Fraction(
-        vlDiv - 1 - _.clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
+        vlDiv - 1 - clamp(Math.floor(ny * vlDiv), 0, vlDiv - 1),
         vlDiv
       ),
       guid: guid(),
@@ -192,7 +211,7 @@ export default class LaneController {
       horizontalSize: setting.objectSize,
       templateName: laneTemplate.name,
       horizontalPosition: new Fraction(
-        _.clamp(Math.floor((nx - p) * hlDiv), 0, hlDiv - setting.objectSize),
+        clamp(Math.floor((nx - p) * hlDiv), 0, hlDiv - setting.objectSize),
         hlDiv
       ),
     } as LanePoint;

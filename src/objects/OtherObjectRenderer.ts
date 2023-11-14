@@ -1,15 +1,15 @@
 import { Measure } from "./Measure";
-import * as PIXI from "pixi.js";
 import { parseRgba } from "../utils/color";
 import { OtherObjectType } from "../stores/MusicGameSystem";
 import Pixi from "../containers/Pixi";
 import { OtherObject } from "./OtherObject";
+import { Graphics, Rectangle } from "pixi.js";
 
 export class _OtherObjectRenderer {
   private readonly labelWidth = 60;
   private readonly labelHeight = 20;
 
-  public getBounds(otherObject: OtherObject, measure: Measure): PIXI.Rectangle {
+  public getBounds(otherObject: OtherObject, measure: Measure): Rectangle {
     const lane = measure;
 
     const y =
@@ -23,7 +23,7 @@ export class _OtherObjectRenderer {
     const _x = measure.x;
     const _y = y - colliderH / 2;
 
-    return new PIXI.Rectangle(_x, _y, colliderW, colliderH);
+    return new Rectangle(_x, _y, colliderW, colliderH);
   }
 
   private drawedPositions: {
@@ -50,7 +50,7 @@ export class _OtherObjectRenderer {
   public drawBounds(
     object: OtherObject,
     measure: Measure,
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     rgba: number
   ) {
     const { color, alpha } = parseRgba(rgba);
@@ -79,7 +79,7 @@ export class _OtherObjectRenderer {
   private renderTextValue(
     otherObjectType: OtherObjectType,
     object: OtherObject,
-    bounds: PIXI.Rectangle,
+    bounds: Rectangle,
     labelAddY: number,
     measure: Measure
   ) {
@@ -99,8 +99,8 @@ export class _OtherObjectRenderer {
   private renderPointValue(
     otherObjectType: OtherObjectType,
     object: OtherObject,
-    graphics: PIXI.Graphics,
-    bounds: PIXI.Rectangle,
+    graphics: Graphics,
+    bounds: Rectangle,
     labelAddY: number,
     measure: Measure
   ) {
@@ -140,10 +140,16 @@ export class _OtherObjectRenderer {
   public render(
     otherObjectTypes: OtherObjectType[],
     object: OtherObject,
-    graphics: PIXI.Graphics,
+    graphics: Graphics,
     measure: Measure
   ) {
-    const otherObjectType = otherObjectTypes[object.type];
+    const otherObjectType = otherObjectTypes.find(
+      (type) => type.name === object.typeName
+    );
+
+    if (!otherObjectType) {
+      throw "otherObjectType not found: " + object.typeName;
+    }
 
     const bounds = this.getBounds(object, measure);
 
@@ -159,12 +165,19 @@ export class _OtherObjectRenderer {
     }
 
     this.renderOrders.set(object, this.drawedPositions[positionText]);
-
-    graphics
-      .lineStyle(0)
-      .beginFill(Number(otherObjectType.color), 0.75)
-      .drawRect(measure.x, bounds.y, measure.width, bounds.height)
-      .endFill();
+    if (otherObjectType.name === "measureLine") {
+      graphics
+        .lineStyle(0)
+        .beginFill(Number(otherObjectType.color), 0.75)
+        .drawRect(measure.x, bounds.y + 1, measure.width, bounds.height - 2)
+        .endFill();
+    } else {
+      graphics
+        .lineStyle(0)
+        .beginFill(Number(otherObjectType.color), 0.75)
+        .drawRect(measure.x, bounds.y, measure.width, bounds.height)
+        .endFill();
+    }
 
     switch (otherObjectType.valueType) {
       case "point":

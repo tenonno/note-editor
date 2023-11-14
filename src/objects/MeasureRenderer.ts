@@ -17,6 +17,13 @@ class MeasureDefaultRenderer implements IMeasureRenderer {
       .beginFill(0x333333)
       .drawRect(x, y, width, height)
       .endFill();
+
+    if (measure.invisibleLine) {
+      graphics
+        .lineStyle(2, 0x333333)
+        .moveTo(x, y + height)
+        .lineTo(x + width, y + height);
+    }
   }
 }
 

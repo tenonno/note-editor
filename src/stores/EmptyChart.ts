@@ -1,6 +1,7 @@
 import MusicGameSystem, {
   CustomNoteLineRenderer,
   HowlPool,
+  LaneGroup,
   LaneTemplate,
   MusicGameSystemNoteType,
 } from "../stores/MusicGameSystem";
@@ -39,6 +40,7 @@ export const emptyChart = {
     otherObjectTypes: [],
     seMap: new Map<string, HowlPool>(),
     noteTypeMap: new Map<string, MusicGameSystemNoteType>(),
+    noteLaneGroupMap: new Map<string, LaneGroup[]>(),
     customNoteLineRenderers: [],
     customNoteLineRendererMap: new Map<string, CustomNoteLineRenderer>(),
     measure: {
