@@ -1,11 +1,9 @@
-import { remote } from "electron";
+import { dialog, getCurrentWindow } from "@electron/remote";
 import * as fs from "fs";
 import * as util from "util";
 import { Fraction } from "../math";
 import { MeasureData } from "../objects/Measure";
 import { guid } from "../utils/guid";
-
-const { dialog } = remote;
 
 type Stop = {
   value: number;
@@ -15,7 +13,7 @@ type Stop = {
 
 export default class BMSImporter {
   public static async import() {
-    const window = remote.getCurrentWindow();
+    const window = getCurrentWindow();
 
     const filenames = dialog.showOpenDialogSync(window, {
       properties: ["openFile", "multiSelections"],

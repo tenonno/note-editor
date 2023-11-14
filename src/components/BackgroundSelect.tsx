@@ -5,7 +5,7 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
-import { remote } from "electron";
+import { dialog } from "@electron/remote";
 import * as React from "react";
 import { useStyles } from "../styles/styles";
 import { Delete } from "@mui/icons-material";
@@ -35,7 +35,7 @@ export default function ({
           width: 174,
         }}
         onClick={() => {
-          const result = remote.dialog.showOpenDialogSync({
+          const result = dialog.showOpenDialogSync({
             defaultPath: assetsPath,
             filters: [{ name: "背景", extensions: ["png", "jpg", "gif"] }],
           });

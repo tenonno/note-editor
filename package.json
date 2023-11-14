@@ -17,6 +17,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@electron/remote": "^2.0.12",
     "@types/classnames": "^2.2.7",
     "@types/config": "0.0.36",
     "@types/dat.gui": "^0.7.2",
@@ -31,8 +32,8 @@
     "@types/webpack-merge": "^5.0.0",
     "babel-runtime": "^6.26.0",
     "cross-env": "^5.2.0",
-    "electron": "^12.0.5",
-    "electron-builder": "^22.10.5",
+    "electron": "^27.0.2",
+    "electron-builder": "24.6.4",
     "electron-load-devtool": "^1.2.0",
     "file-loader": "^4.2.0",
     "hard-source-webpack-plugin": "^0.13.1",
@@ -89,7 +90,7 @@
     ]
   },
   "volta": {
-    "node": "16.17.0",
-    "yarn": "1.22.19"
+    "node": "21.1.0",
+    "yarn": "4.0.1"
   }
 }

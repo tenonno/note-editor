@@ -1,6 +1,9 @@
 import { app, BrowserWindow, ipcMain, Menu } from "electron";
+import * as main from "@electron/remote/main";
 import * as fs from "fs";
 import * as path from "path";
+
+main.initialize();
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -15,7 +18,7 @@ const audioAssetPath = path.resolve(dirname, "assets/audio");
 const musicGameSystemsPath = path.resolve(dirname, "assets/musicGameSystems");
 const keyConfigPath = path.resolve(dirname, "assets/keyconfig.json");
 
-let mainWindow: BrowserWindow | null;
+let mainWindow: Electron.CrossProcessExports.BrowserWindow | null;
 
 const defaultKeyConfig = {
   editModes: ["Q", "W", "E", "R"],
@@ -36,10 +39,12 @@ function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-      enableRemoteModule: true,
+      // enableRemoteModule: true,
       contextIsolation: false,
     },
   });
+
+  main.enable(mainWindow.webContents);
 
   if (isDevelopment) {
     mainWindow!.loadURL(`http://localhost:9000`);

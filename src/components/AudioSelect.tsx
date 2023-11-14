@@ -1,5 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
-import { remote } from "electron";
+import { dialog } from "@electron/remote";
+
 import * as React from "react";
 import { useStyles } from "../styles/styles";
 
@@ -22,7 +23,7 @@ export default function ({
       <Select
         value={0}
         onClick={() => {
-          const result = remote.dialog.showOpenDialogSync({
+          const result = dialog.showOpenDialogSync({
             defaultPath: audioAssetPath,
             filters: [{ name: "音源", extensions: ["mp3", "wav"] }],
           });

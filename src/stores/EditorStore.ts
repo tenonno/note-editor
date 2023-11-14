@@ -1,4 +1,5 @@
-import { ipcRenderer, remote } from "electron";
+import { ipcRenderer } from "electron";
+import { dialog, getCurrentWindow } from "@electron/remote";
 import * as fs from "fs";
 import http from "http";
 import { clamp, cloneDeep, uniq } from "lodash";
@@ -31,8 +32,7 @@ import {
   CurrentMeasurePosition,
   initialCurrentMeasurePosition,
 } from "../objects/MeasureController";
-
-const { dialog } = remote;
+import { isTargetLane } from "../objects/LaneController";
 
 export type Notification = {
   guid: GUID;
@@ -400,7 +400,7 @@ export default class Editor {
   private saveAs() {
     if (!this.existsCurrentChart()) return;
 
-    const window = remote.getCurrentWindow();
+    const window = getCurrentWindow();
     const filePath = dialog.showSaveDialogSync(window, {
       title: "タイトル",
       filters: this.dialogFilters,
@@ -459,7 +459,7 @@ export default class Editor {
 
   @action
   private open() {
-    const window = remote.getCurrentWindow();
+    const window = getCurrentWindow();
     if (!window) return;
     const paths = dialog.showOpenDialogSync(window, {
       properties: ["openFile", "multiSelections"],
