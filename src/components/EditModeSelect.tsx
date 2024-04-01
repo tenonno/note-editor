@@ -4,8 +4,8 @@ import {
   ShowChart as ShowChartIcon,
 } from "@mui/icons-material";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import * as React from "react";
 import { EditMode } from "../stores/EditorSetting";
 import useStyles from "../styles/ToolBar";

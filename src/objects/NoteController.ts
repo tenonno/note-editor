@@ -453,9 +453,6 @@ export default class NoteController {
         speed: 1,
         lane: targetNotePoint!.lane.guid,
         layer: chart.currentLayer.guid,
-        editorProps: {
-          time: 0,
-        },
         customProps: {
           customColor: setting.customPropColor,
         },

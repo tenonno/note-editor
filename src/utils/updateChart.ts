@@ -42,8 +42,8 @@ function updateToV4(chart: ChartJsonData, musicGameSystem: MusicGameSystem) {
   for (const otherObject of chart.timeline.otherObjects) {
     let type = otherObject.type;
 
-    if (type >= 4) {
-      type++;
+    if (type >= 3) {
+      type += 2;
     }
 
     // @ts-ignore

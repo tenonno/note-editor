@@ -19,7 +19,6 @@ interface INoteEditorProps {
 
 export type NoteData = {
   guid: GUID;
-  editorProps: INoteEditorProps;
 
   /**
    * 小節インデックス
@@ -52,9 +51,7 @@ export type NoteData = {
 
 const defaultNoteData: NoteData = {
   guid: "GUID",
-  editorProps: {
-    time: 1,
-  },
+
   measureIndex: -1,
   measurePosition: new Fraction(0, 1),
 
@@ -86,6 +83,10 @@ export class NoteRecord
   sePlayed: boolean = false;
 
   chart: Chart;
+
+  editorProps: INoteEditorProps = {
+    time: 0,
+  };
 
   getLane(): Lane {
     return this.chart.timeline.laneMap.get(this.lane)!;

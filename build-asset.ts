@@ -43,8 +43,6 @@ function replaceImports(src: string) {
     const s = "import".length;
     const e = args[0].lastIndexOf(`from`);
 
-    console.error(from);
-
     return args[0]
       .slice(s, e)!
       .replace(/\n|\{|\}|\,|\*| as |/g, "")
@@ -57,11 +55,9 @@ function replaceImports(src: string) {
 
 const directoryPath = "./assets/musicGameSystems";
 
-const files = enumerateFiles(directoryPath).filter((f) =>
-  f.match(/src\/.*.ts$/)
-);
-
-console.log(files);
+const files = enumerateFiles(directoryPath).filter((f) => {
+  return f.match(/src[\/\\].*.ts$/);
+});
 
 function sleep(time: number) {
   return new Promise((resolve) => {
@@ -76,8 +72,6 @@ function sleep(time: number) {
  * @param file 対象 .ts ファイル
  */
 const transpile = async (file: string) => {
-  await sleep(100);
-
   let data = fs.readFileSync("./" + file, "utf-8");
   data = replaceImports(data);
 
@@ -87,10 +81,23 @@ const transpile = async (file: string) => {
     },
   });
 
+  path.normalize(
+    "./" +
+      file
+        .replace(".ts", ".js")
+        .replace("/src/", "/dest/")
+        .replace("\\src\\", "\\dest\\")
+  );
+
   fs.writeFileSync(
-    "./" + file.replace(".ts", ".js").replace("/src/", "/dest/"),
+    "./" +
+      file
+        .replace(".ts", ".js")
+        .replace("/src/", "/dest/")
+        .replace("\\src\\", "\\dest\\"),
     result.outputText
   );
+
   console.log("transpiled: ", file, result.outputText.length);
 };
 

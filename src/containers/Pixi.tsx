@@ -59,7 +59,7 @@ export default class Pixi extends InjectedComponent {
       width: window.innerWidth,
       height: window.innerHeight,
       antialias: true,
-      transparent: true,
+      backgroundAlpha: 0,
     });
 
     this.app.view.style.width = "100%";
@@ -182,6 +182,7 @@ export default class Pixi extends InjectedComponent {
 
   componentWillUnmount() {
     this.app!.stop();
+    this.container!.removeChild(this.app!.view);
   }
 
   /**

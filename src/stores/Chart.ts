@@ -675,10 +675,18 @@ export default class Chart {
     };
     deleteConfigKey(chart);
 
+    // delete old other object type
+    (() => {
+      for (const otherObject of chart.timeline.otherObjects) {
+        // @ts-ignore
+        delete otherObject.type;
+      }
+    })();
+
     if (space === null) {
       return JSON.stringify(chart);
     }
 
-    return JSON.stringify(chart, null, 2);
+    return JSON.stringify(chart, null, 2) + "\n";
   }
 }
